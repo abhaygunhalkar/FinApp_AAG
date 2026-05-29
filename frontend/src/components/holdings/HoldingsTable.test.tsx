@@ -15,6 +15,8 @@ function createHolding(overrides: Partial<Holding> = {}): Holding {
     current_price: 175,
     total_invested: 1500,
     current_value: 1750,
+    daily_change: 0,
+    daily_change_pct: 0,
     unrealized_gain: 250,
     unrealized_gain_pct: 16.67,
     allocation_pct: 50,
@@ -70,14 +72,14 @@ describe('HoldingsTable', () => {
     expect(screen.getByText(/^Quantity/)).toBeInTheDocument();
     expect(screen.getByText(/^Avg Buy Price/)).toBeInTheDocument();
     expect(screen.getByText(/^Current Price/)).toBeInTheDocument();
+    expect(screen.getByText(/^Day Change$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Day Change %$/)).toBeInTheDocument();
     expect(screen.getByText(/^Total Invested/)).toBeInTheDocument();
     expect(screen.getByText(/^Current Value/)).toBeInTheDocument();
     expect(screen.getByText(/^Gain\/Loss/)).toBeInTheDocument();
     expect(screen.getByText(/^Gain %/)).toBeInTheDocument();
     expect(screen.getByText(/^Sector/)).toBeInTheDocument();
-    expect(screen.getByText(/^Industry/)).toBeInTheDocument();
-    expect(screen.getByText(/^Div Yield/)).toBeInTheDocument();
-    expect(screen.getByText(/^Annual Div Income/)).toBeInTheDocument();
+    expect(screen.getByText(/^Broker/)).toBeInTheDocument();
     expect(screen.getByText(/^Allocation %/)).toBeInTheDocument();
     expect(screen.getByText(/^Last Updated/)).toBeInTheDocument();
   });

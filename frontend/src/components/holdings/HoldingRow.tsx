@@ -24,6 +24,10 @@ export default function HoldingRow({ holding }: HoldingRowProps) {
     });
 
   const formatPercent = (value: number) => `${value.toFixed(2)}%`;
+  const formatSignedCurrency = (value: number) =>
+    `${value > 0 ? '+' : ''}${formatCurrency(value)}`;
+  const formatSignedPercent = (value: number) =>
+    `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
 
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('en-US', {
@@ -65,6 +69,12 @@ export default function HoldingRow({ holding }: HoldingRowProps) {
         <td style={{ padding: '8px', fontSize: '14px' }} className="text-right text-gray-900 dark:text-gray-100">
           {formatCurrency(holding.current_price)}
         </td>
+        <td style={{ padding: '8px', fontSize: '14px' }} className={`text-right ${holding.daily_change > 0 ? 'text-green-600 dark:text-green-400' : holding.daily_change < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`}>
+          {formatSignedCurrency(holding.daily_change)}
+        </td>
+        <td style={{ padding: '8px', fontSize: '14px' }} className={`text-right ${holding.daily_change_pct > 0 ? 'text-green-600 dark:text-green-400' : holding.daily_change_pct < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`}>
+          {formatSignedPercent(holding.daily_change_pct)}
+        </td>
         <td style={{ padding: '8px', fontSize: '14px' }} className="text-right text-gray-900 dark:text-gray-100">
           {formatCurrency(holding.total_invested)}
         </td>
@@ -92,7 +102,7 @@ export default function HoldingRow({ holding }: HoldingRowProps) {
       </tr>
       {expanded && (
         <tr className="bg-gray-50 dark:bg-gray-800/50">
-          <td colSpan={13} className="px-4 py-3">
+          <td colSpan={15} className="px-4 py-3">
             <TransactionHistory holdingId={holding.id} ticker={holding.ticker} />
           </td>
         </tr>

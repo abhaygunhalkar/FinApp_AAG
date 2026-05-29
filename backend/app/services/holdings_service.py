@@ -9,6 +9,7 @@ from app.models.holding import Holding
 from app.models.transaction import Transaction
 from app.repositories.cash_balance_repository import CashBalanceRepository
 from app.repositories.holdings_repository import HoldingsRepository
+from app.repositories.price_history_repository import PriceHistoryRepository
 from app.schemas.holding import HoldingCreate, HoldingResponse, HoldingUpdate
 
 
@@ -28,8 +29,21 @@ class HoldingsService:
         return sum(h.current_price * h.quantity for h in holdings)
 
     @staticmethod
+    def _get_previous_close(db: Session, ticker: str) -> float | None:
+        """Retrieve the most recent prior close price for a ticker."""
+        history = PriceHistoryRepository.get_history(db, ticker, days=365)
+        if not history:
+            return None
+
+        latest = history[-1]
+        if latest.open_price is not None:
+            return latest.open_price
+
+        return latest.close_price
+
+    @staticmethod
     def _build_holding_response(
-        holding: Holding, total_portfolio_value: float
+        db: Session, holding: Holding, total_portfolio_value: float
     ) -> HoldingResponse:
         """Build a HoldingResponse with all calculated fields."""
         total_invested = holding.average_buy_price * holding.quantity
@@ -57,6 +71,20 @@ class HoldingsService:
         else:
             allocation_pct = 0.0
 
+        previous_close = HoldingsService._get_previous_close(db, holding.ticker)
+        if previous_close is not None and previous_close != 0:
+            daily_change = round(
+                (holding.current_price - previous_close) * holding.quantity,
+                2,
+            )
+            daily_change_pct = round(
+                ((holding.current_price - previous_close) / previous_close) * 100,
+                2,
+            )
+        else:
+            daily_change = 0.0
+            daily_change_pct = 0.0
+
         # annual_dividend_income = dividend_per_share * quantity
         # We use dividend_yield (stored as decimal, e.g. 0.05 = 5%) only as display.
         # The actual income is: dividend_yield * current_price * quantity
@@ -79,6 +107,8 @@ class HoldingsService:
             current_price=holding.current_price,
             total_invested=total_invested,
             current_value=current_value,
+            daily_change=daily_change,
+            daily_change_pct=daily_change_pct,
             unrealized_gain=unrealized_gain,
             unrealized_gain_pct=unrealized_gain_pct,
             allocation_pct=allocation_pct,
@@ -110,7 +140,7 @@ class HoldingsService:
         )
 
         return [
-            HoldingsService._build_holding_response(h, total_portfolio_value)
+            HoldingsService._build_holding_response(db, h, total_portfolio_value)
             for h in holdings
         ]
 
@@ -133,7 +163,7 @@ class HoldingsService:
         total_portfolio_value = HoldingsService._calculate_total_portfolio_value(
             db, holding_type
         )
-        return HoldingsService._build_holding_response(holding, total_portfolio_value)
+        return HoldingsService._build_holding_response(db, holding, total_portfolio_value)
 
     @staticmethod
     def create_holding(
@@ -211,7 +241,7 @@ class HoldingsService:
         total_portfolio_value = HoldingsService._calculate_total_portfolio_value(
             db, holding_type
         )
-        return HoldingsService._build_holding_response(holding, total_portfolio_value)
+        return HoldingsService._build_holding_response(db, holding, total_portfolio_value)
 
     @staticmethod
     def update_holding(
@@ -242,7 +272,7 @@ class HoldingsService:
         total_portfolio_value = HoldingsService._calculate_total_portfolio_value(
             db, holding_type
         )
-        return HoldingsService._build_holding_response(holding, total_portfolio_value)
+        return HoldingsService._build_holding_response(db, holding, total_portfolio_value)
 
     @staticmethod
     def delete_holding(

@@ -39,6 +39,8 @@ class HoldingResponse(BaseModel):
     current_price: float
     total_invested: float
     current_value: float
+    daily_change: float
+    daily_change_pct: float
     unrealized_gain: float
     unrealized_gain_pct: float
     allocation_pct: float

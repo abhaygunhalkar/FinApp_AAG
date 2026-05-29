@@ -7,6 +7,8 @@ export interface Holding {
   current_price: number;
   total_invested: number;
   current_value: number;
+  daily_change: number;
+  daily_change_pct: number;
   unrealized_gain: number;
   unrealized_gain_pct: number;
   allocation_pct: number;
