@@ -97,7 +97,7 @@ export default function SectorAllocationChart() {
               <text
                 x={x}
                 y={y}
-                fill="#111827"
+                fill="#f2f2f4"
                 textAnchor="middle"
                 dominantBaseline="central"
                 fontSize={12}
