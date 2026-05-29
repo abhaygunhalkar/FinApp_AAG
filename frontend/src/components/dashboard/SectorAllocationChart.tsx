@@ -1,11 +1,15 @@
 import { useMemo } from 'react';
 import {
-  PieChart,
-  Pie,
-  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   Legend,
+  Cell,
+  LabelList,
 } from 'recharts';
 import { useHoldings } from '../../hooks/useHoldings';
 import { EmptyState } from '../shared';
@@ -84,33 +88,31 @@ export default function SectorAllocationChart() {
         Sector Allocation
       </h3>
       <ResponsiveContainer width="100%" height={256}>
-        <PieChart>
-          <Pie
-            data={sectorData}
-            cx="50%"
-            cy="50%"
-            innerRadius={50}
-            outerRadius={90}
-            dataKey="value"
-            nameKey="name"
-            label={({ payload, x, y }) => (
-              <text
-                x={x}
-                y={y}
-                fill="#f2f2f4"
-                textAnchor="middle"
-                dominantBaseline="central"
-                fontSize={12}
-              >
-                {`${payload.percentage}%`}
-              </text>
-            )}
-            labelLine={false}
-          >
-            {sectorData.map((_entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
+        <BarChart
+          data={sectorData}
+          layout="vertical"
+          margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+          <XAxis
+            type="number"
+            tick={{ fontSize: 12 }}
+            className="text-gray-500 dark:text-gray-400"
+            tickFormatter={(value) =>
+              new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                maximumFractionDigits: 0,
+              }).format(Number(value))
+            }
+          />
+          <YAxis
+            type="category"
+            dataKey="name"
+            width={120}
+            tick={{ fontSize: 12 }}
+            className="text-gray-500 dark:text-gray-400"
+          />
           <Tooltip
             formatter={(value) => [
               new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value)),
@@ -122,10 +124,19 @@ export default function SectorAllocationChart() {
               borderRadius: '0.375rem',
             }}
           />
-          <Legend
-            wrapperStyle={{ fontSize: '12px' }}
-          />
-        </PieChart>
+          <Legend wrapperStyle={{ fontSize: '12px' }} />
+          <Bar dataKey="value" isAnimationActive={false}>
+            {sectorData.map((_entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+            <LabelList
+              dataKey="percentage"
+              position="right"
+              formatter={(value) => `${value}%`}
+              style={{ fill: '#111827', fontSize: 12, fontWeight: 600 }}
+            />
+          </Bar>
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );
