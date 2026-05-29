@@ -93,7 +93,18 @@ export default function SectorAllocationChart() {
             outerRadius={90}
             dataKey="value"
             nameKey="name"
-            label={({ payload }) => `${payload.percentage}%`}
+            label={({ payload, x, y }) => (
+              <text
+                x={x}
+                y={y}
+                fill="#111827"
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontSize={12}
+              >
+                {`${payload.percentage}%`}
+              </text>
+            )}
             labelLine={false}
           >
             {sectorData.map((_entry, index) => (
