@@ -93,7 +93,7 @@ export default function SectorAllocationChart() {
             outerRadius={90}
             dataKey="value"
             nameKey="name"
-            label={({ name }) => `${name}`}
+            label={({ payload }) => `${payload.percentage}%`}
             labelLine={false}
           >
             {sectorData.map((_entry, index) => (
