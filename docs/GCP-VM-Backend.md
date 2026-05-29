@@ -16,24 +16,24 @@ python3 --version && nginx -v && git --version
 ## Phase 2 — Python 3.11 Installation
 
 ```bash
-# Install Python 3.11 (stable via deadsnakes PPA)
-sudo apt install python3.11 python3.11-venv -y
+# Install stable Python 3.11 via deadsnakes PPA
 sudo add-apt-repository ppa:deadsnakes/ppa -y
 sudo apt update
 sudo apt install python3.11 python3.11-venv -y
 
 # Verify Python version
 python3.11 --version
+# Expected: Python 3.11.15
 ```
 
 ## Phase 3 — Clone Repo and Setup Virtual Environment
 
 ```bash
 # Clone your GitHub repo
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+git clone https://github.com/YOUR_USERNAME/FinApp_Kiro.git
 
 # Navigate into backend folder
-cd YOUR_REPO_NAME/backend
+cd FinApp_Kiro/backend
 
 # Create virtual environment using Python 3.11
 python3.11 -m venv venv
@@ -68,7 +68,7 @@ curl http://127.0.0.1:8000/openapi.json
 sudo nano /etc/systemd/system/finapp.service
 ```
 
-Paste the following into the file — replace `YOUR_USERNAME` and `YOUR_REPO_NAME`:
+Paste the following — replace `YOUR_USERNAME`:
 
 ```ini
 [Unit]
@@ -77,9 +77,9 @@ After=network.target
 
 [Service]
 User=YOUR_USERNAME
-WorkingDirectory=/home/YOUR_USERNAME/YOUR_REPO_NAME/backend
-Environment="PATH=/home/YOUR_USERNAME/YOUR_REPO_NAME/backend/venv/bin"
-ExecStart=/home/YOUR_USERNAME/YOUR_REPO_NAME/backend/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+WorkingDirectory=/home/YOUR_USERNAME/FinApp_Kiro/backend
+Environment="PATH=/home/YOUR_USERNAME/FinApp_Kiro/backend/venv/bin"
+ExecStart=/home/YOUR_USERNAME/FinApp_Kiro/backend/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 Restart=always
 
 [Install]
@@ -101,6 +101,25 @@ sudo systemctl status finapp
 curl http://127.0.0.1:8000/openapi.json
 ```
 
+## Phase 6 — Copy SQLite Database to VM
+
+Upload `finance_tracker.db` via the GCP browser SSH upload button (gear icon ⚙ in the SSH window), then move it to the correct location:
+
+```bash
+mv ~/finance_tracker.db ~/FinApp_Kiro/backend/
+```
+
+Verify data:
+```bash
+sudo apt install sqlite3 -y
+sqlite3 ~/FinApp_Kiro/backend/finance_tracker.db "SELECT COUNT(*) FROM holdings;"
+```
+
+Then restart the service:
+```bash
+sudo systemctl restart finapp
+```
+
 ## Useful Service Management Commands
 
 ```bash
@@ -112,4 +131,7 @@ sudo systemctl stop finapp
 
 # View live logs
 sudo journalctl -u finapp -f
+
+# View logs from last 10 minutes
+sudo journalctl -u finapp --since "10 minutes ago"
 ```
