@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.database import SessionLocal, verify_database
-from app.routers import dashboard, etf_holdings, holdings, market, transactions, watchlist
+from app.routers import dashboard, earnings, etf_holdings, holdings, market, transactions, watchlist
 from app.services.market_data_service import MarketDataService
 
 logger = logging.getLogger(__name__)
@@ -175,6 +175,7 @@ app.include_router(transactions.router)
 app.include_router(watchlist.router)
 app.include_router(dashboard.router)
 app.include_router(market.router)
+app.include_router(earnings.router)
 
 
 # --- Health Check ---

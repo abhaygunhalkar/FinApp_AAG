@@ -101,6 +101,9 @@ def verify_database() -> None:
                 logger.info("Added missing holdings.holding_type column.")
 
         logger.info("Database integrity check passed.")
+
+        # Create any missing tables, including earnings_cache.
+        Base.metadata.create_all(bind=engine)
     except Exception as exc:
         logger.error(
             "Failed to open or verify database file '%s': %s. Exiting.",

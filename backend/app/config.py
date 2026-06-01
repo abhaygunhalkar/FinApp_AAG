@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     MARKET_API_PROVIDER: str = "yfinance"
     REFRESH_INTERVAL_MINUTES: int = 15
     BROKERS: str = "Robinhood,Schwab,Merrill"
+    FINNHUB_API_KEY: str | None = None
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
