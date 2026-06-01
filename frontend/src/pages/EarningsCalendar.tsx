@@ -1,11 +1,8 @@
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { getEarningsCalendar } from '../api/earnings';
+import { useEarningsCalendar } from '../hooks/useEarningsCalendar';
 import { LoadingSpinner, EmptyState } from '../components/shared';
 import { parseLocalDateString } from '../utils/date';
 import type { EarningsCalendarEntry } from '../types/earnings';
-
-const DATE_LABELS = ['Today', 'Tomorrow', 'Day After'];
 
 function getDateLabel(dateString: string): string {
   const dateValue = parseLocalDateString(dateString);
@@ -58,10 +55,7 @@ function getBadgeClass(hour: string): string {
 }
 
 export default function EarningsCalendar() {
-  const { data: earnings, isLoading, isError, error } = useQuery(
-    ['earnings', 'calendar'],
-    getEarningsCalendar
-  );
+  const { data: earnings, isLoading, isError, error } = useEarningsCalendar();
 
   const groupedEarnings = useMemo(() => {
     const groups = new Map<string, EarningsCalendarEntry[]>();
@@ -77,7 +71,7 @@ export default function EarningsCalendar() {
       groups.set(label, group);
     });
 
-    groups.forEach((items, label) => {
+    groups.forEach((items) => {
       items.sort((a, b) => {
         if (a.date !== b.date) {
           return a.date.localeCompare(b.date);
