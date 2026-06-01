@@ -18,12 +18,18 @@ interface TransactionFormData {
   notes: string;
 }
 
+const pad = (n: number) => n.toString().padStart(2, '0');
+const todayLocal = (() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+})();
+
 const initialFormData: TransactionFormData = {
   transaction_type: 'buy',
   quantity: '',
   price: '',
   fees: '0',
-  transaction_date: new Date().toISOString().split('T')[0],
+  transaction_date: todayLocal,
   notes: '',
 };
 

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '../api/client';
 import { LoadingSpinner, EmptyState } from '../components/shared';
+import { parseLocalDateString } from '../utils/date';
 
 interface SellRecord {
   id: number;
@@ -82,7 +83,7 @@ export default function TradeHistory() {
     (value ?? 0).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
 
   const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    parseLocalDateString(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
   const totalRealized = sortedSells.reduce((sum, s) => sum + (s.realized_gain ?? 0), 0);
 
