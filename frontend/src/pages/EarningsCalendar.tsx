@@ -54,6 +54,19 @@ function getBadgeClass(hour: string): string {
     : 'bg-emerald-100 text-emerald-800';
 }
 
+function getGroupBackground(label: string): string {
+  switch (label) {
+    case 'Today':
+      return 'bg-slate-50 dark:bg-slate-900/30';
+    case 'Tomorrow':
+      return 'bg-slate-100 dark:bg-slate-800/60';
+    case 'Day After':
+      return 'bg-slate-200 dark:bg-slate-700/60';
+    default:
+      return 'bg-white/80 dark:bg-slate-900/60';
+  }
+}
+
 export default function EarningsCalendar() {
   const { data: earnings, isLoading, isError, error } = useEarningsCalendar();
 
@@ -155,41 +168,44 @@ export default function EarningsCalendar() {
                 </div>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {items.map((item) => (
-                  <div
-                    key={`${item.ticker}-${item.date}-${item.hour}`}
-                    className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{item.company}</p>
-                        <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">{item.ticker}</p>
-                      </div>
-                      <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getBadgeClass(item.hour)}`}>
-                        {getHourLabel(item.hour)}
-                      </span>
-                    </div>
-
-                    <div className="mt-5 space-y-3 text-sm text-slate-700 dark:text-slate-300">
-                      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-3 dark:bg-slate-800">
-                        <span className="text-slate-500">EPS Estimate</span>
-                        <span className="font-semibold">{formatEps(item.epsEstimate)}</span>
-                      </div>
-                      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-3 dark:bg-slate-800">
-                        <span className="text-slate-500">Revenue Estimate</span>
-                        <span className="font-semibold">{formatRevenue(item.revenueEstimate)}</span>
-                      </div>
-                      <div className="rounded-2xl bg-slate-50 px-3 py-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                        {parseLocalDateString(item.date).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className={`overflow-hidden rounded-3xl border border-slate-200 shadow-sm dark:border-slate-700 ${getGroupBackground(label)}`}>
+                <table className="min-w-full border-separate border-spacing-0 text-left text-sm">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                      <th className="px-4 py-3 font-semibold">Date</th>
+                      <th className="px-4 py-3 font-semibold">Ticker</th>
+                      <th className="px-4 py-3 font-semibold">Company</th>
+                      <th className="px-4 py-3 font-semibold">BMO/AMC</th>
+                      <th className="px-4 py-3 font-semibold">EPS Estimate</th>
+                      <th className="px-4 py-3 font-semibold">Revenue Estimate</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item, index) => (
+                      <tr
+                        key={`${item.ticker}-${item.date}-${item.hour}`}
+                        className={`border-t border-slate-200 dark:border-slate-700 ${index % 2 === 0 ? 'bg-white dark:bg-slate-950/70' : 'bg-slate-50 dark:bg-slate-900/50'}`}
+                      >
+                        <td className="px-4 py-4 text-slate-700 dark:text-slate-300">
+                          {parseLocalDateString(item.date).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </td>
+                        <td className="px-4 py-4 font-semibold text-slate-900 dark:text-white">{item.ticker}</td>
+                        <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{item.company}</td>
+                        <td className="px-4 py-4">
+                          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getBadgeClass(item.hour)}`}>
+                            {getHourLabel(item.hour)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{formatEps(item.epsEstimate)}</td>
+                        <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{formatRevenue(item.revenueEstimate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </section>
           ))}
