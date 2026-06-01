@@ -8,6 +8,7 @@ const navItems = [
   { to: '/etf-holdings', label: 'ETF Holdings', icon: ETFIcon },
   { to: '/watchlist', label: 'Watchlist', icon: WatchlistIcon },
   { to: '/trades', label: 'Trade History', icon: TradesIcon },
+  { to: '/options-strategy', label: 'Options Strategy', icon: OptionsStrategyIcon },
   { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ];
 
@@ -188,6 +189,19 @@ function TradesIcon() {
       fill="currentColor"
     >
       <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
+function OptionsStrategyIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-5 w-5"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+    >
+      <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
     </svg>
   );
 }

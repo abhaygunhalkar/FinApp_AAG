@@ -10,6 +10,7 @@ import ETFHoldings from './pages/ETFHoldings';
 import Watchlist from './pages/Watchlist';
 import TradeHistory from './pages/TradeHistory';
 import Settings from './pages/Settings';
+import OptionsStrategy from './pages/OptionsStrategy';
 
 const router = createBrowserRouter([
   {
@@ -20,6 +21,7 @@ const router = createBrowserRouter([
       { path: '/etf-holdings', element: <ETFHoldings /> },
       { path: '/watchlist', element: <Watchlist /> },
       { path: '/trades', element: <TradeHistory /> },
+      { path: '/options-strategy', element: <OptionsStrategy /> },
       { path: '/settings', element: <Settings /> },
     ],
   },
