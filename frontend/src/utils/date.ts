@@ -13,14 +13,14 @@ export function parseLocalDateString(dateStr: string): Date {
     year = Number(dateOnly[1]);
     month = Number(dateOnly[2]) - 1;
     day = Number(dateOnly[3]);
-    return new Date(year, month, day);
+    return new Date(year, month, day, 12, 0, 0);
   }
 
   if (isoDate) {
     year = Number(isoDate[1]);
     month = Number(isoDate[2]) - 1;
     day = Number(isoDate[3]);
-    return new Date(year, month, day);
+    return new Date(year, month, day, 12, 0, 0);
   }
 
   return new Date(dateStr);
