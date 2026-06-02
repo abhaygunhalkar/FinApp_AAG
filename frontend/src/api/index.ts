@@ -8,5 +8,5 @@ export {
   updateWatchlistItem,
   deleteWatchlistItem,
 } from './watchlist';
-export { getSummary, getActivity, getHistory } from './dashboard';
+export { getSummary, getActivity, getHistory, getSellHistory } from './dashboard';
 export { getQuote, getHistory as getMarketHistory } from './market';

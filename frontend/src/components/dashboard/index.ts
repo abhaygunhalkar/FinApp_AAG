@@ -1,6 +1,7 @@
 export { default as MetricsCards } from './MetricsCards';
 export { default as ActivityFeed } from './ActivityFeed';
 export { default as PortfolioGrowthChart } from './PortfolioGrowthChart';
+export { default as MonthlyGainLossChart } from './MonthlyGainLossChart';
 export { default as SectorAllocationChart } from './SectorAllocationChart';
 export { default as GainersLosersChart } from './GainersLosersChart';
 export { default as DividendForecastChart } from './DividendForecastChart';

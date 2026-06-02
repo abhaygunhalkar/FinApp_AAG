@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getSummary, getActivity, getHistory } from '../api';
+import { getSummary, getActivity, getHistory, getSellHistory } from '../api';
 
 export function useDashboardSummary() {
   return useQuery({
@@ -19,5 +19,12 @@ export function usePortfolioHistory(days: number = 30) {
   return useQuery({
     queryKey: ['dashboard', 'history', days],
     queryFn: () => getHistory(days),
+  });
+}
+
+export function useMonthlyRealizedGain() {
+  return useQuery({
+    queryKey: ['dashboard', 'monthly_gain_loss'],
+    queryFn: getSellHistory,
   });
 }

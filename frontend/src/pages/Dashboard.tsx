@@ -1,5 +1,10 @@
 import { useDashboardSummary } from '../hooks';
-import { MetricsCards, PortfolioGrowthChart, SectorAllocationChart } from '../components/dashboard';
+import {
+  MetricsCards,
+  PortfolioGrowthChart,
+  MonthlyGainLossChart,
+  SectorAllocationChart,
+} from '../components/dashboard';
 import { LoadingSpinner, ErrorNotification } from '../components/shared';
 import { useState } from 'react';
 import type { DashboardSummary } from '../types';
@@ -53,7 +58,10 @@ export default function Dashboard() {
       <MetricsCards data={summary} />
 
       <div className="mt-8 grid gap-6 xl:grid-cols-[2fr_1fr]">
-        <PortfolioGrowthChart />
+        <div className="grid gap-6">
+          <PortfolioGrowthChart />
+          <MonthlyGainLossChart />
+        </div>
         <SectorAllocationChart />
       </div>
     </div>
