@@ -58,11 +58,9 @@ export default function Dashboard() {
       <MetricsCards data={summary} />
 
       <div className="mt-8 grid gap-6 xl:grid-cols-[2fr_1fr]">
-        <div className="grid gap-6">
-          <PortfolioGrowthChart />
-          <MonthlyGainLossChart />
-        </div>
+        <PortfolioGrowthChart />
         <SectorAllocationChart />
+        <MonthlyGainLossChart />
       </div>
     </div>
   );
