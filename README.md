@@ -292,4 +292,4 @@ Data
 
 Options tracking (calls/puts with expiry dates)
 Crypto holdings support
-Multiple portfolios (e.g., "Retirement" vs "Trading")
+Multiple portfolios (e.g., "Retirement" vs "Trading")<!-- test -->
