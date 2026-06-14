@@ -80,6 +80,12 @@ export default function OptionsLogForm({ editing, onClose }: { editing?: any; on
             <option value="closed">Closed — bought back early</option>
             <option value="expired_worthless">Expired worthless — full premium kept</option>
             <option value="assigned">Assigned — stock delivered/called away</option>
+            <option value="assigned">Expired worthless — full premium lost</option>
+            <option value="assigned">Closed — sold to close</option>
+            <option value="assigned">Exercised — bought shares at strike</option>
+     
+          
+            
           </select>
 
           {status === 'closed' && (
