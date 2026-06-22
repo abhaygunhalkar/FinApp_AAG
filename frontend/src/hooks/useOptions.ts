@@ -9,6 +9,10 @@ export function useOptionsSummary() {
   return useQuery({ queryKey: ['options', 'summary'], queryFn: api.getOptionsSummary });
 }
 
+export function useOpenTradeQuotes() {
+  return useQuery({ queryKey: ['options', 'quotes'], queryFn: api.getOpenTradeQuotes });
+}
+
 export function useCreateOption() {
   const qc = useQueryClient();
   return useMutation({

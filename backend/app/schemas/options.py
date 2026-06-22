@@ -44,3 +44,13 @@ class OptionsSummary(BaseModel):
     win_rate: float
 
     model_config = {"from_attributes": True}
+
+
+class OptionQuoteResponse(BaseModel):
+    """Live market quote for a single open options trade, sourced from yfinance."""
+
+    bid: float | None
+    ask: float | None
+    last_price: float | None
+    current_price: float | None  # bid/ask midpoint, falls back to last_price
+    unrealized_pnl: float | None

@@ -6,7 +6,8 @@ from typing import List
 from sqlalchemy.orm import Session
 
 from app.repositories.options_repository import OptionsRepository
-from app.schemas.options import OptionsTradeResponse, OptionsSummary
+from app.schemas.options import OptionQuoteResponse, OptionsTradeResponse, OptionsSummary
+from app.services.market_data_service import MarketDataService
 
 
 class OptionsService:
@@ -106,3 +107,59 @@ class OptionsService:
             expiring_this_week=expiring_this_week,
             win_rate=win_rate,
         )
+
+    @staticmethod
+    def _calculate_unrealized_pnl(
+        trade_type: str, premium: float, contracts: int, current_price: float
+    ) -> float:
+        multiplier = (contracts or 0) * 100
+        is_credit = trade_type.startswith("sell_")
+        if is_credit:
+            return round((premium - current_price) * multiplier, 2)
+        return round((current_price - premium) * multiplier, 2)
+
+    @staticmethod
+    def get_open_trade_quotes(db: Session) -> dict[int, OptionQuoteResponse]:
+        """Fetch live bid/ask quotes (and derived unrealized P&L) for every open
+        options trade, sourced from yfinance. Trades whose ticker/expiry/strike
+        can't be resolved to a live contract are simply omitted from the result.
+
+        Option chains are cached per (ticker, expiry) within a single call so
+        multiple open positions on the same underlying/expiry only hit
+        yfinance once.
+        """
+        trades = [t for t in OptionsRepository.get_all(db) if t.status == "open"]
+        chain_cache: dict[tuple[str, date], tuple | None] = {}
+        results: dict[int, OptionQuoteResponse] = {}
+
+        for trade in trades:
+            cache_key = (trade.ticker, trade.expiry_date)
+            if cache_key not in chain_cache:
+                chain_cache[cache_key] = MarketDataService.fetch_option_chain(
+                    trade.ticker, trade.expiry_date
+                )
+            chain = chain_cache[cache_key]
+            if chain is None:
+                continue
+
+            calls, puts = chain
+            chain_side = calls if trade.trade_type.endswith("_call") else puts
+            quote_data = MarketDataService.extract_option_quote(chain_side, trade.strike_price)
+            if quote_data is None:
+                continue
+
+            unrealized_pnl = None
+            if quote_data["current_price"] is not None:
+                unrealized_pnl = OptionsService._calculate_unrealized_pnl(
+                    trade.trade_type, trade.premium, trade.contracts, quote_data["current_price"]
+                )
+
+            results[trade.id] = OptionQuoteResponse(
+                bid=quote_data["bid"],
+                ask=quote_data["ask"],
+                last_price=quote_data["last_price"],
+                current_price=quote_data["current_price"],
+                unrealized_pnl=unrealized_pnl,
+            )
+
+        return results

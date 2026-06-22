@@ -259,6 +259,13 @@ On error:
 | Settings | `/settings` | Theme toggle (light/dark), refresh interval display |
 
 
+# Manual Updates to ETF - DO NOT DELETE THIS
+Directly update database, as ETF as being purchased weekly using SIP.
+
+$ sqlite3 /home/techysnacks/FinApp_Kiro/backend/finance_tracker.db
+$ .tables
+$ UPDATE holdings SET quantity = 15.95, average_buy_price = 427.75 WHERE ticker = 'SMH' AND holding_type = 'etf';
+UPDATE holdings SET quantity = 22.97, average_buy_price = 67.52 WHERE ticker = 'IGPT' AND holding_type = 'etf';
 
 ## TO BE IMPLEMENTED
 

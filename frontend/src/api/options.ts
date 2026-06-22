@@ -43,3 +43,16 @@ export async function getOptionsSummary() {
   const { data } = await apiClient.get<ApiResponse<any>>('/api/options/summary');
   return unwrapResponse(data);
 }
+
+export interface OptionQuote {
+  bid: number | null;
+  ask: number | null;
+  last_price: number | null;
+  current_price: number | null;
+  unrealized_pnl: number | null;
+}
+
+export async function getOpenTradeQuotes() {
+  const { data } = await apiClient.get<ApiResponse<Record<string, OptionQuote>>>('/api/options/quotes');
+  return unwrapResponse(data);
+}

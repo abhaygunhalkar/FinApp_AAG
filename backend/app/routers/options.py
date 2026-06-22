@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.schemas.common import ApiResponse
-from app.schemas.options import OptionsTradeResponse, OptionsTradeCreate, OptionsSummary
+from app.schemas.options import OptionQuoteResponse, OptionsTradeResponse, OptionsTradeCreate, OptionsSummary
 from app.services.options_service import OptionsService
 
 router = APIRouter(prefix="/api/options", tags=["options"])
@@ -20,6 +20,13 @@ def list_options(db: Session = Depends(get_db)) -> ApiResponse[list[OptionsTrade
 def options_summary(db: Session = Depends(get_db)) -> ApiResponse[OptionsSummary]:
     summary = OptionsService.get_summary(db)
     return ApiResponse(success=True, data=summary, error=None)
+
+
+@router.get("/quotes", response_model=ApiResponse[dict[int, OptionQuoteResponse]])
+def get_open_trade_quotes(db: Session = Depends(get_db)) -> ApiResponse[dict[int, OptionQuoteResponse]]:
+    """Live bid/ask quotes and unrealized P&L for every open options trade."""
+    quotes = OptionsService.get_open_trade_quotes(db)
+    return ApiResponse(success=True, data=quotes, error=None)
 
 
 @router.get("/{id}", response_model=ApiResponse[OptionsTradeResponse])

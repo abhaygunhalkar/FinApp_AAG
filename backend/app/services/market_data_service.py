@@ -1,9 +1,11 @@
 """Market data service for fetching stock prices via yfinance."""
 
 import logging
+import math
 import time
 from dataclasses import dataclass
 from datetime import date
+from typing import Any
 
 import yfinance as yf
 from sqlalchemy.orm import Session
@@ -19,6 +21,17 @@ logger = logging.getLogger(__name__)
 MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 5
 RSI_PERIOD = 14
+
+
+def _safe_positive_float(value: Any) -> float | None:
+    """Coerce a yfinance cell to a float, treating NaN/None/<=0 as missing."""
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return None
+    if math.isnan(result) or result <= 0:
+        return None
+    return result
 
 
 def calculate_rsi(closes: list[float], period: int = RSI_PERIOD) -> float | None:
@@ -390,6 +403,51 @@ class MarketDataService:
             tickers_updated=tickers_updated,
             tickers_failed=tickers_failed,
         )
+
+    @staticmethod
+    def fetch_option_chain(ticker: str, expiry: date) -> tuple[Any, Any] | None:
+        """Fetch the full option chain (calls, puts) for a ticker/expiry from yfinance.
+
+        Returns None if the expiry isn't a real listed expiration for this
+        ticker or the request otherwise fails.
+        """
+        try:
+            stock = yf.Ticker(ticker)
+            chain = stock.option_chain(expiry.isoformat())
+            return chain.calls, chain.puts
+        except Exception as exc:
+            logger.warning(
+                "Failed to fetch option chain for '%s' expiring %s: %s",
+                ticker,
+                expiry,
+                exc,
+            )
+            return None
+
+    @staticmethod
+    def extract_option_quote(chain_side: Any, strike: float) -> dict[str, float | None] | None:
+        """Find the row matching `strike` in a calls/puts DataFrame and extract
+        bid/ask/lastPrice, plus a current_price (bid/ask midpoint, falling back
+        to lastPrice when there's no two-sided market).
+
+        Returns None if no contract at that strike is found.
+        """
+        matches = chain_side[(chain_side["strike"] - strike).abs() < 0.01]
+        if matches.empty:
+            return None
+        row = matches.iloc[0]
+
+        bid = _safe_positive_float(row.get("bid"))
+        ask = _safe_positive_float(row.get("ask"))
+        last_price = _safe_positive_float(row.get("lastPrice"))
+        current_price = round((bid + ask) / 2, 4) if bid is not None and ask is not None else last_price
+
+        return {
+            "bid": bid,
+            "ask": ask,
+            "last_price": last_price,
+            "current_price": current_price,
+        }
 
     @staticmethod
     def get_cached_price(db: Session, ticker: str) -> float | None:

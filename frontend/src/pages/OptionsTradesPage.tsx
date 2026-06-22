@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useOptions, useCreateOption, useUpdateOption, useDeleteOption, useOptionsSummary } from '../hooks';
+import { useOptions, useCreateOption, useUpdateOption, useDeleteOption, useOptionsSummary, useOpenTradeQuotes } from '../hooks';
 import { parseLocalDateString } from '../utils/date';
 import OptionsLogForm from '../components/options/OptionsLogForm';
 
@@ -27,6 +27,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default function OptionsTradesPage() {
   const { data: trades } = useOptions();
   const summary = useOptionsSummary();
+  const quotes = useOpenTradeQuotes();
   const create = useCreateOption();
   const update = useUpdateOption();
   const remove = useDeleteOption();
@@ -150,6 +151,7 @@ export default function OptionsTradesPage() {
               <th>Type</th>
               <th>Strike</th>
               <th>Premium</th>
+              <th>Current Price</th>
               <th>Contracts</th>
               <th>Expiry</th>
               <th>Status</th>
@@ -165,6 +167,8 @@ export default function OptionsTradesPage() {
               const expired = daysLeft < 0;
               const countdownClass = expired ? 'text-red-600' : daysLeft <= 7 ? 'text-red-600' : daysLeft <= 30 ? 'text-amber-600' : 'text-gray-500';
               const amount = (t.premium || 0) * (t.contracts || 0) * 100;
+              const quote = quotes.data?.[String(t.id)];
+              const displayPnl = t.status === 'open' ? quote?.unrealized_pnl : t.pnl;
               return (
                 <tr key={t.id} className="border-t border-gray-100 dark:border-gray-700">
                   <td className="px-3 py-3 font-medium">{t.ticker}</td>
@@ -177,6 +181,15 @@ export default function OptionsTradesPage() {
                   <td>
                     <span className="text-emerald-700 font-medium">+{formatCurrency(amount)}</span>
                   </td>
+                  <td>
+                    {t.status === 'open' && quote?.current_price != null ? (
+                      <span title={`Bid: ${quote.bid != null ? formatCurrency(quote.bid) : '—'}  /  Ask: ${quote.ask != null ? formatCurrency(quote.ask) : '—'}`}>
+                        {formatCurrency(quote.current_price)}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
                   <td>{t.contracts}</td>
                   <td>
                     <div>{expiryDate.toISOString().slice(0,10)}</div>
@@ -184,7 +197,14 @@ export default function OptionsTradesPage() {
                   </td>
                   <td><span className={`px-2 py-1 rounded text-xs ${STATUS_COLORS[t.status] || 'bg-gray-100'}`}>{t.status}</span></td>
                   <td className="text-right font-medium">
-                    {t.pnl == null ? '—' : (t.pnl >= 0 ? <span className="text-emerald-600">{formatCurrency(t.pnl)}</span> : <span className="text-red-600">{formatCurrency(t.pnl)}</span>)}
+                    {displayPnl == null ? (
+                      '—'
+                    ) : (
+                      <span className={displayPnl >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                        {formatCurrency(displayPnl)}
+                        {t.status === 'open' && <span className="text-gray-400 font-normal text-xs"> (unrl.)</span>}
+                      </span>
+                    )}
                   </td>
                   <td className="pl-4">
                     <button onClick={() => startEdit(t)} className="text-sm text-sky-600">Edit</button>
@@ -200,6 +220,8 @@ export default function OptionsTradesPage() {
               const expired = daysLeft < 0;
               const countdownClass = expired ? 'text-red-600' : daysLeft <= 7 ? 'text-red-600' : daysLeft <= 30 ? 'text-amber-600' : 'text-gray-500';
               const amount = (t.premium || 0) * (t.contracts || 0) * 100;
+              const quote = quotes.data?.[String(t.id)];
+              const displayPnl = t.status === 'open' ? quote?.unrealized_pnl : t.pnl;
               return (
                 <tr key={t.id} className="border-t border-gray-100 dark:border-gray-700">
                   <td className="px-3 py-3 font-medium">{t.ticker}</td>
@@ -212,6 +234,15 @@ export default function OptionsTradesPage() {
                   <td>
                     <span className="text-red-700 font-medium">-{formatCurrency(amount)}</span>
                   </td>
+                  <td>
+                    {t.status === 'open' && quote?.current_price != null ? (
+                      <span title={`Bid: ${quote.bid != null ? formatCurrency(quote.bid) : '—'}  /  Ask: ${quote.ask != null ? formatCurrency(quote.ask) : '—'}`}>
+                        {formatCurrency(quote.current_price)}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
                   <td>{t.contracts}</td>
                   <td>
                     <div>{expiryDate.toISOString().slice(0,10)}</div>
@@ -219,7 +250,14 @@ export default function OptionsTradesPage() {
                   </td>
                   <td><span className={`px-2 py-1 rounded text-xs ${STATUS_COLORS[t.status] || 'bg-gray-100'}`}>{t.status}</span></td>
                   <td className="text-right font-medium">
-                    {t.pnl == null ? '—' : (t.pnl >= 0 ? <span className="text-emerald-600">{formatCurrency(t.pnl)}</span> : <span className="text-red-600">{formatCurrency(t.pnl)}</span>)}
+                    {displayPnl == null ? (
+                      '—'
+                    ) : (
+                      <span className={displayPnl >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                        {formatCurrency(displayPnl)}
+                        {t.status === 'open' && <span className="text-gray-400 font-normal text-xs"> (unrl.)</span>}
+                      </span>
+                    )}
                   </td>
                   <td className="pl-4">
                     <button onClick={() => startEdit(t)} className="text-sm text-sky-600">Edit</button>
