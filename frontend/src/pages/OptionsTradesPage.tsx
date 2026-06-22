@@ -41,6 +41,24 @@ export default function OptionsTradesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalEditing, setModalEditing] = useState<any | null>(null);
 
+  type SortKey = 'ticker' | 'type' | 'strike' | 'premium' | 'current_price' | 'contracts' | 'expiry' | 'status' | 'pnl';
+  const [sortKey, setSortKey] = useState<SortKey>('expiry');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  }
+
+  function sortIndicator(key: SortKey) {
+    if (sortKey !== key) return null;
+    return <span className="ml-1">{sortDir === 'asc' ? '▲' : '▼'}</span>;
+  }
+
   const filtered = useMemo(() => {
     if (!trades) return [];
     if (filter === 'all') return trades;
@@ -50,6 +68,57 @@ export default function OptionsTradesPage() {
   function formatCurrency(v: number) {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(v);
   }
+
+  const rows = useMemo(() => {
+    return filtered.map((t: any) => {
+      const expiryDate = parseLocalDateString(t.expiry_date);
+      const daysLeft = Math.ceil((expiryDate.getTime() - Date.now()) / (24 * 3600 * 1000));
+      const expired = daysLeft < 0;
+      const countdownClass = expired ? 'text-red-600' : daysLeft <= 7 ? 'text-red-600' : daysLeft <= 30 ? 'text-amber-600' : 'text-gray-500';
+      const isCredit = t.trade_type.startsWith('sell_');
+      const amount = (t.premium || 0) * (t.contracts || 0) * 100;
+      const signedAmount = isCredit ? amount : -amount;
+      const quote = quotes.data?.[String(t.id)];
+      const displayPnl = t.status === 'open' ? quote?.unrealized_pnl : t.pnl;
+      return { trade: t, expiryDate, daysLeft, expired, countdownClass, isCredit, amount, signedAmount, quote, displayPnl };
+    });
+  }, [filtered, quotes.data]);
+
+  const sortedRows = useMemo(() => {
+    const dir = sortDir === 'asc' ? 1 : -1;
+    const getValue = (r: (typeof rows)[number]): string | number => {
+      switch (sortKey) {
+        case 'ticker':
+          return r.trade.ticker;
+        case 'type':
+          return TRADE_LABELS[r.trade.trade_type] ?? r.trade.trade_type;
+        case 'strike':
+          return r.trade.strike_price;
+        case 'premium':
+          return r.signedAmount;
+        case 'current_price':
+          return r.quote?.current_price ?? -Infinity;
+        case 'contracts':
+          return r.trade.contracts;
+        case 'expiry':
+          return r.expiryDate.getTime();
+        case 'status':
+          return r.trade.status;
+        case 'pnl':
+          return r.displayPnl ?? -Infinity;
+        default:
+          return 0;
+      }
+    };
+    return [...rows].sort((a, b) => {
+      const va = getValue(a);
+      const vb = getValue(b);
+      if (typeof va === 'string' && typeof vb === 'string') {
+        return va.localeCompare(vb) * dir;
+      }
+      return ((va as number) - (vb as number)) * dir;
+    });
+  }, [rows, sortKey, sortDir]);
 
   function startEdit(trade: any) {
     // open modal in edit mode
@@ -147,124 +216,63 @@ export default function OptionsTradesPage() {
         <table className="min-w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-gray-500">
-              <th className="px-3 py-2">Ticker</th>
-              <th>Type</th>
-              <th>Strike</th>
-              <th>Premium</th>
-              <th>Current Price</th>
-              <th>Contracts</th>
-              <th>Expiry</th>
-              <th>Status</th>
-              <th className="text-right">P&L</th>
+              <th className="px-3 py-2 cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('ticker')}>Ticker{sortIndicator('ticker')}</th>
+              <th className="cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('type')}>Type{sortIndicator('type')}</th>
+              <th className="cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('strike')}>Strike{sortIndicator('strike')}</th>
+              <th className="cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('premium')}>Premium{sortIndicator('premium')}</th>
+              <th className="cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('current_price')}>Current Price{sortIndicator('current_price')}</th>
+              <th className="cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('contracts')}>Contracts{sortIndicator('contracts')}</th>
+              <th className="cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('expiry')}>Expiry{sortIndicator('expiry')}</th>
+              <th className="cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('status')}>Status{sortIndicator('status')}</th>
+              <th className="text-right cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('pnl')}>P&L{sortIndicator('pnl')}</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {/* credit trades (selling premium) */}
-            {filtered.filter((t: any) => t.trade_type.startsWith('sell_')).map((t: any) => {
-              const expiryDate = parseLocalDateString(t.expiry_date);
-              const daysLeft = Math.ceil((expiryDate.getTime() - Date.now()) / (24 * 3600 * 1000));
-              const expired = daysLeft < 0;
-              const countdownClass = expired ? 'text-red-600' : daysLeft <= 7 ? 'text-red-600' : daysLeft <= 30 ? 'text-amber-600' : 'text-gray-500';
-              const amount = (t.premium || 0) * (t.contracts || 0) * 100;
-              const quote = quotes.data?.[String(t.id)];
-              const displayPnl = t.status === 'open' ? quote?.unrealized_pnl : t.pnl;
-              return (
-                <tr key={t.id} className="border-t border-gray-100 dark:border-gray-700">
-                  <td className="px-3 py-3 font-medium">{t.ticker}</td>
-                  <td>
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${TYPE_COLORS[t.trade_type] || 'bg-gray-100'}`}>
-                      {TRADE_LABELS[t.trade_type] ?? t.trade_type}
+            {sortedRows.map(({ trade: t, expiryDate, daysLeft, expired, countdownClass, isCredit, amount, quote, displayPnl }) => (
+              <tr key={t.id} className="border-t border-gray-100 dark:border-gray-700">
+                <td className="px-3 py-3 font-medium">{t.ticker}</td>
+                <td>
+                  <span className={`px-2 py-1 rounded text-xs font-semibold ${TYPE_COLORS[t.trade_type] || 'bg-gray-100'}`}>
+                    {TRADE_LABELS[t.trade_type] ?? t.trade_type}
+                  </span>
+                </td>
+                <td>{t.strike_price}</td>
+                <td>
+                  <span className={isCredit ? 'text-emerald-700 font-medium' : 'text-red-700 font-medium'}>
+                    {isCredit ? '+' : '-'}{formatCurrency(amount)}
+                  </span>
+                </td>
+                <td>
+                  {t.status === 'open' && quote?.current_price != null ? (
+                    <span title={`Bid: ${quote.bid != null ? formatCurrency(quote.bid) : '—'}  /  Ask: ${quote.ask != null ? formatCurrency(quote.ask) : '—'}`}>
+                      {formatCurrency(quote.current_price)}
                     </span>
-                  </td>
-                  <td>{t.strike_price}</td>
-                  <td>
-                    <span className="text-emerald-700 font-medium">+{formatCurrency(amount)}</span>
-                  </td>
-                  <td>
-                    {t.status === 'open' && quote?.current_price != null ? (
-                      <span title={`Bid: ${quote.bid != null ? formatCurrency(quote.bid) : '—'}  /  Ask: ${quote.ask != null ? formatCurrency(quote.ask) : '—'}`}>
-                        {formatCurrency(quote.current_price)}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </td>
-                  <td>{t.contracts}</td>
-                  <td>
-                    <div>{expiryDate.toISOString().slice(0,10)}</div>
-                    <div className={`text-xs mt-1 ${countdownClass}`}>{expired ? 'Expired' : `${daysLeft} days left`}</div>
-                  </td>
-                  <td><span className={`px-2 py-1 rounded text-xs ${STATUS_COLORS[t.status] || 'bg-gray-100'}`}>{t.status}</span></td>
-                  <td className="text-right font-medium">
-                    {displayPnl == null ? (
-                      '—'
-                    ) : (
-                      <span className={displayPnl >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                        {formatCurrency(displayPnl)}
-                        {t.status === 'open' && <span className="text-gray-400 font-normal text-xs"> (unrl.)</span>}
-                      </span>
-                    )}
-                  </td>
-                  <td className="pl-4">
-                    <button onClick={() => startEdit(t)} className="text-sm text-sky-600">Edit</button>
-                  </td>
-                </tr>
-              );
-            })}
-
-            {/* debit trades (buying options) */}
-            {filtered.filter((t: any) => t.trade_type.startsWith('buy_')).map((t: any) => {
-              const expiryDate = parseLocalDateString(t.expiry_date);
-              const daysLeft = Math.ceil((expiryDate.getTime() - Date.now()) / (24 * 3600 * 1000));
-              const expired = daysLeft < 0;
-              const countdownClass = expired ? 'text-red-600' : daysLeft <= 7 ? 'text-red-600' : daysLeft <= 30 ? 'text-amber-600' : 'text-gray-500';
-              const amount = (t.premium || 0) * (t.contracts || 0) * 100;
-              const quote = quotes.data?.[String(t.id)];
-              const displayPnl = t.status === 'open' ? quote?.unrealized_pnl : t.pnl;
-              return (
-                <tr key={t.id} className="border-t border-gray-100 dark:border-gray-700">
-                  <td className="px-3 py-3 font-medium">{t.ticker}</td>
-                  <td>
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${TYPE_COLORS[t.trade_type] || 'bg-gray-100'}`}>
-                      {TRADE_LABELS[t.trade_type] ?? t.trade_type}
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
+                </td>
+                <td>{t.contracts}</td>
+                <td>
+                  <div>{expiryDate.toISOString().slice(0,10)}</div>
+                  <div className={`text-xs mt-1 ${countdownClass}`}>{expired ? 'Expired' : `${daysLeft} days left`}</div>
+                </td>
+                <td><span className={`px-2 py-1 rounded text-xs ${STATUS_COLORS[t.status] || 'bg-gray-100'}`}>{t.status}</span></td>
+                <td className="text-right font-medium">
+                  {displayPnl == null ? (
+                    '—'
+                  ) : (
+                    <span className={displayPnl >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                      {formatCurrency(displayPnl)}
+                      {t.status === 'open' && <span className="text-gray-400 font-normal text-xs"> (unrl.)</span>}
                     </span>
-                  </td>
-                  <td>{t.strike_price}</td>
-                  <td>
-                    <span className="text-red-700 font-medium">-{formatCurrency(amount)}</span>
-                  </td>
-                  <td>
-                    {t.status === 'open' && quote?.current_price != null ? (
-                      <span title={`Bid: ${quote.bid != null ? formatCurrency(quote.bid) : '—'}  /  Ask: ${quote.ask != null ? formatCurrency(quote.ask) : '—'}`}>
-                        {formatCurrency(quote.current_price)}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </td>
-                  <td>{t.contracts}</td>
-                  <td>
-                    <div>{expiryDate.toISOString().slice(0,10)}</div>
-                    <div className={`text-xs mt-1 ${countdownClass}`}>{expired ? 'Expired' : `${daysLeft} days left`}</div>
-                  </td>
-                  <td><span className={`px-2 py-1 rounded text-xs ${STATUS_COLORS[t.status] || 'bg-gray-100'}`}>{t.status}</span></td>
-                  <td className="text-right font-medium">
-                    {displayPnl == null ? (
-                      '—'
-                    ) : (
-                      <span className={displayPnl >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                        {formatCurrency(displayPnl)}
-                        {t.status === 'open' && <span className="text-gray-400 font-normal text-xs"> (unrl.)</span>}
-                      </span>
-                    )}
-                  </td>
-                  <td className="pl-4">
-                    <button onClick={() => startEdit(t)} className="text-sm text-sky-600">Edit</button>
-                  </td>
-                </tr>
-              );
-            })}
+                  )}
+                </td>
+                <td className="pl-4">
+                  <button onClick={() => startEdit(t)} className="text-sm text-sky-600">Edit</button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
         <p className="mt-3 text-xs text-gray-500">* Premium kept as gain. Update cost basis in holdings page.</p>
