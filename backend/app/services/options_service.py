@@ -19,13 +19,21 @@ class OptionsService:
         multiplier = contracts * 100
         premium = trade.premium or 0.0
         close_price = trade.close_price
+        # Credit trades (sell_put/sell_call) collect premium up front; debit
+        # trades (buy_put/buy_call) pay premium up front, so the sign of
+        # every outcome is mirrored.
+        is_credit = trade.trade_type.startswith('sell_')
 
         if trade.status == 'closed':
             if close_price is None:
                 return None
-            return round((premium - close_price) * multiplier, 2)
+            if is_credit:
+                return round((premium - close_price) * multiplier, 2)
+            return round((close_price - premium) * multiplier, 2)
         if trade.status in ('expired_worthless', 'assigned'):
-            return round(premium * multiplier, 2)
+            if is_credit:
+                return round(premium * multiplier, 2)
+            return round(-premium * multiplier, 2)
         return None
 
     @staticmethod

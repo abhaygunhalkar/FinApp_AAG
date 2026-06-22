@@ -1,16 +1,55 @@
 import React, { useEffect, useState } from 'react';
 import { useCreateOption, useUpdateOption } from '../../hooks';
 
+// Backend only accepts these four status values (see OptionsTradeCreate schema).
+// Which ones are meaningful depends on whether the trade is a credit (sell_*,
+// premium collected up front) or debit (buy_*, premium paid up front) position.
+function getStatusOptions(tradeType: string): { value: string; label: string }[] {
+  const isCredit = tradeType.startsWith('sell_');
+  if (isCredit) {
+    return [
+      { value: 'open', label: 'Open' },
+      { value: 'closed', label: 'Closed — bought back early' },
+      { value: 'expired_worthless', label: 'Expired worthless — full premium kept' },
+      {
+        value: 'assigned',
+        label:
+          tradeType === 'sell_put'
+            ? 'Assigned — bought shares at strike'
+            : 'Assigned — shares called away at strike',
+      },
+    ];
+  }
+  return [
+    { value: 'open', label: 'Open' },
+    { value: 'closed', label: 'Closed — sold to close' },
+    { value: 'expired_worthless', label: 'Expired worthless — full premium lost' },
+  ];
+}
+
 export default function OptionsLogForm({ editing, onClose }: { editing?: any; onClose: () => void }) {
   const create = useCreateOption();
   const update = useUpdateOption();
+  const [tradeType, setTradeType] = useState<string>(editing?.trade_type ?? 'sell_put');
   const [status, setStatus] = useState<string>(editing?.status ?? 'open');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  const statusOptions = getStatusOptions(tradeType);
+
   useEffect(() => {
+    setTradeType(editing?.trade_type ?? 'sell_put');
     setStatus(editing?.status ?? 'open');
   }, [editing]);
+
+  function handleTradeTypeChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const nextTradeType = e.target.value;
+    setTradeType(nextTradeType);
+    const validValues = getStatusOptions(nextTradeType).map((o) => o.value);
+    if (!validValues.includes(status)) {
+      setStatus('open');
+    }
+  }
 
   async function submit(e: any) {
     e.preventDefault();
@@ -61,7 +100,7 @@ export default function OptionsLogForm({ editing, onClose }: { editing?: any; on
 
         <div className="grid grid-cols-2 gap-3">
           <input name="ticker" defaultValue={editing?.ticker ?? ''} placeholder="Ticker" className="p-2 border rounded" required />
-          <select name="trade_type" defaultValue={editing?.trade_type ?? 'sell_put'} className="p-2 border rounded">
+          <select name="trade_type" value={tradeType} onChange={handleTradeTypeChange} className="p-2 border rounded">
             <option value="sell_put">sell_put</option>
             <option value="sell_call">sell_call</option>
             <option value="buy_call">buy_call</option>
@@ -75,36 +114,33 @@ export default function OptionsLogForm({ editing, onClose }: { editing?: any; on
           <input name="open_date" type="date" defaultValue={editing?.open_date ?? ''} className="p-2 border rounded" required />
 
           <input name="expiry_date" type="date" defaultValue={editing?.expiry_date ?? ''} className="p-2 border rounded" required />
-          <select name="status" defaultValue={editing?.status ?? 'open'} onChange={(e) => setStatus(e.target.value)} className="p-2 border rounded">
-            <option value="open">Open</option>
-            <option value="closed">Closed — bought back early</option>
-            <option value="expired_worthless">Expired worthless — full premium kept</option>
-            <option value="assigned">Assigned — stock delivered/called away</option>
-            <option value="expired_premium_lost">Expired worthless — full premium lost</option>
-            <option value="sold_to_close">Closed — sold to close</option>
-            <option value="bought_at_strike">Exercised — bought shares at strike</option>
-     
-          
-            
+          <select name="status" value={status} onChange={(e) => setStatus(e.target.value)} className="p-2 border rounded">
+            {statusOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
           </select>
 
           {status === 'closed' && (
             <div className="col-span-2">
               <input name="close_price" type="number" step="0.01" defaultValue={editing?.close_price ?? ''} placeholder="Close Price" className="p-2 border rounded w-full" required />
-              <p className="text-xs text-gray-500 mt-1">P&L = (premium − close price) × contracts × 100</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {tradeType.startsWith('sell_')
+                  ? 'P&L = (premium − close price) × contracts × 100'
+                  : 'P&L = (close price − premium) × contracts × 100'}
+              </p>
             </div>
           )}
           {status === 'expired_worthless' && (
-            <div className="col-span-2 p-3 rounded bg-emerald-50 text-emerald-700">Full premium will be recorded as gain. No close price needed.</div>
+            <div className="col-span-2 p-3 rounded bg-emerald-50 text-emerald-700">
+              {tradeType.startsWith('sell_')
+                ? 'Full premium will be recorded as gain. No close price needed.'
+                : 'Full premium will be recorded as a loss. No close price needed.'}
+            </div>
           )}
           {status === 'assigned' && (
             <div className="col-span-2 p-3 rounded bg-amber-50 text-amber-700">Premium will be recorded as gain. Remember to update cost basis in holdings page for the assigned shares.</div>
-          )}
-          {status === 'expired_premium_lost' && (
-            <div className="col-span-2 p-3 rounded bg-amber-50 text-amber-700">Expired worthless — full premium lost</div>
-          )}
-          {status === 'sold_to_close' && (
-            <div className="col-span-2 p-3 rounded bg-amber-50 text-amber-700">Closed — sold to close</div>
           )}
           {status === 'open' && <div className="col-span-2" />}
           {status !== 'closed' && <input name="close_price" type="hidden" />}
