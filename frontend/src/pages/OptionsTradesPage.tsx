@@ -399,7 +399,7 @@ export default function OptionsTradesPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-800 dark:bg-slate-900 text-slate-300 text-left border-b border-slate-700">
+              <tr className="bg-finance-gradient text-slate-200 text-left border-b border-blue-900/40">
                 <SortTh col="ticker" label="Ticker" className="pl-5" />
                 <SortTh col="type" label="Strategy" />
                 <SortTh col="strike" label="Strike" className="text-right" />
@@ -449,14 +449,14 @@ export default function OptionsTradesPage() {
                       className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
                     >
                       {/* Ticker */}
-                      <td className="pl-5 pr-4 py-3.5">
+                      <td className="pl-5 pr-4 py-2">
                         <span className="font-bold text-slate-900 dark:text-white tracking-wide">
                           {t.ticker}
                         </span>
                       </td>
 
                       {/* Strategy */}
-                      <td className="px-4 py-3.5">
+                      <td className="px-4 py-2">
                         {typeConf ? (
                           <span
                             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold ${typeConf.bg} ${typeConf.text}`}
@@ -472,12 +472,12 @@ export default function OptionsTradesPage() {
                       </td>
 
                       {/* Strike */}
-                      <td className="px-4 py-3.5 text-right font-medium tabular-nums text-slate-700 dark:text-slate-300">
+                      <td className="px-4 py-2 text-right font-medium tabular-nums text-slate-700 dark:text-slate-300">
                         ${t.strike_price}
                       </td>
 
                       {/* Net Premium */}
-                      <td className="px-4 py-3.5 text-right tabular-nums">
+                      <td className="px-4 py-2 text-right tabular-nums">
                         <span
                           className={`font-semibold ${isCredit ? 'text-emerald-600' : 'text-red-500'}`}
                         >
@@ -487,7 +487,7 @@ export default function OptionsTradesPage() {
                       </td>
 
                       {/* Option Price */}
-                      <td className="px-4 py-3.5 text-right tabular-nums text-slate-600 dark:text-slate-400">
+                      <td className="px-4 py-2 text-right tabular-nums text-slate-600 dark:text-slate-400">
                         {t.status === 'open' && quote?.current_price != null ? (
                           <span
                             title={`Bid: ${quote.bid != null ? fmt(quote.bid) : '—'} / Ask: ${quote.ask != null ? fmt(quote.ask) : '—'}`}
@@ -501,12 +501,12 @@ export default function OptionsTradesPage() {
                       </td>
 
                       {/* Contracts */}
-                      <td className="px-4 py-3.5 text-center tabular-nums text-slate-600 dark:text-slate-400">
+                      <td className="px-4 py-2 text-center tabular-nums text-slate-600 dark:text-slate-400">
                         {t.contracts}
                       </td>
 
                       {/* Expiry */}
-                      <td className="px-4 py-3.5">
+                      <td className="px-4 py-2">
                         <div className="text-slate-700 dark:text-slate-300 font-medium tabular-nums">
                           {expiryDate.toISOString().slice(0, 10)}
                         </div>
@@ -522,7 +522,7 @@ export default function OptionsTradesPage() {
                         (() => {
                           const sc = STATUS_CONFIG[t.status];
                           return (
-                            <td className="px-4 py-3.5">
+                            <td className="px-4 py-2">
                               <span
                                 className={`text-xs font-semibold px-2.5 py-1 rounded-full ${sc?.bg ?? 'bg-slate-100'} ${sc?.text ?? 'text-slate-600'}`}
                               >
@@ -533,7 +533,7 @@ export default function OptionsTradesPage() {
                         })()}
 
                       {/* P&L */}
-                      <td className="px-4 py-3.5 pr-5 text-right tabular-nums">
+                      <td className="px-4 py-2 pr-5 text-right tabular-nums">
                         {displayPnl == null ? (
                           <span className="text-slate-300 dark:text-slate-600">—</span>
                         ) : (
@@ -552,7 +552,7 @@ export default function OptionsTradesPage() {
                       </td>
 
                       {/* Actions */}
-                      <td className="px-4 py-3.5">
+                      <td className="px-4 py-2">
                         <div className="flex items-center gap-1 justify-end">
                           <button
                             onClick={() => {
