@@ -126,6 +126,16 @@ export default function OptionsTradesPage() {
     setModalOpen(true);
   }
 
+  async function handleDelete(trade: any) {
+    const confirmed = window.confirm(`Delete ${trade.ticker} ${TRADE_LABELS[trade.trade_type] ?? trade.trade_type} (strike ${trade.strike_price}, expiry ${trade.expiry_date})? This cannot be undone.`);
+    if (!confirmed) return;
+    try {
+      await remove.mutateAsync(trade.id);
+    } catch (err) {
+      window.alert('Failed to delete trade. Please try again.');
+    }
+  }
+
   function clearForm() {
     setEditing(null);
     setStatus('open');
@@ -268,8 +278,9 @@ export default function OptionsTradesPage() {
                     </span>
                   )}
                 </td>
-                <td className="pl-4">
+                <td className="pl-4 whitespace-nowrap">
                   <button onClick={() => startEdit(t)} className="text-sm text-sky-600">Edit</button>
+                  <button onClick={() => handleDelete(t)} className="text-sm text-red-600 ml-3" disabled={remove.isPending}>Delete</button>
                 </td>
               </tr>
             ))}
