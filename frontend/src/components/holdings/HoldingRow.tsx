@@ -7,30 +7,33 @@ interface HoldingRowProps {
   holding: Holding;
 }
 
+const td = 'px-3 py-2 text-sm tabular-nums';
+
 export default function HoldingRow({ holding }: HoldingRowProps) {
   const [expanded, setExpanded] = useState(false);
 
   const gainClass =
     holding.unrealized_gain > 0
-      ? 'text-green-600 dark:text-green-400'
+      ? 'text-emerald-600 dark:text-emerald-400'
       : holding.unrealized_gain < 0
-        ? 'text-red-600 dark:text-red-400'
-        : 'text-gray-900 dark:text-gray-100';
+        ? 'text-red-500 dark:text-red-400'
+        : 'text-slate-600 dark:text-slate-300';
 
-  const formatCurrency = (value: number) =>
-    value.toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-    });
+  const dayClass =
+    holding.daily_change > 0
+      ? 'text-emerald-600 dark:text-emerald-400'
+      : holding.daily_change < 0
+        ? 'text-red-500 dark:text-red-400'
+        : 'text-slate-600 dark:text-slate-300';
 
-  const formatPercent = (value: number) => `${value.toFixed(2)}%`;
-  const formatSignedCurrency = (value: number) =>
-    `${value > 0 ? '+' : ''}${formatCurrency(value)}`;
-  const formatSignedPercent = (value: number) =>
-    `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
+  const fmt = (v: number) =>
+    v.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
 
-  const formatDate = (dateStr: string) =>
+  const fmtSigned = (v: number) => `${v > 0 ? '+' : ''}${fmt(v)}`;
+  const fmtPct = (v: number) => `${v.toFixed(2)}%`;
+  const fmtSignedPct = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(2)}%`;
+
+  const fmtDate = (dateStr: string) =>
     parseLocalDateString(dateStr).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -40,70 +43,98 @@ export default function HoldingRow({ holding }: HoldingRowProps) {
   return (
     <>
       <tr
-        className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-        style={{ minHeight: '40px' }}
+        className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
         onClick={() => setExpanded(!expanded)}
         aria-expanded={expanded}
       >
-        <td className="px-2 py-2 text-sm text-gray-900 dark:text-gray-100" style={{ padding: '8px', fontSize: '14px' }}>
-          <span className="inline-flex items-center gap-1">
+        {/* Ticker */}
+        <td className={`${td} pl-4`}>
+          <span className="inline-flex items-center gap-1.5">
             <svg
-              className={`w-4 h-4 transition-transform ${expanded ? 'rotate-90' : ''}`}
+              className={`w-3.5 h-3.5 text-slate-400 transition-transform flex-shrink-0 ${expanded ? 'rotate-90' : ''}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <span className="font-medium">{holding.ticker}</span>
+            <span className="font-bold text-slate-900 dark:text-white tracking-wide">
+              {holding.ticker}
+            </span>
           </span>
         </td>
-        <td style={{ padding: '8px', fontSize: '14px' }} className="text-gray-900 dark:text-gray-100">
+
+        {/* Company */}
+        <td className={`${td} text-slate-600 dark:text-slate-400 max-w-[160px] truncate`}>
           {holding.company_name ?? '—'}
         </td>
-        <td style={{ padding: '8px', fontSize: '14px' }} className="text-right text-gray-900 dark:text-gray-100">
+
+        {/* Qty */}
+        <td className={`${td} text-right text-slate-700 dark:text-slate-300`}>
           {holding.quantity}
         </td>
-        <td style={{ padding: '8px', fontSize: '14px' }} className="text-right text-gray-900 dark:text-gray-100">
-          {formatCurrency(holding.average_buy_price)}
+
+        {/* Avg Cost */}
+        <td className={`${td} text-right text-slate-700 dark:text-slate-300`}>
+          {fmt(holding.average_buy_price)}
         </td>
-        <td style={{ padding: '8px', fontSize: '14px' }} className="text-right text-gray-900 dark:text-gray-100">
-          {formatCurrency(holding.current_price)}
+
+        {/* Current Price */}
+        <td className={`${td} text-right font-medium text-slate-900 dark:text-white`}>
+          {fmt(holding.current_price)}
         </td>
-        <td style={{ padding: '8px', fontSize: '14px' }} className={`text-right ${holding.daily_change > 0 ? 'text-green-600 dark:text-green-400' : holding.daily_change < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`}>
-          {formatSignedCurrency(holding.daily_change)}
+
+        {/* Day Change $ */}
+        <td className={`${td} text-right font-medium ${dayClass}`}>
+          {fmtSigned(holding.daily_change)}
         </td>
-        <td style={{ padding: '8px', fontSize: '14px' }} className={`text-right ${holding.daily_change_pct > 0 ? 'text-green-600 dark:text-green-400' : holding.daily_change_pct < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`}>
-          {formatSignedPercent(holding.daily_change_pct)}
+
+        {/* Day Change % */}
+        <td className={`${td} text-right font-medium ${dayClass}`}>
+          {fmtSignedPct(holding.daily_change_pct)}
         </td>
-        <td style={{ padding: '8px', fontSize: '14px' }} className="text-right text-gray-900 dark:text-gray-100">
-          {formatCurrency(holding.total_invested)}
+
+        {/* Total Invested */}
+        <td className={`${td} text-right text-slate-600 dark:text-slate-400`}>
+          {fmt(holding.total_invested)}
         </td>
-        <td style={{ padding: '8px', fontSize: '14px' }} className="text-right text-gray-900 dark:text-gray-100">
-          {formatCurrency(holding.current_value)}
+
+        {/* Current Value */}
+        <td className={`${td} text-right font-medium text-slate-800 dark:text-slate-200`}>
+          {fmt(holding.current_value)}
         </td>
-        <td style={{ padding: '8px', fontSize: '14px' }} className={`text-right ${gainClass}`}>
-          {formatCurrency(holding.unrealized_gain)}
+
+        {/* Gain/Loss $ */}
+        <td className={`${td} text-right font-semibold ${gainClass}`}>
+          {fmtSigned(holding.unrealized_gain)}
         </td>
-        <td style={{ padding: '8px', fontSize: '14px' }} className={`text-right ${gainClass}`}>
-          {formatPercent(holding.unrealized_gain_pct)}
+
+        {/* Gain/Loss % */}
+        <td className={`${td} text-right font-semibold ${gainClass}`}>
+          {fmtPct(holding.unrealized_gain_pct)}
         </td>
-        <td style={{ padding: '8px', fontSize: '14px' }} className="text-gray-900 dark:text-gray-100">
-          {holding.sector ?? '—'}
+
+        {/* Sector */}
+        <td className={`${td} text-slate-500 dark:text-slate-400`}>{holding.sector ?? '—'}</td>
+
+        {/* Broker */}
+        <td className={`${td} text-slate-500 dark:text-slate-400`}>{holding.broker ?? '—'}</td>
+
+        {/* Allocation % */}
+        <td className={`${td} text-right text-slate-600 dark:text-slate-400`}>
+          {fmtPct(holding.allocation_pct)}
         </td>
-        <td style={{ padding: '8px', fontSize: '14px' }} className="text-gray-900 dark:text-gray-100">
-          {holding.broker ?? '—'}
-        </td>
-        <td style={{ padding: '8px', fontSize: '14px' }} className="text-right text-gray-900 dark:text-gray-100">
-          {formatPercent(holding.allocation_pct)}
-        </td>
-        <td style={{ padding: '8px', fontSize: '14px' }} className="text-gray-500 dark:text-gray-400">
-          {formatDate(holding.updated_at)}
+
+        {/* Updated */}
+        <td className={`${td} text-slate-400 dark:text-slate-500 pr-4`}>
+          {fmtDate(holding.updated_at)}
         </td>
       </tr>
+
+      {/* Expanded transaction history */}
       {expanded && (
-        <tr className="bg-gray-50 dark:bg-gray-800/50">
-          <td colSpan={15} className="px-4 py-3">
+        <tr className="bg-slate-50 dark:bg-slate-800/50">
+          <td colSpan={15} className="px-5 py-4">
             <TransactionHistory holdingId={holding.id} ticker={holding.ticker} />
           </td>
         </tr>

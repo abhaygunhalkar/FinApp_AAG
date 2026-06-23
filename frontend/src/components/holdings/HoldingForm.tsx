@@ -36,6 +36,12 @@ interface TickerInfo {
   notes: string | null;
 }
 
+const inputClass =
+  'w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 focus:border-transparent transition';
+
+const labelClass =
+  'block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5';
+
 export default function HoldingForm({ holding, holdingType = 'stock', onClose }: HoldingFormProps) {
   const isEditing = !!holding;
   const createMutation = holdingType === 'etf' ? useCreateETFHolding() : useCreateHolding();
@@ -53,21 +59,18 @@ export default function HoldingForm({ holding, holdingType = 'stock', onClose }:
   });
 
   const [brokers, setBrokers] = useState<string[]>([]);
-
   const [errors, setErrors] = useState<FormErrors>({});
   const [isFetchingInfo, setIsFetchingInfo] = useState(false);
   const [infoFetched, setInfoFetched] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Fetch broker options on mount
   useEffect(() => {
-    apiClient.get('/api/market/brokers').then((res) => {
-      if (res.data.success) {
-        setBrokers(res.data.data);
-      }
-    }).catch(() => {
-      setBrokers(['Robinhood', 'Schwab', 'Merrill']);
-    });
+    apiClient
+      .get('/api/market/brokers')
+      .then((res) => {
+        if (res.data.success) setBrokers(res.data.data);
+      })
+      .catch(() => setBrokers(['Robinhood', 'Schwab', 'Merrill']));
   }, []);
 
   useEffect(() => {
@@ -87,17 +90,12 @@ export default function HoldingForm({ holding, holdingType = 'stock', onClose }:
   }, [holding]);
 
   const fetchTickerInfo = useCallback(async (ticker: string) => {
-    if (!ticker || ticker.length < 1 || !/^[A-Z]{1,5}$/.test(ticker)) {
-      return;
-    }
-
+    if (!ticker || ticker.length < 1 || !/^[A-Z]{1,5}$/.test(ticker)) return;
     setIsFetchingInfo(true);
     setFetchError(null);
-
     try {
       const response = await apiClient.get(`/api/market/info/${ticker}`);
       const data = response.data;
-
       if (data.success && data.data) {
         const info: TickerInfo = data.data;
         setFormData((prev) => ({
@@ -121,100 +119,65 @@ export default function HoldingForm({ holding, holdingType = 'stock', onClose }:
     }
   }, []);
 
-  // Auto-fetch when ticker changes and is valid
   useEffect(() => {
     if (isEditing) return;
-
     const ticker = formData.ticker.trim();
     if (ticker.length >= 1 && /^[A-Z]{1,5}$/.test(ticker)) {
-      const debounce = setTimeout(() => {
-        fetchTickerInfo(ticker);
-      }, 600);
+      const debounce = setTimeout(() => fetchTickerInfo(ticker), 600);
       return () => clearTimeout(debounce);
     } else {
       setInfoFetched(false);
       setFetchError(null);
-      setFormData((prev) => ({
-        ...prev,
-        company_name: '',
-        sector: '',
-        industry: '',
-        notes: '',
-      }));
+      setFormData((prev) => ({ ...prev, company_name: '', sector: '', industry: '', notes: '' }));
     }
   }, [formData.ticker, isEditing, fetchTickerInfo]);
 
   function validate(): FormErrors {
     const newErrors: FormErrors = {};
-
     const ticker = formData.ticker.trim().toUpperCase();
-    if (!ticker) {
-      newErrors.ticker = 'Ticker is required';
-    } else if (!/^[A-Z]{1,5}$/.test(ticker)) {
-      newErrors.ticker = 'Ticker must be 1-5 uppercase letters';
-    }
-
+    if (!ticker) newErrors.ticker = 'Ticker is required';
+    else if (!/^[A-Z]{1,5}$/.test(ticker))
+      newErrors.ticker = 'Ticker must be 1–5 uppercase letters';
     const quantity = parseFloat(formData.quantity);
-    if (!formData.quantity.trim()) {
-      newErrors.quantity = 'Quantity is required';
-    } else if (isNaN(quantity) || quantity <= 0) {
+    if (!formData.quantity.trim()) newErrors.quantity = 'Quantity is required';
+    else if (isNaN(quantity) || quantity <= 0)
       newErrors.quantity = 'Quantity must be greater than 0';
-    }
-
     const buyPrice = parseFloat(formData.buy_price);
-    if (!formData.buy_price.trim()) {
-      newErrors.buy_price = 'Buy price is required';
-    } else if (isNaN(buyPrice) || buyPrice < 0.01) {
+    if (!formData.buy_price.trim()) newErrors.buy_price = 'Buy price is required';
+    else if (isNaN(buyPrice) || buyPrice < 0.01)
       newErrors.buy_price = 'Buy price must be at least $0.01';
-    }
-
     return newErrors;
   }
 
   function parseBackendErrors(error: unknown): FormErrors {
     if (error instanceof AxiosError && error.response) {
-      const status = error.response.status;
-      const data = error.response.data;
-
+      const { status, data } = error.response;
       if (status === 422) {
         if (data?.detail && Array.isArray(data.detail)) {
           const fieldErrors: FormErrors = {};
           for (const err of data.detail) {
             const field = err.loc?.[err.loc.length - 1];
-            if (field && typeof field === 'string') {
+            if (field && typeof field === 'string')
               fieldErrors[field as keyof FormErrors] = err.msg;
-            }
           }
           return fieldErrors;
         }
-        if (data?.error) {
-          return { general: data.error };
-        }
+        if (data?.error) return { general: data.error };
       }
-
-      if (data?.error) {
-        return { general: data.error };
-      }
+      if (data?.error) return { general: data.error };
     }
-
-    if (error instanceof Error) {
-      return { general: error.message };
-    }
-
+    if (error instanceof Error) return { general: error.message };
     return { general: 'An unexpected error occurred' };
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
-
     setErrors({});
-
     const payload: HoldingCreate = {
       ticker: formData.ticker.trim().toUpperCase(),
       quantity: parseFloat(formData.quantity),
@@ -225,7 +188,6 @@ export default function HoldingForm({ holding, holdingType = 'stock', onClose }:
       ...(formData.broker && { broker: formData.broker }),
       ...(formData.notes.trim() && { notes: formData.notes.trim() }),
     };
-
     try {
       if (isEditing && holding) {
         await updateMutation.mutateAsync({
@@ -242,32 +204,32 @@ export default function HoldingForm({ holding, holdingType = 'stock', onClose }:
       }
       onClose();
     } catch (error: unknown) {
-      const backendErrors = parseBackendErrors(error);
-      setErrors(backendErrors);
+      setErrors(parseBackendErrors(error));
     }
   }
 
   function handleTickerChange(value: string) {
-    const upper = value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 5);
+    const upper = value
+      .toUpperCase()
+      .replace(/[^A-Z]/g, '')
+      .slice(0, 5);
     setFormData((prev) => ({ ...prev, ticker: upper }));
-    if (errors.ticker) {
+    if (errors.ticker)
       setErrors((prev) => {
-        const next = { ...prev };
-        delete next.ticker;
-        return next;
+        const n = { ...prev };
+        delete n.ticker;
+        return n;
       });
-    }
   }
 
   function handleChange(field: keyof FormData, value: string) {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field as keyof FormErrors]) {
+    if (errors[field as keyof FormErrors])
       setErrors((prev) => {
-        const next = { ...prev };
-        delete next[field as keyof FormErrors];
-        return next;
+        const n = { ...prev };
+        delete n[field as keyof FormErrors];
+        return n;
       });
-    }
   }
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
@@ -279,42 +241,62 @@ export default function HoldingForm({ holding, holdingType = 'stock', onClose }:
       aria-modal="true"
       aria-labelledby="holding-form-title"
     >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 dark:bg-black/70"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
-      <div className="relative z-10 w-full max-w-lg mx-4 bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2
-            id="holding-form-title"
-            className="text-lg font-semibold text-gray-900 dark:text-gray-100"
-          >
-            {isEditing ? 'Edit Holding' : 'Add Holding'}
-          </h2>
-          {!isEditing && (
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Enter a ticker symbol and we'll fetch the company details automatically.
+      <div className="relative z-10 w-full max-w-lg mx-4 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden">
+        {/* dark header */}
+        <div className="bg-slate-900 dark:bg-slate-950 px-6 py-5 flex items-center justify-between">
+          <div>
+            <h2 id="holding-form-title" className="text-base font-bold text-white">
+              {isEditing
+                ? `Edit ${holdingType === 'etf' ? 'ETF' : 'Stock'} Holding`
+                : `Add ${holdingType === 'etf' ? 'ETF' : 'Stock'} Holding`}
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {isEditing
+                ? 'Update the details below'
+                : "Enter a ticker and we'll fetch company details automatically"}
             </p>
-          )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              className="w-4 h-4"
+            >
+              <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
+            </svg>
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
           {errors.general && (
-            <div className="p-3 text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg">
-              {errors.general}
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+                className="w-4 h-4 text-red-500 flex-shrink-0"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14Zm0-4a.75.75 0 0 1-.75-.75v-3.5a.75.75 0 0 1 1.5 0v3.5A.75.75 0 0 1 8 11Zm0 3a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span className="text-sm text-red-700 dark:text-red-400">{errors.general}</span>
             </div>
           )}
 
           {/* Ticker */}
           <div>
-            <label
-              htmlFor="ticker"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              Ticker Symbol <span className="text-red-500">*</span>
+            <label htmlFor="ticker" className={labelClass}>
+              Ticker Symbol <span className="text-red-400 font-normal normal-case">*</span>
             </label>
             <div className="relative">
               <input
@@ -325,147 +307,153 @@ export default function HoldingForm({ holding, holdingType = 'stock', onClose }:
                 disabled={isEditing}
                 maxLength={5}
                 placeholder="e.g. AAPL"
-                className={`w-full px-3 py-2 text-sm rounded-lg border ${
-                  errors.ticker
-                    ? 'border-red-500 dark:border-red-400'
-                    : 'border-gray-300 dark:border-gray-600'
-                } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={`${inputClass} uppercase ${errors.ticker ? 'border-red-400 focus:ring-red-400' : ''} ${isEditing ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
               {isFetchingInfo && (
-                <div className="absolute right-3 top-2.5">
-                  <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <svg
+                    className="animate-spin h-4 w-4 text-slate-400"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                 </div>
               )}
             </div>
-            {errors.ticker && (
-              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.ticker}</p>
-            )}
+            {errors.ticker && <p className="mt-1 text-xs text-red-500">{errors.ticker}</p>}
             {fetchError && !errors.ticker && (
-              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{fetchError}</p>
+              <p className="mt-1 text-xs text-amber-500">{fetchError}</p>
             )}
           </div>
 
-          {/* Company Info (auto-fetched, shown as read-only when populated) */}
+          {/* Company info (auto-fetched) */}
           {infoFetched && formData.company_name && (
-            <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-3 space-y-1">
-              <div className="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            <div className="px-3 py-2.5 rounded-lg bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 space-y-0.5">
+              <div className="flex items-center gap-1.5">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                  className="w-3.5 h-3.5 text-sky-500"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14Zm3.844-8.791a.75.75 0 0 0-1.188-.918l-3.7 4.79-1.649-1.833a.75.75 0 1 0-1.114 1.004l2.25 2.5a.75.75 0 0 0 1.15-.043l4.25-5.5Z"
+                    clipRule="evenodd"
+                  />
                 </svg>
-                <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                <span className="text-xs font-semibold text-sky-700 dark:text-sky-300 uppercase tracking-wider">
                   Company info loaded
                 </span>
               </div>
-              <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+              <p className="text-sm font-semibold text-sky-800 dark:text-sky-200">
                 {formData.company_name}
               </p>
-              <p className="text-xs text-blue-600 dark:text-blue-400">
-                {[formData.sector, formData.industry].filter(Boolean).join(' • ')}
-              </p>
-              {formData.notes && (
-                <p className="text-xs text-blue-600/80 dark:text-blue-400/80 mt-1 line-clamp-2">
-                  {formData.notes}
+              {(formData.sector || formData.industry) && (
+                <p className="text-xs text-sky-600 dark:text-sky-400">
+                  {[formData.sector, formData.industry].filter(Boolean).join(' · ')}
                 </p>
               )}
             </div>
           )}
 
-          {/* Quantity */}
-          <div>
-            <label
-              htmlFor="quantity"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              Quantity (Shares) <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="quantity"
-              type="number"
-              step="any"
-              value={formData.quantity}
-              onChange={(e) => handleChange('quantity', e.target.value)}
-              disabled={isEditing}
-              placeholder="e.g. 10"
-              className={`w-full px-3 py-2 text-sm rounded-lg border ${
-                errors.quantity
-                  ? 'border-red-500 dark:border-red-400'
-                  : 'border-gray-300 dark:border-gray-600'
-              } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed`}
-            />
-            {errors.quantity && (
-              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.quantity}</p>
-            )}
-          </div>
-
-          {/* Buy Price */}
-          <div>
-            <label
-              htmlFor="buy_price"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              Buy Price per Share <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="buy_price"
-              type="number"
-              step="0.01"
-              value={formData.buy_price}
-              onChange={(e) => handleChange('buy_price', e.target.value)}
-              disabled={isEditing}
-              placeholder="e.g. 150.00"
-              className={`w-full px-3 py-2 text-sm rounded-lg border ${
-                errors.buy_price
-                  ? 'border-red-500 dark:border-red-400'
-                  : 'border-gray-300 dark:border-gray-600'
-              } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed`}
-            />
-            {errors.buy_price && (
-              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.buy_price}</p>
-            )}
+          {/* Quantity + Buy Price */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="quantity" className={labelClass}>
+                Quantity <span className="text-red-400 font-normal normal-case">*</span>
+              </label>
+              <input
+                id="quantity"
+                type="number"
+                step="any"
+                value={formData.quantity}
+                onChange={(e) => handleChange('quantity', e.target.value)}
+                disabled={isEditing}
+                placeholder="e.g. 10"
+                className={`${inputClass} ${errors.quantity ? 'border-red-400 focus:ring-red-400' : ''} ${isEditing ? 'opacity-50 cursor-not-allowed' : ''}`}
+              />
+              {errors.quantity && <p className="mt-1 text-xs text-red-500">{errors.quantity}</p>}
+            </div>
+            <div>
+              <label htmlFor="buy_price" className={labelClass}>
+                Buy Price/Share <span className="text-red-400 font-normal normal-case">*</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+                  $
+                </span>
+                <input
+                  id="buy_price"
+                  type="number"
+                  step="0.01"
+                  value={formData.buy_price}
+                  onChange={(e) => handleChange('buy_price', e.target.value)}
+                  disabled={isEditing}
+                  placeholder="0.00"
+                  className={`${inputClass} pl-7 ${errors.buy_price ? 'border-red-400 focus:ring-red-400' : ''} ${isEditing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                />
+              </div>
+              {errors.buy_price && <p className="mt-1 text-xs text-red-500">{errors.buy_price}</p>}
+            </div>
           </div>
 
           {/* Broker */}
           <div>
-            <label
-              htmlFor="broker"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
+            <label htmlFor="broker" className={labelClass}>
               Broker
             </label>
             <select
               id="broker"
               value={formData.broker}
               onChange={(e) => handleChange('broker', e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+              className={inputClass}
             >
-              <option value="">Select broker...</option>
+              <option value="">Select broker…</option>
               {brokers.map((b) => (
-                <option key={b} value={b}>{b}</option>
+                <option key={b} value={b}>
+                  {b}
+                </option>
               ))}
             </select>
           </div>
         </form>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+        {/* footer */}
+        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-700 flex gap-3">
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors disabled:opacity-50"
+            className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
-            type="submit"
+            type="button"
             onClick={handleSubmit}
             disabled={isSubmitting || isFetchingInfo}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-semibold hover:bg-slate-700 dark:hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'Saving...' : isEditing ? 'Save Changes' : 'Add Holding'}
+            {isSubmitting
+              ? 'Saving…'
+              : isEditing
+                ? 'Save Changes'
+                : `Add ${holdingType === 'etf' ? 'ETF' : 'Holding'}`}
           </button>
         </div>
       </div>
