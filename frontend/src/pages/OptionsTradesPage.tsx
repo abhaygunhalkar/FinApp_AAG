@@ -1,63 +1,186 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useOptions, useCreateOption, useUpdateOption, useDeleteOption, useOptionsSummary, useOpenTradeQuotes } from '../hooks';
+import { useMemo, useState } from 'react';
+import { useOptions, useDeleteOption, useOptionsSummary, useOpenTradeQuotes } from '../hooks';
 import { parseLocalDateString } from '../utils/date';
 import OptionsLogForm from '../components/options/OptionsLogForm';
 
-const TYPE_COLORS: Record<string, string> = {
-  sell_put: 'bg-sky-100 text-sky-800', // cash-secured put -> blue
-  sell_call: 'bg-teal-100 text-teal-800', // covered call -> teal
-  buy_call: 'bg-amber-100 text-amber-800', // buy call -> amber
-  buy_put: 'bg-red-100 text-red-800',
+// ── icons ─────────────────────────────────────────────────────────────────────
+
+function PencilIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      className="w-3.5 h-3.5"
+    >
+      <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.774a2.75 2.75 0 0 0-.596.892l-.848 2.047a.75.75 0 0 0 .98.98l2.047-.848a2.75 2.75 0 0 0 .892-.596l4.261-4.263a1.75 1.75 0 0 0 0-2.474ZM4.75 13.5c-.69 0-1.25-.56-1.25-1.25V4.75c0-.69.56-1.25 1.25-1.25H8a.75.75 0 0 0 0-1.5H4.75A2.75 2.75 0 0 0 2 4.75v7.5A2.75 2.75 0 0 0 4.75 15h7.5A2.75 2.75 0 0 0 15 12.25V9a.75.75 0 0 0-1.5 0v3.25c0 .69-.56 1.25-1.25 1.25h-7.5Z" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      className="w-3.5 h-3.5"
+    >
+      <path
+        fillRule="evenodd"
+        d="M5 3.25V4H2.75a.75.75 0 0 0 0 1.5h.3l.815 8.15A1.5 1.5 0 0 0 5.357 15h5.285a1.5 1.5 0 0 0 1.493-1.35l.815-8.15h.3a.75.75 0 0 0 0-1.5H11v-.75A2.25 2.25 0 0 0 8.75 1h-1.5A2.25 2.25 0 0 0 5 3.25Zm2.25-.75a.75.75 0 0 0-.75.75V4h3v-.75a.75.75 0 0 0-.75-.75h-1.5ZM6.05 6a.75.75 0 0 1 .787.713l.275 5.5a.75.75 0 0 1-1.498.075l-.275-5.5A.75.75 0 0 1 6.05 6Zm3.9 0a.75.75 0 0 1 .712.787l-.275 5.5a.75.75 0 0 1-1.498-.075l.275-5.5a.75.75 0 0 1 .786-.711Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
+function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
+  if (!active) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 16 16"
+        fill="currentColor"
+        className="w-3 h-3 opacity-30"
+      >
+        <path
+          fillRule="evenodd"
+          d="M8 1a.75.75 0 0 1 .75.75v10.638l1.96-2.158a.75.75 0 1 1 1.11 1.008l-3.25 3.578a.75.75 0 0 1-1.11 0L4.21 11.238a.75.75 0 1 1 1.11-1.008l1.93 2.127V1.75A.75.75 0 0 1 8 1Z"
+          clipRule="evenodd"
+        />
+      </svg>
+    );
+  }
+  return dir === 'asc' ? (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      className="w-3 h-3"
+    >
+      <path
+        fillRule="evenodd"
+        d="M8 15a.75.75 0 0 1-.75-.75V3.612L5.29 5.77a.75.75 0 0 1-1.08-1.04l3.25-3.5a.75.75 0 0 1 1.08 0l3.25 3.5a.75.75 0 1 1-1.08 1.04L8.75 3.612V14.25A.75.75 0 0 1 8 15Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  ) : (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      className="w-3 h-3"
+    >
+      <path
+        fillRule="evenodd"
+        d="M8 1a.75.75 0 0 1 .75.75v10.638l1.96-2.158a.75.75 0 1 1 1.11 1.008l-3.25 3.578a.75.75 0 0 1-1.11 0L4.21 11.238a.75.75 0 1 1 1.11-1.008l1.93 2.127V1.75A.75.75 0 0 1 8 1Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
+// ── config ────────────────────────────────────────────────────────────────────
+
+const TYPE_CONFIG: Record<string, { label: string; dot: string; bg: string; text: string }> = {
+  sell_put: { label: 'Cash-secured put', dot: 'bg-sky-500', bg: 'bg-sky-50', text: 'text-sky-800' },
+  sell_call: { label: 'Covered call', dot: 'bg-teal-500', bg: 'bg-teal-50', text: 'text-teal-800' },
+  buy_call: {
+    label: 'Buy call',
+    dot: 'bg-violet-500',
+    bg: 'bg-violet-50',
+    text: 'text-violet-800',
+  },
+  buy_put: { label: 'Buy put', dot: 'bg-rose-500', bg: 'bg-rose-50', text: 'text-rose-800' },
 };
 
-const TRADE_LABELS: Record<string, string> = {
-  sell_call: 'Covered call',
-  sell_put: 'Cash-secured put',
-  buy_call: 'Buy call',
-  buy_put: 'Buy put',
+const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
+  open: { label: 'Open', bg: 'bg-emerald-50', text: 'text-emerald-700' },
+  closed: { label: 'Closed', bg: 'bg-slate-100', text: 'text-slate-600' },
+  expired_worthless: { label: 'Expired', bg: 'bg-purple-50', text: 'text-purple-700' },
+  assigned: { label: 'Assigned', bg: 'bg-amber-50', text: 'text-amber-700' },
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  open: 'bg-sky-100 text-sky-700',
-  closed: 'bg-gray-100 text-gray-700',
-  expired_worthless: 'bg-emerald-100 text-emerald-700',
-  assigned: 'bg-amber-100 text-amber-700',
-};
+const FILTERS = [
+  { key: 'open', label: 'Open' },
+  { key: 'closed', label: 'Closed' },
+  { key: 'expired_worthless', label: 'Expired' },
+  { key: 'assigned', label: 'Assigned' },
+  { key: 'all', label: 'All trades' },
+] as const;
+
+type FilterKey = (typeof FILTERS)[number]['key'];
+type SortKey =
+  | 'ticker'
+  | 'type'
+  | 'strike'
+  | 'premium'
+  | 'current_price'
+  | 'contracts'
+  | 'expiry'
+  | 'status'
+  | 'pnl';
+
+function fmt(v: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+  }).format(v);
+}
+
+// ── stat card ─────────────────────────────────────────────────────────────────
+
+function StatCard({
+  label,
+  value,
+  valueClass = '',
+  sub,
+}: {
+  label: string;
+  value: string;
+  valueClass?: string;
+  sub?: string;
+}) {
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 px-5 py-4 flex flex-col gap-1 shadow-sm">
+      <span className="text-xs font-medium text-slate-400 uppercase tracking-widest">{label}</span>
+      <span className={`text-2xl font-bold tabular-nums ${valueClass}`}>{value}</span>
+      {sub && <span className="text-xs text-slate-400">{sub}</span>}
+    </div>
+  );
+}
+
+// ── main page ─────────────────────────────────────────────────────────────────
 
 export default function OptionsTradesPage() {
   const { data: trades } = useOptions();
   const summary = useOptionsSummary();
   const quotes = useOpenTradeQuotes();
-  const create = useCreateOption();
-  const update = useUpdateOption();
   const remove = useDeleteOption();
 
-  const [filter, setFilter] = useState<'all' | 'open' | 'closed' | 'expired_worthless' | 'assigned'>('open');
-  const [editing, setEditing] = useState<any | null>(null);
-  const formRef = useRef<HTMLFormElement | null>(null);
-  const [status, setStatus] = useState<string>('open');
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterKey>('open');
+  const [sortKey, setSortKey] = useState<SortKey>('expiry');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [modalOpen, setModalOpen] = useState(false);
   const [modalEditing, setModalEditing] = useState<any | null>(null);
 
-  type SortKey = 'ticker' | 'type' | 'strike' | 'premium' | 'current_price' | 'contracts' | 'expiry' | 'status' | 'pnl';
-  const [sortKey, setSortKey] = useState<SortKey>('expiry');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-
   function toggleSort(key: SortKey) {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
+    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else {
       setSortKey(key);
       setSortDir('asc');
     }
   }
 
-  function sortIndicator(key: SortKey) {
-    if (sortKey !== key) return null;
-    return <span className="ml-1">{sortDir === 'asc' ? '▲' : '▼'}</span>;
-  }
+  // per-filter counts for tab badges
+  const counts = useMemo(() => {
+    if (!trades) return {} as Record<string, number>;
+    const c: Record<string, number> = { all: trades.length };
+    for (const t of trades) c[t.status] = (c[t.status] ?? 0) + 1;
+    return c;
+  }, [trades]);
 
   const filtered = useMemo(() => {
     if (!trades) return [];
@@ -65,22 +188,41 @@ export default function OptionsTradesPage() {
     return trades.filter((t: any) => t.status === filter);
   }, [trades, filter]);
 
-  function formatCurrency(v: number) {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(v);
-  }
+  // compute unrealized P&L from open-trade quotes
+  const unrealizedPnl = useMemo(() => {
+    if (!quotes.data) return null;
+    let sum = 0;
+    let hasAny = false;
+    for (const q of Object.values(quotes.data) as any[]) {
+      if (q.unrealized_pnl != null) {
+        sum += q.unrealized_pnl;
+        hasAny = true;
+      }
+    }
+    return hasAny ? sum : null;
+  }, [quotes.data]);
 
   const rows = useMemo(() => {
     return filtered.map((t: any) => {
       const expiryDate = parseLocalDateString(t.expiry_date);
       const daysLeft = Math.ceil((expiryDate.getTime() - Date.now()) / (24 * 3600 * 1000));
       const expired = daysLeft < 0;
-      const countdownClass = expired ? 'text-red-600' : daysLeft <= 7 ? 'text-red-600' : daysLeft <= 30 ? 'text-amber-600' : 'text-gray-500';
       const isCredit = t.trade_type.startsWith('sell_');
       const amount = (t.premium || 0) * (t.contracts || 0) * 100;
       const signedAmount = isCredit ? amount : -amount;
       const quote = quotes.data?.[String(t.id)];
-      const displayPnl = t.status === 'open' ? quote?.unrealized_pnl : t.pnl;
-      return { trade: t, expiryDate, daysLeft, expired, countdownClass, isCredit, amount, signedAmount, quote, displayPnl };
+      const displayPnl = t.status === 'open' ? (quote?.unrealized_pnl ?? null) : t.pnl;
+      return {
+        trade: t,
+        expiryDate,
+        daysLeft,
+        expired,
+        isCredit,
+        amount,
+        signedAmount,
+        quote,
+        displayPnl,
+      };
     });
   }, [filtered, quotes.data]);
 
@@ -91,7 +233,7 @@ export default function OptionsTradesPage() {
         case 'ticker':
           return r.trade.ticker;
         case 'type':
-          return TRADE_LABELS[r.trade.trade_type] ?? r.trade.trade_type;
+          return TYPE_CONFIG[r.trade.trade_type]?.label ?? r.trade.trade_type;
         case 'strike':
           return r.trade.strike_price;
         case 'premium':
@@ -111,192 +253,366 @@ export default function OptionsTradesPage() {
       }
     };
     return [...rows].sort((a, b) => {
-      const va = getValue(a);
-      const vb = getValue(b);
-      if (typeof va === 'string' && typeof vb === 'string') {
-        return va.localeCompare(vb) * dir;
-      }
+      const va = getValue(a),
+        vb = getValue(b);
+      if (typeof va === 'string' && typeof vb === 'string') return va.localeCompare(vb) * dir;
       return ((va as number) - (vb as number)) * dir;
     });
   }, [rows, sortKey, sortDir]);
 
-  function startEdit(trade: any) {
-    // open modal in edit mode
-    setModalEditing(trade);
-    setModalOpen(true);
+  function SortTh({
+    col,
+    label,
+    className = '',
+  }: {
+    col: SortKey;
+    label: string;
+    className?: string;
+  }) {
+    return (
+      <th
+        className={`px-4 py-3 font-semibold text-xs uppercase tracking-wider cursor-pointer select-none whitespace-nowrap group ${className}`}
+        onClick={() => toggleSort(col)}
+      >
+        <span className="inline-flex items-center gap-1.5">
+          {label}
+          <SortIcon active={sortKey === col} dir={sortDir} />
+        </span>
+      </th>
+    );
   }
 
   async function handleDelete(trade: any) {
-    const confirmed = window.confirm(`Delete ${trade.ticker} ${TRADE_LABELS[trade.trade_type] ?? trade.trade_type} (strike ${trade.strike_price}, expiry ${trade.expiry_date})? This cannot be undone.`);
-    if (!confirmed) return;
+    const label = TYPE_CONFIG[trade.trade_type]?.label ?? trade.trade_type;
+    if (
+      !window.confirm(
+        `Delete ${trade.ticker} ${label} (strike ${trade.strike_price}, expiry ${trade.expiry_date})?\n\nThis cannot be undone.`,
+      )
+    )
+      return;
     try {
       await remove.mutateAsync(trade.id);
-    } catch (err) {
+    } catch {
       window.alert('Failed to delete trade. Please try again.');
     }
   }
 
-  function clearForm() {
-    setEditing(null);
-    setStatus('open');
-    setErrorMsg(null);
-    setModalEditing(null);
-  }
-
-  useEffect(() => {
-    if (modalEditing) {
-      setStatus(modalEditing.status ?? 'open');
-    }
-  }, [modalEditing]);
-
-  async function submit(e: any) {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const payload: any = {
-      ticker: fd.get('ticker')?.toString().toUpperCase(),
-      trade_type: fd.get('trade_type'),
-      strike_price: Number(fd.get('strike_price')),
-      premium: Number(fd.get('premium')),
-      contracts: Number(fd.get('contracts')),
-      open_date: fd.get('open_date'),
-      expiry_date: fd.get('expiry_date'),
-      status: fd.get('status'),
-      close_price: fd.get('close_price') ? Number(fd.get('close_price')) : null,
-      notes: fd.get('notes')?.toString() || null,
-    };
-
-    // client-side validation
-    setErrorMsg(null);
-    if (!payload.ticker) return setErrorMsg('Ticker is required');
-    if (!(payload.strike_price > 0)) return setErrorMsg('Strike price must be greater than 0');
-    if (!(payload.premium > 0)) return setErrorMsg('Premium must be greater than 0');
-    if (!(payload.contracts >= 1)) return setErrorMsg('Contracts must be at least 1');
-    if (parseLocalDateString(payload.expiry_date) <= parseLocalDateString(payload.open_date)) return setErrorMsg('Expiry date must be after open date');
-    if (payload.status === 'closed' && !(payload.close_price > 0)) return setErrorMsg('Close price is required when status is Closed');
-
-    try {
-      if (editing) {
-        await update.mutateAsync({ id: editing.id, payload });
-      } else {
-        await create.mutateAsync(payload);
-      }
-      clearForm();
-      (e.target as HTMLFormElement).reset();
-      setSuccessMsg(editing ? 'Trade updated' : 'Trade logged');
-      setTimeout(() => setSuccessMsg(null), 3000);
-    } catch (err) {
-      setErrorMsg('Save failed');
-    }
-  }
-
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Options Trades</h1>
-        <div className="text-sm text-gray-500">
-          Total P&L: {summary.data ? `$${summary.data.total_pnl}` : '—'} • Open: {summary.data?.open_positions ?? '—'} • Win Rate: {summary.data?.win_rate ?? '—'}%
+    <div className="space-y-5">
+      {/* ── page header ── */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Options Trades</h1>
+          <p className="text-sm text-slate-400 mt-0.5">Track and manage your options positions</p>
         </div>
+        <button
+          onClick={() => {
+            setModalEditing(null);
+            setModalOpen(true);
+          }}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-semibold rounded-lg shadow-sm hover:bg-slate-700 dark:hover:bg-slate-100 transition-colors"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 16 16"
+            fill="currentColor"
+            className="w-4 h-4"
+          >
+            <path d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z" />
+          </svg>
+          Log a trade
+        </button>
       </div>
 
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {['all','open','closed','expired_worthless','assigned'].map((k) => {
-            const labels: Record<string, string> = { all: 'All', open: 'Open', closed: 'Closed', expired_worthless: 'Expired worthless', assigned: 'Assigned' };
-            return (
-              <button
-                key={k}
-                onClick={() => setFilter(k as any)}
-                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 ${
-                  filter === k
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {labels[k] ?? k}
-              </button>
-            );
-          })}
-        </div>
-        <div className="ml-auto">
-          <button onClick={() => { setModalEditing(null); setModalOpen(true); }} className="px-4 py-2 bg-green-600 text-white rounded-full text-sm font-medium hover:bg-green-700">Log a trade</button>
-        </div>
+      {/* ── summary stat cards ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard
+          label="Open Positions"
+          value={summary.data?.open_positions != null ? String(summary.data.open_positions) : '—'}
+          valueClass="text-slate-800 dark:text-white"
+        />
+        <StatCard
+          label="Unrealized P&L"
+          value={unrealizedPnl != null ? fmt(unrealizedPnl) : '—'}
+          valueClass={
+            unrealizedPnl == null
+              ? 'text-slate-400'
+              : unrealizedPnl >= 0
+                ? 'text-emerald-600'
+                : 'text-red-500'
+          }
+          sub="Open trades only"
+        />
+        <StatCard
+          label="Total Realized P&L"
+          value={summary.data?.total_pnl != null ? fmt(summary.data.total_pnl) : '—'}
+          valueClass={
+            summary.data?.total_pnl == null
+              ? 'text-slate-400'
+              : summary.data.total_pnl >= 0
+                ? 'text-emerald-600'
+                : 'text-red-500'
+          }
+        />
+        <StatCard
+          label="Win Rate"
+          value={summary.data?.win_rate != null ? `${summary.data.win_rate}%` : '—'}
+          valueClass="text-slate-800 dark:text-white"
+          sub="Closed & expired"
+        />
       </div>
 
-      <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-4">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-gray-500">
-              <th className="px-3 py-2 cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('ticker')}>Ticker{sortIndicator('ticker')}</th>
-              <th className="cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('type')}>Type{sortIndicator('type')}</th>
-              <th className="cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('strike')}>Strike{sortIndicator('strike')}</th>
-              <th className="cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('premium')}>Premium{sortIndicator('premium')}</th>
-              <th className="cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('current_price')}>Current Price{sortIndicator('current_price')}</th>
-              <th className="cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('contracts')}>Contracts{sortIndicator('contracts')}</th>
-              <th className="cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('expiry')}>Expiry{sortIndicator('expiry')}</th>
-              <th className="cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('status')}>Status{sortIndicator('status')}</th>
-              <th className="text-right cursor-pointer select-none hover:text-gray-700" onClick={() => toggleSort('pnl')}>P&L{sortIndicator('pnl')}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedRows.map(({ trade: t, expiryDate, daysLeft, expired, countdownClass, isCredit, amount, quote, displayPnl }) => (
-              <tr key={t.id} className="border-t border-gray-100 dark:border-gray-700">
-                <td className="px-3 py-3 font-medium">{t.ticker}</td>
-                <td>
-                  <span className={`px-2 py-1 rounded text-xs font-semibold ${TYPE_COLORS[t.trade_type] || 'bg-gray-100'}`}>
-                    {TRADE_LABELS[t.trade_type] ?? t.trade_type}
-                  </span>
-                </td>
-                <td>{t.strike_price}</td>
-                <td>
-                  <span className={isCredit ? 'text-emerald-700 font-medium' : 'text-red-700 font-medium'}>
-                    {isCredit ? '+' : '-'}{formatCurrency(amount)}
-                  </span>
-                </td>
-                <td>
-                  {t.status === 'open' && quote?.current_price != null ? (
-                    <span title={`Bid: ${quote.bid != null ? formatCurrency(quote.bid) : '—'}  /  Ask: ${quote.ask != null ? formatCurrency(quote.ask) : '—'}`}>
-                      {formatCurrency(quote.current_price)}
-                    </span>
-                  ) : (
-                    <span className="text-gray-400">—</span>
-                  )}
-                </td>
-                <td>{t.contracts}</td>
-                <td>
-                  <div>{expiryDate.toISOString().slice(0,10)}</div>
-                  <div className={`text-xs mt-1 ${countdownClass}`}>{expired ? 'Expired' : `${daysLeft} days left`}</div>
-                </td>
-                <td><span className={`px-2 py-1 rounded text-xs ${STATUS_COLORS[t.status] || 'bg-gray-100'}`}>{t.status}</span></td>
-                <td className="text-right font-medium">
-                  {displayPnl == null ? (
-                    '—'
-                  ) : (
-                    <span className={displayPnl >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                      {formatCurrency(displayPnl)}
-                      {t.status === 'open' && <span className="text-gray-400 font-normal text-xs"> (unrl.)</span>}
-                    </span>
-                  )}
-                </td>
-                <td className="pl-4 whitespace-nowrap">
-                  <button onClick={() => startEdit(t)} className="text-sm text-sky-600">Edit</button>
-                  <button onClick={() => handleDelete(t)} className="text-sm text-red-600 ml-3" disabled={remove.isPending}>Delete</button>
-                </td>
+      {/* ── filter tabs ── */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {FILTERS.map(({ key, label }) => {
+          const active = filter === key;
+          const count = counts[key] ?? 0;
+          return (
+            <button
+              key={key}
+              onClick={() => setFilter(key)}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-lg transition-all focus:outline-none ${
+                active
+                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm'
+                  : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-slate-300 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}
+            >
+              {label}
+              {count > 0 && (
+                <span
+                  className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+                    active
+                      ? 'bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── table ── */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-800 dark:bg-slate-900 text-slate-300 text-left border-b border-slate-700">
+                <SortTh col="ticker" label="Ticker" className="pl-5" />
+                <SortTh col="type" label="Strategy" />
+                <SortTh col="strike" label="Strike" className="text-right" />
+                <SortTh col="premium" label="Net Premium" className="text-right" />
+                <SortTh col="current_price" label="Option Price" className="text-right" />
+                <SortTh col="contracts" label="Qty" className="text-center" />
+                <SortTh col="expiry" label="Expiry" />
+                {filter === 'all' && <SortTh col="status" label="Status" />}
+                <SortTh col="pnl" label="P&L" className="text-right pr-5" />
+                <th className="px-4 py-3 w-20" />
               </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="mt-3 text-xs text-gray-500">* Premium kept as gain. Update cost basis in holdings page.</p>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+              {sortedRows.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={filter === 'all' ? 10 : 9}
+                    className="px-5 py-12 text-center text-slate-400 text-sm"
+                  >
+                    No {filter === 'all' ? '' : filter.replace('_', ' ')} trades found
+                  </td>
+                </tr>
+              )}
+              {sortedRows.map(
+                ({
+                  trade: t,
+                  expiryDate,
+                  daysLeft,
+                  expired,
+                  isCredit,
+                  amount,
+                  quote,
+                  displayPnl,
+                }) => {
+                  const typeConf = TYPE_CONFIG[t.trade_type];
+                  const daysChipClass = expired
+                    ? 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+                    : daysLeft <= 7
+                      ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                      : daysLeft <= 30
+                        ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                        : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
+
+                  return (
+                    <tr
+                      key={t.id}
+                      className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                    >
+                      {/* Ticker */}
+                      <td className="pl-5 pr-4 py-3.5">
+                        <span className="font-bold text-slate-900 dark:text-white tracking-wide">
+                          {t.ticker}
+                        </span>
+                      </td>
+
+                      {/* Strategy */}
+                      <td className="px-4 py-3.5">
+                        {typeConf ? (
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold ${typeConf.bg} ${typeConf.text}`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${typeConf.dot}`}
+                            />
+                            {typeConf.label}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-500">{t.trade_type}</span>
+                        )}
+                      </td>
+
+                      {/* Strike */}
+                      <td className="px-4 py-3.5 text-right font-medium tabular-nums text-slate-700 dark:text-slate-300">
+                        ${t.strike_price}
+                      </td>
+
+                      {/* Net Premium */}
+                      <td className="px-4 py-3.5 text-right tabular-nums">
+                        <span
+                          className={`font-semibold ${isCredit ? 'text-emerald-600' : 'text-red-500'}`}
+                        >
+                          {isCredit ? '+' : '−'}
+                          {fmt(amount)}
+                        </span>
+                      </td>
+
+                      {/* Option Price */}
+                      <td className="px-4 py-3.5 text-right tabular-nums text-slate-600 dark:text-slate-400">
+                        {t.status === 'open' && quote?.current_price != null ? (
+                          <span
+                            title={`Bid: ${quote.bid != null ? fmt(quote.bid) : '—'} / Ask: ${quote.ask != null ? fmt(quote.ask) : '—'}`}
+                            className="cursor-default"
+                          >
+                            {fmt(quote.current_price)}
+                          </span>
+                        ) : (
+                          <span className="text-slate-300 dark:text-slate-600">—</span>
+                        )}
+                      </td>
+
+                      {/* Contracts */}
+                      <td className="px-4 py-3.5 text-center tabular-nums text-slate-600 dark:text-slate-400">
+                        {t.contracts}
+                      </td>
+
+                      {/* Expiry */}
+                      <td className="px-4 py-3.5">
+                        <div className="text-slate-700 dark:text-slate-300 font-medium tabular-nums">
+                          {expiryDate.toISOString().slice(0, 10)}
+                        </div>
+                        <span
+                          className={`inline-block mt-1 text-xs font-semibold px-2 py-0.5 rounded-full ${daysChipClass}`}
+                        >
+                          {expired ? 'Expired' : `${daysLeft}d left`}
+                        </span>
+                      </td>
+
+                      {/* Status (All view only) */}
+                      {filter === 'all' &&
+                        (() => {
+                          const sc = STATUS_CONFIG[t.status];
+                          return (
+                            <td className="px-4 py-3.5">
+                              <span
+                                className={`text-xs font-semibold px-2.5 py-1 rounded-full ${sc?.bg ?? 'bg-slate-100'} ${sc?.text ?? 'text-slate-600'}`}
+                              >
+                                {sc?.label ?? t.status}
+                              </span>
+                            </td>
+                          );
+                        })()}
+
+                      {/* P&L */}
+                      <td className="px-4 py-3.5 pr-5 text-right tabular-nums">
+                        {displayPnl == null ? (
+                          <span className="text-slate-300 dark:text-slate-600">—</span>
+                        ) : (
+                          <div className="flex flex-col items-end">
+                            <span
+                              className={`font-bold text-base ${displayPnl >= 0 ? 'text-emerald-600' : 'text-red-500'}`}
+                            >
+                              {displayPnl >= 0 ? '+' : ''}
+                              {fmt(displayPnl)}
+                            </span>
+                            {t.status === 'open' && (
+                              <span className="text-xs text-slate-400 font-normal">unrealized</span>
+                            )}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-1 justify-end">
+                          <button
+                            onClick={() => {
+                              setModalEditing(t);
+                              setModalOpen(true);
+                            }}
+                            title="Edit trade"
+                            className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-700 transition-colors"
+                          >
+                            <PencilIcon />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(t)}
+                            title="Delete trade"
+                            disabled={remove.isPending}
+                            className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40"
+                          >
+                            <TrashIcon />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                },
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* table footer note */}
+        <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+          <p className="text-xs text-slate-400">
+            Premium shown as net collected/paid per position (premium × contracts × 100). Option
+            prices reflect mid-market; hover for bid/ask spread.
+          </p>
+        </div>
       </div>
 
-      {/* Inline form removed — now using modal-based separate form page */}
-      {/* Modal form component will be shown when modalOpen is true */}
+      {/* ── modal ── */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true">
-          <div className="absolute inset-0 bg-black/50 dark:bg-black/70" onClick={() => { setModalOpen(false); setModalEditing(null); }} />
-          <div className="relative z-10 w-full max-w-2xl mx-4 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-xl">
-            {/* lazy load: render local form component */}
-            <OptionsLogForm editing={modalEditing ?? undefined} onClose={() => { setModalOpen(false); setModalEditing(null); }} />
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => {
+              setModalOpen(false);
+              setModalEditing(null);
+            }}
+          />
+          <div className="relative z-10 w-full max-w-2xl mx-4">
+            <OptionsLogForm
+              editing={modalEditing ?? undefined}
+              onClose={() => {
+                setModalOpen(false);
+                setModalEditing(null);
+              }}
+            />
           </div>
         </div>
       )}
