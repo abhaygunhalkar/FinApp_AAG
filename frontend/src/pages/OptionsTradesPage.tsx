@@ -81,6 +81,36 @@ function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
   );
 }
 
+// ── sort header ───────────────────────────────────────────────────────────────
+
+function SortTh({
+  col,
+  label,
+  className = '',
+  sortKey,
+  sortDir,
+  onSort,
+}: {
+  col: SortKey;
+  label: string;
+  className?: string;
+  sortKey: SortKey;
+  sortDir: 'asc' | 'desc';
+  onSort: (col: SortKey) => void;
+}) {
+  return (
+    <th
+      className={`px-4 py-3 font-semibold text-xs uppercase tracking-wider cursor-pointer select-none whitespace-nowrap group ${className}`}
+      onClick={() => onSort(col)}
+    >
+      <span className="inline-flex items-center gap-1.5">
+        {label}
+        <SortIcon active={sortKey === col} dir={sortDir} />
+      </span>
+    </th>
+  );
+}
+
 // ── config ────────────────────────────────────────────────────────────────────
 
 const TYPE_CONFIG: Record<string, { label: string; dot: string; bg: string; text: string }> = {
@@ -260,28 +290,6 @@ export default function OptionsTradesPage() {
     });
   }, [rows, sortKey, sortDir]);
 
-  function SortTh({
-    col,
-    label,
-    className = '',
-  }: {
-    col: SortKey;
-    label: string;
-    className?: string;
-  }) {
-    return (
-      <th
-        className={`px-4 py-3 font-semibold text-xs uppercase tracking-wider cursor-pointer select-none whitespace-nowrap group ${className}`}
-        onClick={() => toggleSort(col)}
-      >
-        <span className="inline-flex items-center gap-1.5">
-          {label}
-          <SortIcon active={sortKey === col} dir={sortDir} />
-        </span>
-      </th>
-    );
-  }
-
   async function handleDelete(trade: any) {
     const label = TYPE_CONFIG[trade.trade_type]?.label ?? trade.trade_type;
     if (
@@ -403,15 +411,76 @@ export default function OptionsTradesPage() {
                 <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider pl-5 whitespace-nowrap">
                   Brokerage
                 </th>
-                <SortTh col="ticker" label="Ticker" />
-                <SortTh col="type" label="Strategy" />
-                <SortTh col="strike" label="Strike" className="text-right" />
-                <SortTh col="premium" label="Net Premium" className="text-right" />
-                <SortTh col="current_price" label="Option Price" className="text-right" />
-                <SortTh col="contracts" label="Qty" className="text-center" />
-                <SortTh col="expiry" label="Expiry" />
-                {filter === 'all' && <SortTh col="status" label="Status" />}
-                <SortTh col="pnl" label="P&L" className="text-right pr-5" />
+                <SortTh
+                  col="ticker"
+                  label="Ticker"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                />
+                <SortTh
+                  col="type"
+                  label="Strategy"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                />
+                <SortTh
+                  col="strike"
+                  label="Strike"
+                  className="text-right"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                />
+                <SortTh
+                  col="premium"
+                  label="Net Premium"
+                  className="text-right"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                />
+                <SortTh
+                  col="current_price"
+                  label="Option Price"
+                  className="text-right"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                />
+                <SortTh
+                  col="contracts"
+                  label="Qty"
+                  className="text-center"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                />
+                <SortTh
+                  col="expiry"
+                  label="Expiry"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                />
+                {filter === 'all' && (
+                  <SortTh
+                    col="status"
+                    label="Status"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={toggleSort}
+                  />
+                )}
+                <SortTh
+                  col="pnl"
+                  label="P&L"
+                  className="text-right pr-5"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                />
                 <th className="px-4 py-3 w-20" />
               </tr>
             </thead>
