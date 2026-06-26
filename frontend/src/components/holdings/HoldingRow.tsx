@@ -71,7 +71,7 @@ export default function HoldingRow({ holding }: HoldingRowProps) {
 
         {/* Qty */}
         <td className={`${td} text-right text-slate-700 dark:text-slate-300`}>
-          {holding.quantity}
+          {Number(holding.quantity).toFixed(2)}
         </td>
 
         {/* Avg Cost */}
