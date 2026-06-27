@@ -54,7 +54,7 @@ class OptionsService:
         trades = OptionsRepository.get_all(db)
         result = []
         for trade in trades:
-            if trade.status != 'closed':
+            if trade.status not in ('closed', 'expired_worthless'):
                 continue
             pnl = OptionsService._calculate_pnl_for_trade(trade)
             if pnl is not None:
