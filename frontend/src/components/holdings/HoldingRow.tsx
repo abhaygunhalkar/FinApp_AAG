@@ -5,11 +5,12 @@ import type { Holding } from '../../types';
 
 interface HoldingRowProps {
   holding: Holding;
+  hasOpenOption?: boolean;
 }
 
 const td = 'px-3 py-2 text-sm tabular-nums';
 
-export default function HoldingRow({ holding }: HoldingRowProps) {
+export default function HoldingRow({ holding, hasOpenOption = false }: HoldingRowProps) {
   const [expanded, setExpanded] = useState(false);
 
   const gainClass =
@@ -61,6 +62,14 @@ export default function HoldingRow({ holding }: HoldingRowProps) {
             <span className="font-bold text-slate-900 dark:text-white tracking-wide">
               {holding.ticker}
             </span>
+            {hasOpenOption && (
+              <span
+                title="Active options trade"
+                className="inline-block px-1.5 py-0.5 text-[10px] font-semibold rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 leading-none"
+              >
+                OPT
+              </span>
+            )}
           </span>
         </td>
 

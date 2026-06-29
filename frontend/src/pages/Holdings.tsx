@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useHoldings } from '../hooks/useHoldings';
+import { useOptions } from '../hooks/useOptions';
 import { HoldingsTable, SearchFilter, HoldingForm } from '../components/holdings';
 import { LoadingSpinner } from '../components/shared';
 import apiClient from '../api/client';
@@ -35,6 +36,12 @@ function StatCard({
 
 export default function Holdings() {
   const { data: holdings, isLoading, isError } = useHoldings();
+  const { data: options } = useOptions();
+
+  const openOptionTickers = useMemo(
+    () => new Set((options ?? []).filter((o) => o.status === 'open').map((o) => o.ticker)),
+    [options],
+  );
   const [showAddForm, setShowAddForm] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const queryClient = useQueryClient();
@@ -155,7 +162,7 @@ export default function Holdings() {
       <SearchFilter holdings={holdingsList} />
 
       {/* ── table ── */}
-      <HoldingsTable holdings={holdingsList} />
+      <HoldingsTable holdings={holdingsList} openOptionTickers={openOptionTickers} />
 
       {showAddForm && <HoldingForm onClose={() => setShowAddForm(false)} />}
     </div>

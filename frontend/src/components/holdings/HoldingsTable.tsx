@@ -6,6 +6,7 @@ import type { Holding } from '../../types';
 
 interface HoldingsTableProps {
   holdings: Holding[];
+  openOptionTickers?: Set<string>;
 }
 
 type SortColumn = keyof Holding | string;
@@ -94,7 +95,7 @@ function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
   );
 }
 
-export default function HoldingsTable({ holdings }: HoldingsTableProps) {
+export default function HoldingsTable({ holdings, openOptionTickers }: HoldingsTableProps) {
   const { holdingsFilter, setHoldingsFilter } = useUIStore();
 
   const filteredAndSorted = useMemo(() => {
@@ -196,7 +197,11 @@ export default function HoldingsTable({ holdings }: HoldingsTableProps) {
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
             {filteredAndSorted.map((holding) => (
-              <HoldingRow key={holding.id} holding={holding} />
+              <HoldingRow
+                key={holding.id}
+                holding={holding}
+                hasOpenOption={openOptionTickers?.has(holding.ticker) ?? false}
+              />
             ))}
           </tbody>
         </table>
