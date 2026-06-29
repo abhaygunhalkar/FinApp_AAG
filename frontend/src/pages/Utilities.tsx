@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import CoveredCallSimulator from '../components/utilities/CoveredCallSimulator';
 
 type Field = 'current' | 'target' | 'percent';
 
@@ -99,6 +100,8 @@ export default function Utilities() {
           </div>
         </div>
       </section>
+
+      <CoveredCallSimulator />
     </div>
   );
 }
