@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import CoveredCallSimulator from '../components/utilities/CoveredCallSimulator';
-import PortfolioAnalysis from '../components/utilities/PortfolioAnalysis';
 
 type Field = 'current' | 'target' | 'percent';
 
@@ -101,8 +100,6 @@ export default function Utilities() {
           </div>
         </div>
       </section>
-
-      <PortfolioAnalysis />
 
       <CoveredCallSimulator />
     </div>

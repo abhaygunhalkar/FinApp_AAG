@@ -14,6 +14,7 @@ import Settings from './pages/Settings';
 import OptionsStrategy from './pages/OptionsStrategy';
 import OptionsTradesPage from './pages/OptionsTradesPage';
 import Utilities from './pages/Utilities';
+import PortfolioAnalysisPage from './pages/PortfolioAnalysisPage';
 
 const router = createBrowserRouter([
   {
@@ -29,6 +30,7 @@ const router = createBrowserRouter([
       { path: '/options', element: <OptionsTradesPage /> },
       { path: '/settings', element: <Settings /> },
       { path: '/utilities', element: <Utilities /> },
+      { path: '/portfolio-analysis', element: <PortfolioAnalysisPage /> },
     ],
   },
 ]);
