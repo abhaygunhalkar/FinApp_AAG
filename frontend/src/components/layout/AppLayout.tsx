@@ -34,7 +34,7 @@ export default function AppLayout() {
             </svg>
           </button>
           <h1 className="ml-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
-            FinTracker
+            FINAPP_AAG
           </h1>
         </header>
 
