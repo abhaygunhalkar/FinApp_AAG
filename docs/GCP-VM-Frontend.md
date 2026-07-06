@@ -16,7 +16,7 @@ node --version && npm --version
 
 ```bash
 # Navigate to frontend folder
-cd ~/FinApp_Kiro/frontend
+cd ~/FinApp_AAG/frontend
 
 # Install dependencies
 npm install
@@ -41,7 +41,7 @@ server {
     server_name _;
 
     # Serve React frontend static files
-    root /home/YOUR_USERNAME/FinApp_Kiro/frontend/dist;
+    root /home/YOUR_USERNAME/FinApp_AAG/frontend/dist;
     index index.html;
 
     # Proxy API requests to FastAPI
@@ -85,9 +85,9 @@ sudo systemctl status nginx
 ```bash
 # Allow nginx to read the dist folder
 sudo chmod o+x /home/YOUR_USERNAME
-sudo chmod o+x /home/YOUR_USERNAME/FinApp_Kiro
-sudo chmod o+x /home/YOUR_USERNAME/FinApp_Kiro/frontend
-sudo chmod -R o+r /home/YOUR_USERNAME/FinApp_Kiro/frontend/dist
+sudo chmod o+x /home/YOUR_USERNAME/FinApp_AAG
+sudo chmod o+x /home/YOUR_USERNAME/FinApp_AAG/frontend
+sudo chmod -R o+r /home/YOUR_USERNAME/FinApp_AAG/frontend/dist
 ```
 
 ## Phase 5 — GCP Firewall Rule

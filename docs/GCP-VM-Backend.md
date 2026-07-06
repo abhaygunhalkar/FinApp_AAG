@@ -30,10 +30,10 @@ python3.11 --version
 
 ```bash
 # Clone your GitHub repo
-git clone https://github.com/YOUR_USERNAME/FinApp_Kiro.git
+git clone https://github.com/YOUR_USERNAME/FinApp_AAG.git
 
 # Navigate into backend folder
-cd FinApp_Kiro/backend
+cd FinApp_AAG/backend
 
 # Create virtual environment using Python 3.11
 python3.11 -m venv venv
@@ -77,9 +77,9 @@ After=network.target
 
 [Service]
 User=YOUR_USERNAME
-WorkingDirectory=/home/YOUR_USERNAME/FinApp_Kiro/backend
-Environment="PATH=/home/YOUR_USERNAME/FinApp_Kiro/backend/venv/bin"
-ExecStart=/home/YOUR_USERNAME/FinApp_Kiro/backend/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+WorkingDirectory=/home/YOUR_USERNAME/FinApp_AAG/backend
+Environment="PATH=/home/YOUR_USERNAME/FinApp_AAG/backend/venv/bin"
+ExecStart=/home/YOUR_USERNAME/FinApp_AAG/backend/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 Restart=always
 
 [Install]
@@ -106,13 +106,13 @@ curl http://127.0.0.1:8000/openapi.json
 Upload `finance_tracker.db` via the GCP browser SSH upload button (gear icon ⚙ in the SSH window), then move it to the correct location:
 
 ```bash
-mv ~/finance_tracker.db ~/FinApp_Kiro/backend/
+mv ~/finance_tracker.db ~/FinApp_AAG/backend/
 ```
 
 Verify data:
 ```bash
 sudo apt install sqlite3 -y
-sqlite3 ~/FinApp_Kiro/backend/finance_tracker.db "SELECT COUNT(*) FROM holdings;"
+sqlite3 ~/FinApp_AAG/backend/finance_tracker.db "SELECT COUNT(*) FROM holdings;"
 ```
 
 Then restart the service:

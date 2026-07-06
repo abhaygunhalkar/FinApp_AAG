@@ -83,7 +83,7 @@ jobs:
           username: ${{ secrets.GCP_VM_USER }}
           key: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
           script: |
-            cd ~/FinApp_Kiro/backend
+            cd ~/FinApp_AAG/backend
             git pull origin main
             source venv/bin/activate
             pip install .
@@ -131,7 +131,7 @@ jobs:
           username: ${{ secrets.GCP_VM_USER }}
           key: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
           source: "frontend/dist/*"
-          target: ~/FinApp_Kiro/frontend/dist
+          target: ~/FinApp_AAG/frontend/dist
           strip_components: 2
 
       - name: Fix permissions and reload nginx
@@ -142,14 +142,14 @@ jobs:
           username: ${{ secrets.GCP_VM_USER }}
           key: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
           script: |
-            sudo chmod -R o+r ~/FinApp_Kiro/frontend/dist
+            sudo chmod -R o+r ~/FinApp_AAG/frontend/dist
             sudo systemctl reload nginx
 ```
 
 ## Repo Structure
 
 ```
-FinApp_Kiro/
+FinApp_AAG/
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml      ← workflow file
@@ -169,7 +169,7 @@ git push
 
 ## Monitor Deployments
 
-Go to: `https://github.com/YOUR_USERNAME/FinApp_Kiro/actions`
+Go to: `https://github.com/YOUR_USERNAME/FinApp_AAG/actions`
 
 ## Manual Deployment (if needed)
 
@@ -177,16 +177,16 @@ If you ever need to deploy manually without GitHub Actions:
 
 ```bash
 # Backend
-cd ~/FinApp_Kiro/backend
+cd ~/FinApp_AAG/backend
 git pull origin main
 source venv/bin/activate
 pip install .
 sudo systemctl restart finapp
 
 # Frontend (build locally and push, or on VM)
-cd ~/FinApp_Kiro/frontend
+cd ~/FinApp_AAG/frontend
 npm install
 npm run build
-sudo chmod -R o+r ~/FinApp_Kiro/frontend/dist
+sudo chmod -R o+r ~/FinApp_AAG/frontend/dist
 sudo systemctl reload nginx
 ```
