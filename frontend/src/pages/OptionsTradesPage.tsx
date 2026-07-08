@@ -150,6 +150,7 @@ type SortKey =
   | 'contracts'
   | 'expiry'
   | 'status'
+  | 'pct_gain'
   | 'pnl';
 
 function fmt(v: number) {
@@ -242,6 +243,7 @@ export default function OptionsTradesPage() {
       const signedAmount = isCredit ? amount : -amount;
       const quote = quotes.data?.[String(t.id)];
       const displayPnl = t.status === 'open' ? (quote?.unrealized_pnl ?? null) : t.pnl;
+      const pctGain = displayPnl != null && amount > 0 ? (displayPnl / amount) * 100 : null;
       return {
         trade: t,
         expiryDate,
@@ -252,6 +254,7 @@ export default function OptionsTradesPage() {
         signedAmount,
         quote,
         displayPnl,
+        pctGain,
       };
     });
   }, [filtered, quotes.data]);
@@ -276,6 +279,8 @@ export default function OptionsTradesPage() {
           return r.expiryDate.getTime();
         case 'status':
           return r.trade.status;
+        case 'pct_gain':
+          return r.pctGain ?? -Infinity;
         case 'pnl':
           return r.displayPnl ?? -Infinity;
         default:
@@ -474,6 +479,14 @@ export default function OptionsTradesPage() {
                   />
                 )}
                 <SortTh
+                  col="pct_gain"
+                  label="% Gain"
+                  className="text-right"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                />
+                <SortTh
                   col="pnl"
                   label="P&L"
                   className="text-right pr-5"
@@ -488,7 +501,7 @@ export default function OptionsTradesPage() {
               {sortedRows.length === 0 && (
                 <tr>
                   <td
-                    colSpan={filter === 'all' ? 11 : 10}
+                    colSpan={filter === 'all' ? 12 : 11}
                     className="px-5 py-12 text-center text-slate-400 text-sm"
                   >
                     No {filter === 'all' ? '' : filter.replace('_', ' ')} trades found
@@ -505,6 +518,7 @@ export default function OptionsTradesPage() {
                   amount,
                   quote,
                   displayPnl,
+                  pctGain,
                 }) => {
                   const typeConf = TYPE_CONFIG[t.trade_type];
                   const daysChipClass = expired
@@ -608,6 +622,20 @@ export default function OptionsTradesPage() {
                             </td>
                           );
                         })()}
+
+                      {/* % Gain */}
+                      <td className="px-4 py-2 text-right tabular-nums">
+                        {pctGain == null ? (
+                          <span className="text-slate-300 dark:text-slate-600">—</span>
+                        ) : (
+                          <span
+                            className={`font-semibold ${pctGain >= 0 ? 'text-emerald-600' : 'text-red-500'}`}
+                          >
+                            {pctGain >= 0 ? '+' : ''}
+                            {pctGain.toFixed(1)}%
+                          </span>
+                        )}
+                      </td>
 
                       {/* P&L */}
                       <td className="px-4 py-2 pr-5 text-right tabular-nums">
