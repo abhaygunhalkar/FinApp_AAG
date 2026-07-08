@@ -37,7 +37,8 @@ export default function RealizedGainByTickerChart() {
 
     return Object.entries(byTicker)
       .map(([ticker, gain]) => ({ ticker, gain: parseFloat(gain.toFixed(2)) }))
-      .sort((a, b) => b.gain - a.gain);
+      .sort((a, b) => b.gain - a.gain)
+      .slice(0, 10);
   }, [sells]);
 
   if (isLoading) {
