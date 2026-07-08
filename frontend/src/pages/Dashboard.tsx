@@ -114,7 +114,9 @@ export default function Dashboard() {
         <PortfolioGrowthChart />
         <SectorAllocationChart />
         <MonthlyGainLossChart />
-        <RealizedGainByTickerChart />
+        <div className="xl:col-start-1">
+          <RealizedGainByTickerChart />
+        </div>
       </div>
     </div>
   );
