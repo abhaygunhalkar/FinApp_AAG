@@ -7,3 +7,4 @@ export { default as GainersLosersChart } from './GainersLosersChart';
 export { default as DividendForecastChart } from './DividendForecastChart';
 export { default as WatchlistMoversChart } from './WatchlistMoversChart';
 export { default as TradeHistory } from './TradeHistory';
+export { default as RealizedGainByTickerChart } from './RealizedGainByTickerChart';

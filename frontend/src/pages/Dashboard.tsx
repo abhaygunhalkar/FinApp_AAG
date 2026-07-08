@@ -4,6 +4,7 @@ import {
   PortfolioGrowthChart,
   MonthlyGainLossChart,
   SectorAllocationChart,
+  RealizedGainByTickerChart,
 } from '../components/dashboard';
 import { LoadingSpinner, ErrorNotification } from '../components/shared';
 import { useState } from 'react';
@@ -113,6 +114,7 @@ export default function Dashboard() {
         <PortfolioGrowthChart />
         <SectorAllocationChart />
         <MonthlyGainLossChart />
+        <RealizedGainByTickerChart />
       </div>
     </div>
   );

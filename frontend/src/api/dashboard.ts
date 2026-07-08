@@ -2,6 +2,7 @@ import apiClient, { unwrapResponse } from './client';
 import type { ApiResponse, DashboardSummary, ActivityEvent, PortfolioSnapshot } from '../types';
 
 type SellTransaction = {
+  ticker: string;
   transaction_date: string;
   realized_gain: number;
 };
