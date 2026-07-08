@@ -114,9 +114,6 @@ export default function Dashboard() {
         <PortfolioGrowthChart />
         <SectorAllocationChart />
         <MonthlyGainLossChart />
-      </div>
-
-      <div className="mt-6">
         <RealizedGainByTickerChart />
       </div>
     </div>
