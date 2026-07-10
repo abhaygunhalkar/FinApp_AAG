@@ -438,6 +438,9 @@ export default function OptionsTradesPage() {
                   sortDir={sortDir}
                   onSort={toggleSort}
                 />
+                <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-right whitespace-nowrap">
+                  Eff. Price
+                </th>
                 <SortTh
                   col="premium"
                   label="Net Premium"
@@ -501,7 +504,7 @@ export default function OptionsTradesPage() {
               {sortedRows.length === 0 && (
                 <tr>
                   <td
-                    colSpan={filter === 'all' ? 12 : 11}
+                    colSpan={filter === 'all' ? 13 : 12}
                     className="px-5 py-12 text-center text-slate-400 text-sm"
                   >
                     No {filter === 'all' ? '' : filter.replace('_', ' ')} trades found
@@ -566,6 +569,26 @@ export default function OptionsTradesPage() {
                       <td className="px-4 py-2 text-right font-medium tabular-nums text-slate-700 dark:text-slate-300">
                         ${t.strike_price}
                       </td>
+
+                      {/* Effective Price */}
+                      {(() => {
+                        const isCall = t.trade_type === 'sell_call' || t.trade_type === 'buy_call';
+                        const effPrice = isCall
+                          ? t.strike_price + (t.premium || 0)
+                          : t.strike_price - (t.premium || 0);
+                        const isSell = t.trade_type.startsWith('sell_');
+                        const tooltip = isSell
+                          ? `Effective ${isCall ? 'sell' : 'buy'} price if assigned (strike ${isCall ? '+' : '−'} premium)`
+                          : `Breakeven at expiry (strike ${isCall ? '+' : '−'} premium paid)`;
+                        return (
+                          <td
+                            className="px-4 py-2 text-right tabular-nums text-slate-500 dark:text-slate-400 text-xs"
+                            title={tooltip}
+                          >
+                            <span className="cursor-default">${effPrice.toFixed(2)}</span>
+                          </td>
+                        );
+                      })()}
 
                       {/* Net Premium */}
                       <td className="px-4 py-2 text-right tabular-nums">
@@ -690,8 +713,9 @@ export default function OptionsTradesPage() {
         {/* table footer note */}
         <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
           <p className="text-xs text-slate-400">
-            Premium shown as net collected/paid per position (premium × contracts × 100). Option
-            prices reflect mid-market; hover for bid/ask spread.
+            Premium shown as net collected/paid per position (premium × contracts × 100). Eff.
+            Price = strike ± premium/share — hover for details. Option prices reflect mid-market;
+            hover for bid/ask spread.
           </p>
         </div>
       </div>

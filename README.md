@@ -27,8 +27,8 @@ A locally hosted stock portfolio tracker with a React frontend and FastAPI backe
 **Backend:**
 ```bash
 cd backend
-python -m venv .venv
-source .venv/bin/activate
+python -m venv venv
+source venv/bin/activate
 pip install -e ".[dev]"
 alembic upgrade head
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
@@ -266,6 +266,7 @@ $ sqlite3 /home/techysnacks/FinApp_AAG/backend/finance_tracker.db
 $ .tables
 $ UPDATE holdings SET quantity = 15.95, average_buy_price = 427.75 WHERE ticker = 'SMH' AND holding_type = 'etf';
 UPDATE holdings SET quantity = 22.97, average_buy_price = 67.52 WHERE ticker = 'IGPT' AND holding_type = 'etf';
+
 
 ## TO BE IMPLEMENTED
 
