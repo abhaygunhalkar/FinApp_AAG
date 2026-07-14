@@ -324,20 +324,22 @@ class DashboardService:
     def _get_previous_close(db: Session, ticker: str) -> float | None:
         """Get the most recent previous close price for a ticker.
 
-        Looks for the most recent price_history record before today.
-        Returns None if no previous close is available.
+        Uses open_price from the latest price_history record, which stores
+        fast_info.previous_close — the actual prior session close. Avoids
+        comparing against close_price from the prior record, which can equal
+        today's current_price when stock.info returns stale data.
         """
-        today = date.today()
         record = (
             db.query(PriceHistory)
-            .filter(
-                PriceHistory.ticker == ticker,
-                PriceHistory.date < today,
-            )
+            .filter(PriceHistory.ticker == ticker)
             .order_by(PriceHistory.date.desc())
             .first()
         )
-        return record.close_price if record else None
+        if record is None:
+            return None
+        if record.open_price is not None and record.open_price > 0:
+            return record.open_price
+        return record.close_price
 
     @staticmethod
     def _get_last_successful_fetch(db: Session) -> datetime | None:
