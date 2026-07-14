@@ -103,6 +103,7 @@ class MarketDataService:
             try:
                 stock = yf.Ticker(ticker)
                 info = stock.info
+                fast_info = stock.fast_info
 
                 # Validate currentPrice is present and numeric
                 current_price = info.get("currentPrice")
@@ -120,9 +121,19 @@ class MarketDataService:
                     )
                     return None
 
-                previous_close = info.get("previousClose", 0.0)
-                if not isinstance(previous_close, (int, float)):
-                    previous_close = 0.0
+                # fast_info.previous_close is more reliable than stock.info['previousClose'],
+                # which can return stale cached data (e.g. last Thursday's close on a Tuesday).
+                previous_close = 0.0
+                try:
+                    pc = fast_info.previous_close
+                    if pc is not None and not math.isnan(pc) and pc > 0:
+                        previous_close = float(pc)
+                except Exception:
+                    pass
+                if previous_close == 0.0:
+                    fallback = info.get("previousClose", 0.0)
+                    if isinstance(fallback, (int, float)):
+                        previous_close = float(fallback)
 
                 daily_change = float(current_price) - float(previous_close)
                 daily_change_pct = (
