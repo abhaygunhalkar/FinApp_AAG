@@ -209,6 +209,51 @@ class TestUpdateHolding:
             HoldingsService.update_holding(db_session, 999, data)
         assert exc_info.value.status_code == 404
 
+    def test_updates_broker(self, db_session: Session) -> None:
+        holding = Holding(
+            ticker="SOFI",
+            quantity=250.0,
+            average_buy_price=10.0,
+            current_price=12.0,
+            broker="Robinhood",
+        )
+        db_session.add(holding)
+        db_session.commit()
+
+        data = HoldingUpdate(broker="Schwab")
+
+        result = HoldingsService.update_holding(db_session, holding.id, data)
+        assert result.broker == "Schwab"
+
+    def test_rejects_broker_change_that_collides_with_another_holding(
+        self, db_session: Session
+    ) -> None:
+        from fastapi import HTTPException
+
+        robinhood_holding = Holding(
+            ticker="SOFI",
+            quantity=250.0,
+            average_buy_price=10.0,
+            current_price=12.0,
+            broker="Robinhood",
+        )
+        schwab_holding = Holding(
+            ticker="SOFI",
+            quantity=50.0,
+            average_buy_price=9.0,
+            current_price=12.0,
+            broker="Schwab",
+        )
+        db_session.add_all([robinhood_holding, schwab_holding])
+        db_session.commit()
+
+        data = HoldingUpdate(broker="Schwab")
+
+        with pytest.raises(HTTPException) as exc_info:
+            HoldingsService.update_holding(db_session, robinhood_holding.id, data)
+        assert exc_info.value.status_code == 400
+        assert "already exists" in exc_info.value.detail
+
 
 class TestDeleteHolding:
     """Tests for HoldingsService.delete_holding."""

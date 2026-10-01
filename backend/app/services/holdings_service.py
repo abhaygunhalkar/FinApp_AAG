@@ -262,8 +262,10 @@ class HoldingsService:
     ) -> HoldingResponse:
         """Update editable fields of a holding.
 
-        Only company_name, sector, industry, and notes are editable.
-        Raises HTTPException 404 if the holding does not exist.
+        Only company_name, sector, industry, broker, and notes are editable.
+        Raises HTTPException 404 if the holding does not exist, or 400 if
+        changing the broker would collide with another holding of the same
+        ticker and type.
         """
         holding = (
             HoldingsRepository.get_by_id(db, holding_id)
@@ -272,6 +274,20 @@ class HoldingsService:
         )
         if holding is None:
             raise HTTPException(status_code=404, detail="Holding not found")
+
+        if data.broker is not None and data.broker != holding.broker:
+            existing = HoldingsRepository.get_by_ticker_and_type(
+                db, holding.ticker, holding.holding_type, data.broker
+            )
+            if existing is not None and existing.id != holding.id:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"A {holding.holding_type} holding for ticker "
+                        f"'{holding.ticker}' already exists for broker "
+                        f"'{data.broker}'"
+                    ),
+                )
 
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():

@@ -25,6 +25,7 @@ class HoldingUpdate(BaseModel):
     company_name: str | None = None
     sector: str | None = None
     industry: str | None = None
+    broker: str | None = None
     notes: str | None = None
 
 

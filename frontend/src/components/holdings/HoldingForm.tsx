@@ -196,6 +196,7 @@ export default function HoldingForm({ holding, holdingType = 'stock', onClose }:
             company_name: formData.company_name.trim() || undefined,
             sector: formData.sector.trim() || undefined,
             industry: formData.industry.trim() || undefined,
+            broker: formData.broker || undefined,
             notes: formData.notes.trim() || undefined,
           },
         });
