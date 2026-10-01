@@ -22,6 +22,16 @@ class DashboardSummary(BaseModel):
     last_successful_fetch: datetime | None = None
 
 
+class BrokerSummary(BaseModel):
+    """Schema for aggregated holding value per brokerage account."""
+
+    broker: str
+    market_value: float
+    total_invested: float
+    unrealized_gain: float
+    holding_count: int
+
+
 class ActivityEvent(BaseModel):
     """Schema for a portfolio activity event."""
 

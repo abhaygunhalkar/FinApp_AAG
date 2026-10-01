@@ -1,5 +1,11 @@
 import apiClient, { unwrapResponse } from './client';
-import type { ApiResponse, DashboardSummary, ActivityEvent, PortfolioSnapshot } from '../types';
+import type {
+  ApiResponse,
+  DashboardSummary,
+  BrokerSummary,
+  ActivityEvent,
+  PortfolioSnapshot,
+} from '../types';
 
 type SellTransaction = {
   ticker: string;
@@ -9,6 +15,11 @@ type SellTransaction = {
 
 export async function getSummary(): Promise<DashboardSummary> {
   const { data } = await apiClient.get<ApiResponse<DashboardSummary>>('/api/dashboard/summary');
+  return unwrapResponse(data);
+}
+
+export async function getBrokerSummary(): Promise<BrokerSummary[]> {
+  const { data } = await apiClient.get<ApiResponse<BrokerSummary[]>>('/api/dashboard/by-broker');
   return unwrapResponse(data);
 }
 

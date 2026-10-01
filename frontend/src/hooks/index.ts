@@ -8,6 +8,6 @@ export {
   useUpdateWatchlistItem,
   useDeleteWatchlistItem,
 } from './useWatchlist';
-export { useDashboardSummary, useActivity, usePortfolioHistory } from './useDashboard';
+export { useDashboardSummary, useBrokerSummary, useActivity, usePortfolioHistory } from './useDashboard';
 export { useOptions, useOptionsSummary, useOpenTradeQuotes, useCreateOption, useUpdateOption, useDeleteOption } from './useOptions';
 export { useMarketQuote, useMarketHistory } from './useMarket';

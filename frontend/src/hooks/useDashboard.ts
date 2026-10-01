@@ -1,10 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
-import { getSummary, getActivity, getHistory, getSellHistory } from '../api';
+import { getSummary, getBrokerSummary, getActivity, getHistory, getSellHistory } from '../api';
 
 export function useDashboardSummary() {
   return useQuery({
     queryKey: ['dashboard', 'summary'],
     queryFn: getSummary,
+  });
+}
+
+export function useBrokerSummary() {
+  return useQuery({
+    queryKey: ['dashboard', 'by-broker'],
+    queryFn: getBrokerSummary,
   });
 }
 

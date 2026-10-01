@@ -251,6 +251,91 @@ class TestGetSummary:
         assert result.last_successful_fetch == fetch_time
 
 
+class TestGetBrokerSummary:
+    """Tests for DashboardService.get_broker_summary."""
+
+    def test_returns_empty_list_when_no_holdings(self, db_session: Session) -> None:
+        result = DashboardService.get_broker_summary(db_session)
+        assert result == []
+
+    def test_aggregates_market_value_by_broker(self, db_session: Session) -> None:
+        holdings = [
+            Holding(
+                ticker="AAPL",
+                quantity=10.0,
+                average_buy_price=150.0,
+                current_price=175.0,
+                broker="Robinhood",
+            ),
+            Holding(
+                ticker="MSFT",
+                quantity=5.0,
+                average_buy_price=300.0,
+                current_price=320.0,
+                broker="Robinhood",
+            ),
+            Holding(
+                ticker="VOO",
+                quantity=2.0,
+                average_buy_price=400.0,
+                current_price=420.0,
+                holding_type="etf",
+                broker="Schwab",
+            ),
+        ]
+        db_session.add_all(holdings)
+        db_session.commit()
+
+        result = DashboardService.get_broker_summary(db_session)
+
+        by_broker = {r.broker: r for r in result}
+        assert by_broker["Robinhood"].market_value == 10 * 175.0 + 5 * 320.0
+        assert by_broker["Robinhood"].total_invested == 10 * 150.0 + 5 * 300.0
+        assert by_broker["Robinhood"].holding_count == 2
+        assert by_broker["Schwab"].market_value == 2 * 420.0
+        assert by_broker["Schwab"].holding_count == 1
+
+    def test_groups_holdings_without_broker_as_unassigned(
+        self, db_session: Session
+    ) -> None:
+        holding = Holding(
+            ticker="AAPL",
+            quantity=10.0,
+            average_buy_price=150.0,
+            current_price=175.0,
+        )
+        db_session.add(holding)
+        db_session.commit()
+
+        result = DashboardService.get_broker_summary(db_session)
+        assert len(result) == 1
+        assert result[0].broker == "Unassigned"
+        assert result[0].market_value == 1750.0
+
+    def test_sorted_by_market_value_descending(self, db_session: Session) -> None:
+        holdings = [
+            Holding(
+                ticker="AAPL",
+                quantity=1.0,
+                average_buy_price=100.0,
+                current_price=100.0,
+                broker="Small",
+            ),
+            Holding(
+                ticker="MSFT",
+                quantity=100.0,
+                average_buy_price=100.0,
+                current_price=100.0,
+                broker="Big",
+            ),
+        ]
+        db_session.add_all(holdings)
+        db_session.commit()
+
+        result = DashboardService.get_broker_summary(db_session)
+        assert [r.broker for r in result] == ["Big", "Small"]
+
+
 class TestGetActivityFeed:
     """Tests for DashboardService.get_activity_feed."""
 

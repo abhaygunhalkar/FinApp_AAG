@@ -1,6 +1,7 @@
 import { useDashboardSummary, useOptions } from '../hooks';
 import {
   MetricsCards,
+  BrokerTiles,
   PortfolioGrowthChart,
   MonthlyGainLossChart,
   SectorAllocationChart,
@@ -106,6 +107,8 @@ export default function Dashboard() {
       )}
 
       <MetricsCards data={summary} />
+
+      <BrokerTiles />
 
       {/* Options summary stat cards (premium collected/paid, net premium, realized P&L) */}
       <OptionsStats />

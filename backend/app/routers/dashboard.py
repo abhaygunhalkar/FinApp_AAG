@@ -5,7 +5,12 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.schemas.common import ApiResponse
-from app.schemas.dashboard import ActivityEvent, DashboardSummary, PortfolioSnapshot
+from app.schemas.dashboard import (
+    ActivityEvent,
+    BrokerSummary,
+    DashboardSummary,
+    PortfolioSnapshot,
+)
 from app.services.dashboard_service import DashboardService
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
@@ -17,6 +22,15 @@ def get_dashboard_summary(
 ) -> ApiResponse[DashboardSummary]:
     """Return aggregate portfolio metrics including stale_data and last_successful_fetch."""
     summary = DashboardService.get_summary(db)
+    return ApiResponse(success=True, data=summary, error=None)
+
+
+@router.get("/by-broker", response_model=ApiResponse[list[BrokerSummary]])
+def get_dashboard_by_broker(
+    db: Session = Depends(get_db),
+) -> ApiResponse[list[BrokerSummary]]:
+    """Return market value aggregated by brokerage account."""
+    summary = DashboardService.get_broker_summary(db)
     return ApiResponse(success=True, data=summary, error=None)
 
 

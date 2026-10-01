@@ -1,4 +1,5 @@
 export { default as MetricsCards } from './MetricsCards';
+export { default as BrokerTiles } from './BrokerTiles';
 export { default as ActivityFeed } from './ActivityFeed';
 export { default as PortfolioGrowthChart } from './PortfolioGrowthChart';
 export { default as MonthlyGainLossChart } from './MonthlyGainLossChart';

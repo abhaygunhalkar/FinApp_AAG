@@ -75,6 +75,31 @@ def test_get_summary_with_holdings(test_client: TestClient) -> None:
     assert "last_successful_fetch" in data
 
 
+def test_get_by_broker_empty_portfolio(test_client: TestClient) -> None:
+    """GET /api/dashboard/by-broker returns an empty list when no holdings exist."""
+    response = test_client.get("/api/dashboard/by-broker")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["error"] is None
+    assert body["data"] == []
+
+
+@pytest.mark.usefixtures("_seed_data")
+def test_get_by_broker_with_holdings(test_client: TestClient) -> None:
+    """GET /api/dashboard/by-broker aggregates market value per broker."""
+    response = test_client.get("/api/dashboard/by-broker")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    data = body["data"]
+    assert len(data) == 1
+    assert data[0]["market_value"] == 1750.0
+    assert data[0]["total_invested"] == 1500.0
+    assert data[0]["unrealized_gain"] == 250.0
+    assert data[0]["holding_count"] == 1
+
+
 def test_get_activity_empty(test_client: TestClient) -> None:
     """GET /api/dashboard/activity returns empty list when no events."""
     response = test_client.get("/api/dashboard/activity")

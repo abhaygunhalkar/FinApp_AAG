@@ -8,6 +8,6 @@ export {
   updateWatchlistItem,
   deleteWatchlistItem,
 } from './watchlist';
-export { getSummary, getActivity, getHistory, getSellHistory } from './dashboard';
+export { getSummary, getBrokerSummary, getActivity, getHistory, getSellHistory } from './dashboard';
 export { getOptions, getOption, createOption, updateOption, deleteOption, getOptionsSummary } from './options';
 export { getQuote, getHistory as getMarketHistory } from './market';

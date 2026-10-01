@@ -15,7 +15,12 @@ from app.repositories.holdings_repository import HoldingsRepository
 from app.repositories.price_history_repository import PriceHistoryRepository
 from app.repositories.transaction_repository import TransactionRepository
 from app.repositories.watchlist_repository import WatchlistRepository
-from app.schemas.dashboard import ActivityEvent, DashboardSummary, PortfolioSnapshot
+from app.schemas.dashboard import (
+    ActivityEvent,
+    BrokerSummary,
+    DashboardSummary,
+    PortfolioSnapshot,
+)
 
 
 class DashboardService:
@@ -95,6 +100,37 @@ class DashboardService:
             stale_data=stale_data,
             last_successful_fetch=last_successful_fetch,
         )
+
+    @staticmethod
+    def get_broker_summary(db: Session) -> list[BrokerSummary]:
+        """Aggregate market value by brokerage account across all holdings.
+
+        Holdings without a broker set are grouped under "Unassigned".
+        Sorted by market_value descending.
+        """
+        holdings = HoldingsRepository.get_all(db)
+
+        totals: dict[str, dict[str, float]] = defaultdict(
+            lambda: {"market_value": 0.0, "total_invested": 0.0, "holding_count": 0.0}
+        )
+        for h in holdings:
+            broker = h.broker or "Unassigned"
+            totals[broker]["market_value"] += h.current_price * h.quantity
+            totals[broker]["total_invested"] += h.average_buy_price * h.quantity
+            totals[broker]["holding_count"] += 1
+
+        summaries = [
+            BrokerSummary(
+                broker=broker,
+                market_value=values["market_value"],
+                total_invested=values["total_invested"],
+                unrealized_gain=values["market_value"] - values["total_invested"],
+                holding_count=int(values["holding_count"]),
+            )
+            for broker, values in totals.items()
+        ]
+        summaries.sort(key=lambda s: s.market_value, reverse=True)
+        return summaries
 
     @staticmethod
     def get_activity_feed(db: Session, limit: int = 20) -> list[ActivityEvent]:

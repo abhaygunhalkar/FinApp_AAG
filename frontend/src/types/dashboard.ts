@@ -12,6 +12,14 @@ export interface DashboardSummary {
   last_successful_fetch: string | null;
 }
 
+export interface BrokerSummary {
+  broker: string;
+  market_value: number;
+  total_invested: number;
+  unrealized_gain: number;
+  holding_count: number;
+}
+
 export interface ActivityEvent {
   event_type: 'holding_added' | 'stock_sold' | 'watchlist_added' | 'watchlist_removed' | 'notes_updated';
   ticker: string;
