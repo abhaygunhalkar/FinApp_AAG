@@ -176,28 +176,31 @@ class HoldingsService:
         """Create a new holding with an initial buy transaction.
 
         Steps:
-        1. Check if ticker already exists for this holding type
+        1. Check if ticker already exists for this holding type and broker
         2. Fetch current market price from yfinance
         3. Create Holding record
         4. Create initial Transaction record (type="buy", quantity and price
            from input, date=today)
         5. Decrease cash balance by (quantity × buy_price)
 
-        Raises HTTPException 400 if ticker already exists.
+        Raises HTTPException 400 if ticker already exists for this broker.
         """
         from app.services.market_data_service import MarketDataService
 
         # Remove any stale zero-quantity holdings before duplicate checks
         HoldingsRepository.delete_zero_quantity_holdings(db)
 
-        # Check for duplicate ticker in this holding type
+        # Check for duplicate ticker in this holding type and broker
         existing = HoldingsRepository.get_by_ticker_and_type(
-            db, data.ticker, holding_type
+            db, data.ticker, holding_type, data.broker
         )
         if existing is not None:
             raise HTTPException(
                 status_code=400,
-                detail=f"A {holding_type} holding for ticker '{data.ticker}' already exists",
+                detail=(
+                    f"A {holding_type} holding for ticker '{data.ticker}' "
+                    f"already exists for broker '{data.broker}'"
+                ),
             )
 
         # Fetch current market price

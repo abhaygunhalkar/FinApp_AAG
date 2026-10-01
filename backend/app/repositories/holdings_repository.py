@@ -38,14 +38,15 @@ class HoldingsRepository:
 
     @staticmethod
     def get_by_ticker_and_type(
-        db: Session, ticker: str, holding_type: str
+        db: Session, ticker: str, holding_type: str, broker: str | None = None
     ) -> Holding | None:
-        """Retrieve an active holding by ticker and type."""
+        """Retrieve an active holding by ticker, type, and broker."""
         return (
             db.query(Holding)
             .filter(
                 Holding.ticker == ticker,
                 Holding.holding_type == holding_type,
+                Holding.broker == broker,
                 Holding.quantity > ACTIVE_QUANTITY_THRESHOLD,
             )
             .first()

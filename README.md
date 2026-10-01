@@ -264,8 +264,12 @@ Directly update database, as ETF as being purchased weekly using SIP.
 
 $ sqlite3 /home/techysnacks/FinApp_AAG/backend/finance_tracker.db
 $ .tables
-$ UPDATE holdings SET quantity = 15.95, average_buy_price = 427.75 WHERE ticker = 'SMH' AND holding_type = 'etf';
-UPDATE holdings SET quantity = 22.97, average_buy_price = 67.52 WHERE ticker = 'IGPT' AND holding_type = 'etf';
+$ 
+UPDATE holdings SET quantity = 21.805744, average_buy_price = 467.81 WHERE ticker = 'SMH' AND holding_type = 'etf';
+UPDATE holdings SET quantity = 30.909, average_buy_price = 74.45 WHERE ticker = 'IGPT' AND holding_type = 'etf';
+UPDATE holdings SET quantity = 16.389, average_buy_price = 659.30 WHERE ticker = 'VOO' AND holding_type = 'etf';
+UPDATE holdings SET quantity = 102.746, average_buy_price = 77.62 WHERE ticker = 'VOOG' AND holding_type = 'etf';
+
 
 
 ## TO BE IMPLEMENTED

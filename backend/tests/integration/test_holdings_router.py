@@ -144,6 +144,24 @@ def test_create_holding_duplicate_ticker(test_client: TestClient) -> None:
     assert "already exists" in body["error"].lower()
 
 
+@pytest.mark.usefixtures("_seed_holding")
+def test_create_holding_same_ticker_different_broker_allowed(
+    test_client: TestClient,
+) -> None:
+    """POST /api/holdings allows the same ticker under a different broker."""
+    payload = {
+        "ticker": "AAPL",
+        "quantity": 5.0,
+        "buy_price": 160.0,
+        "broker": "Fidelity",
+    }
+    response = test_client.post("/api/holdings", json=payload)
+    assert response.status_code == 201
+    body = response.json()
+    assert body["success"] is True
+    assert body["data"]["broker"] == "Fidelity"
+
+
 def test_create_holding_invalid_ticker_422(test_client: TestClient) -> None:
     """POST /api/holdings returns 422 for invalid ticker format."""
     payload = {

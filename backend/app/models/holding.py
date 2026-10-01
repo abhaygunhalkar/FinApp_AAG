@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Float, String, Text, func
+from sqlalchemy import DateTime, Float, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -16,9 +16,14 @@ class Holding(Base):
     """Represents a stock holding in the user's portfolio."""
 
     __tablename__ = "holdings"
+    __table_args__ = (
+        UniqueConstraint(
+            "ticker", "holding_type", "broker", name="uq_holdings_ticker_type_broker"
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    ticker: Mapped[str] = mapped_column(String(10), unique=True, nullable=False)
+    ticker: Mapped[str] = mapped_column(String(10), nullable=False)
     company_name: Mapped[str] = mapped_column(String(200), nullable=True)
     quantity: Mapped[float] = mapped_column(Float, nullable=False)
     average_buy_price: Mapped[float] = mapped_column(Float, nullable=False)
