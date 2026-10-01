@@ -10,15 +10,15 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-// Fixed, ordered set of gradients so broker tiles stay visually distinct and
-// stable across renders; brokers beyond this list fall back to slate.
+// Fixed, ordered set of gradients so broker tiles stay visually distinct from
+// each other AND from the metric cards above (blue, indigo, violet, green,
+// amber, red are already taken); brokers beyond this list fall back to slate.
 const GRADIENTS = [
-  'from-blue-500 to-blue-700 shadow-blue-500/20',
-  'from-violet-500 to-violet-700 shadow-violet-500/20',
-  'from-emerald-500 to-emerald-700 shadow-emerald-500/20',
-  'from-amber-500 to-amber-700 shadow-amber-500/20',
-  'from-rose-500 to-rose-700 shadow-rose-500/20',
+  'from-teal-500 to-teal-700 shadow-teal-500/20',
+  'from-fuchsia-500 to-fuchsia-700 shadow-fuchsia-500/20',
   'from-cyan-500 to-cyan-700 shadow-cyan-500/20',
+  'from-lime-500 to-lime-700 shadow-lime-500/20',
+  'from-pink-500 to-pink-700 shadow-pink-500/20',
 ];
 const FALLBACK_GRADIENT = 'from-slate-500 to-slate-700 shadow-slate-500/20';
 
