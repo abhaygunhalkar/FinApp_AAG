@@ -93,11 +93,6 @@ export default function HoldingRow({ holding, hasOpenOption = false }: HoldingRo
           {fmt(holding.current_price)}
         </td>
 
-        {/* Day Change $ */}
-        <td className={`${td} text-right font-medium ${dayClass}`}>
-          {fmtSigned(holding.daily_change)}
-        </td>
-
         {/* Day Change % */}
         <td className={`${td} text-right font-medium ${dayClass}`}>
           {fmtSignedPct(holding.daily_change_pct)}
