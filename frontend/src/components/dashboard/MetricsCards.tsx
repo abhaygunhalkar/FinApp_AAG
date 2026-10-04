@@ -1,4 +1,5 @@
 import type { DashboardSummary } from '../../types';
+import BrokerTiles from './BrokerTiles';
 
 interface MetricsCardsProps {
   data: DashboardSummary;
@@ -91,6 +92,7 @@ export default function MetricsCards({ data }: MetricsCardsProps) {
           <p className="text-sm font-medium text-blue-100">Total Portfolio Value</p>
           <p className="mt-2 text-2xl font-bold text-white">{formatCurrency(data.total_portfolio_value)}</p>
         </div>
+        <BrokerTiles />
         <div className="rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 p-5 shadow-lg shadow-indigo-500/20">
           <p className="text-sm font-medium text-indigo-100">Total Invested</p>
           <p className="mt-2 text-2xl font-bold text-white">{formatCurrency(data.total_invested)}</p>

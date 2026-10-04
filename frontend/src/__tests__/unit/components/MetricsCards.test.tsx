@@ -1,7 +1,16 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import MetricsCards from '../../../components/dashboard/MetricsCards';
-import type { DashboardSummary } from '../../../types';
+import type { DashboardSummary, BrokerSummary } from '../../../types';
+
+const mockUseBrokerSummary = vi.fn();
+vi.mock('../../../hooks', () => ({
+  useBrokerSummary: () => mockUseBrokerSummary(),
+}));
+
+beforeEach(() => {
+  mockUseBrokerSummary.mockReturnValue({ data: [] });
+});
 
 const mockSummary: DashboardSummary = {
   total_portfolio_value: 125000.5,
@@ -125,5 +134,32 @@ describe('MetricsCards', () => {
     render(<MetricsCards data={staleData} />);
 
     expect(screen.getByText(/Never/)).toBeInTheDocument();
+  });
+
+  it('places broker tiles between Total Portfolio Value and Total Invested', () => {
+    const brokers: BrokerSummary[] = [
+      {
+        broker: 'Schwab',
+        market_value: 104257.25,
+        total_invested: 107121.5,
+        unrealized_gain: -2864.25,
+        holding_count: 9,
+      },
+      {
+        broker: 'Robinhood',
+        market_value: 99938.84,
+        total_invested: 146920.95,
+        unrealized_gain: -46982.11,
+        holding_count: 18,
+      },
+    ];
+    mockUseBrokerSummary.mockReturnValue({ data: brokers });
+
+    render(<MetricsCards data={mockSummary} />);
+
+    const labels = screen
+      .getAllByText(/Total Portfolio Value|Total Invested|Schwab|Robinhood/)
+      .map((el) => el.textContent);
+    expect(labels).toEqual(['Total Portfolio Value', 'Schwab', 'Robinhood', 'Total Invested']);
   });
 });

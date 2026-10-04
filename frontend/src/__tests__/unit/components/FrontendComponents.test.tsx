@@ -10,6 +10,10 @@ import type { Holding } from '../../../types';
 import type { WatchlistItem } from '../../../types';
 import type { DashboardSummary } from '../../../types';
 
+vi.mock('../../../hooks', () => ({
+  useBrokerSummary: () => ({ data: [] }),
+}));
+
 // --- Test Data Factories ---
 
 function createHolding(overrides: Partial<Holding> = {}): Holding {

@@ -27,7 +27,7 @@ const mockBrokers: BrokerSummary[] = [
 
 describe('BrokerTiles', () => {
   it('renders a tile per broker with market value and gain', () => {
-    mockUseBrokerSummary.mockReturnValue({ data: mockBrokers, isLoading: false });
+    mockUseBrokerSummary.mockReturnValue({ data: mockBrokers });
     render(<BrokerTiles />);
 
     expect(screen.getByText('Robinhood')).toBeInTheDocument();
@@ -42,16 +42,16 @@ describe('BrokerTiles', () => {
   });
 
   it('renders nothing when there are no brokers', () => {
-    mockUseBrokerSummary.mockReturnValue({ data: [], isLoading: false });
+    mockUseBrokerSummary.mockReturnValue({ data: [] });
     const { container } = render(<BrokerTiles />);
 
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('shows a loading spinner while fetching', () => {
-    mockUseBrokerSummary.mockReturnValue({ data: undefined, isLoading: true });
-    render(<BrokerTiles />);
+  it('renders nothing while data has not loaded yet', () => {
+    mockUseBrokerSummary.mockReturnValue({ data: undefined });
+    const { container } = render(<BrokerTiles />);
 
-    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(container).toBeEmptyDOMElement();
   });
 });
