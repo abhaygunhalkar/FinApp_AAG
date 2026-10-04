@@ -9,7 +9,7 @@ interface MetricCardProps {
   label: string;
   value: string;
   changeValue?: number;
-  variant?: 'default' | 'blue' | 'purple';
+  variant?: 'default' | 'blue' | 'purple' | 'peacock';
 }
 
 function formatCurrency(value: number): string {
@@ -38,6 +38,8 @@ function MetricCard({ label, value, changeValue, variant = 'default' }: MetricCa
       ? 'bg-gradient-to-br from-sky-700 via-sky-800 to-sky-900 text-white shadow-sky-700/40 border border-transparent'
       : variant === 'purple'
       ? 'bg-gradient-to-br from-violet-700 via-violet-800 to-violet-900 text-white shadow-violet-700/40 border border-transparent'
+      : variant === 'peacock'
+      ? 'bg-gradient-to-br from-teal-700 via-teal-800 to-teal-900 text-white shadow-teal-700/40 border border-transparent'
       : 'border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white';
   const labelClasses = variant === 'default' ? 'text-sm font-medium text-slate-500 dark:text-slate-400' : 'text-sm font-medium text-white/90';
   const valueClasses = variant === 'default' ? 'mt-2 text-2xl font-bold text-slate-900 dark:text-white' : 'mt-2 text-2xl font-bold text-white';
@@ -112,6 +114,7 @@ export default function MetricsCards({ data }: MetricsCardsProps) {
           label="Realized Gain/Loss"
           value={formatCurrency(data.realized_gain)}
           changeValue={data.realized_gain}
+          variant="peacock"
         />
         <div className={`rounded-xl p-5 shadow-lg ${
           data.daily_change > 0
