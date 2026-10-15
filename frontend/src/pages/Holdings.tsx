@@ -19,15 +19,17 @@ function StatCard({
   value,
   valueClass = '',
   sub,
+  bgClass = 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700',
 }: {
   label: string;
   value: string;
   valueClass?: string;
   sub?: string;
+  bgClass?: string;
 }) {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 px-5 py-4 flex flex-col gap-1 shadow-sm">
-      <span className="text-xs font-medium text-slate-400 uppercase tracking-widest">{label}</span>
+    <div className={`${bgClass} rounded-xl border px-5 py-4 flex flex-col gap-1 shadow-sm`}>
+      <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest">{label}</span>
       <span className={`text-2xl font-bold tabular-nums ${valueClass}`}>{value}</span>
       {sub && <span className="text-xs text-slate-400">{sub}</span>}
     </div>
@@ -133,27 +135,36 @@ export default function Holdings() {
 
       {/* ── stat cards ── */}
       {holdingsList.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           <StatCard
             label="Holdings"
             value={String(holdingsList.length)}
             valueClass="text-slate-800 dark:text-white"
+            bgClass="bg-slate-100 dark:bg-slate-700/60 border-slate-300 dark:border-slate-600"
+          />
+          <StatCard
+            label="Total Invested"
+            value={fmt(stats.totalInvested)}
+            valueClass="text-slate-800 dark:text-white"
+            bgClass="bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800"
           />
           <StatCard
             label="Total Value"
             value={fmt(stats.totalValue)}
             valueClass="text-slate-800 dark:text-white"
+            bgClass="bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800"
           />
           <StatCard
             label="Unrealized Gain/Loss"
             value={`${stats.totalGain >= 0 ? '+' : ''}${fmt(stats.totalGain)}`}
             valueClass={stats.totalGain >= 0 ? 'text-emerald-600' : 'text-red-500'}
-            sub={`Cost basis ${fmt(stats.totalInvested)}`}
+            bgClass="bg-teal-50 dark:bg-teal-900/30 border-teal-200 dark:border-teal-800"
           />
           <StatCard
             label="Day's Change"
             value={`${stats.dailyChange >= 0 ? '+' : ''}${fmt(stats.dailyChange)}`}
             valueClass={stats.dailyChange >= 0 ? 'text-emerald-600' : 'text-red-500'}
+            bgClass="bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800"
           />
         </div>
       )}
