@@ -133,31 +133,31 @@ export default function ETFHoldings() {
             label="ETF Positions"
             value={String(holdingsList.length)}
             valueClass="text-slate-800 dark:text-white"
-            bgClass="bg-slate-100 dark:bg-slate-700/60 border-slate-300 dark:border-slate-600"
+            bgClass="bg-slate-200 border-2 border-slate-400 dark:bg-slate-700 dark:border-slate-500"
           />
           <StatCard
             label="Total Invested"
             value={fmt(stats.totalInvested)}
-            valueClass="text-slate-800 dark:text-white"
-            bgClass="bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800"
+            valueClass="text-blue-900 dark:text-blue-100"
+            bgClass="bg-blue-100 border-2 border-blue-300 dark:bg-blue-900/50 dark:border-blue-600"
           />
           <StatCard
             label="Total Value"
             value={fmt(stats.totalValue)}
-            valueClass="text-slate-800 dark:text-white"
-            bgClass="bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800"
+            valueClass="text-violet-900 dark:text-violet-100"
+            bgClass="bg-violet-100 border-2 border-violet-300 dark:bg-violet-900/50 dark:border-violet-600"
           />
           <StatCard
             label="Unrealized Gain/Loss"
             value={`${stats.totalGain >= 0 ? '+' : ''}${fmt(stats.totalGain)}`}
-            valueClass={stats.totalGain >= 0 ? 'text-emerald-600' : 'text-red-500'}
-            bgClass="bg-teal-50 dark:bg-teal-900/30 border-teal-200 dark:border-teal-800"
+            valueClass={stats.totalGain >= 0 ? 'text-emerald-700' : 'text-red-600'}
+            bgClass="bg-emerald-100 border-2 border-emerald-300 dark:bg-emerald-900/50 dark:border-emerald-600"
           />
           <StatCard
             label="Day's Change"
             value={`${stats.dailyChange >= 0 ? '+' : ''}${fmt(stats.dailyChange)}`}
-            valueClass={stats.dailyChange >= 0 ? 'text-emerald-600' : 'text-red-500'}
-            bgClass="bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800"
+            valueClass={stats.dailyChange >= 0 ? 'text-emerald-700' : 'text-red-600'}
+            bgClass="bg-amber-100 border-2 border-amber-300 dark:bg-amber-900/50 dark:border-amber-600"
           />
         </div>
       )}
