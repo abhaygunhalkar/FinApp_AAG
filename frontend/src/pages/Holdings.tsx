@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useHoldings } from '../hooks/useHoldings';
 import { useOptions } from '../hooks/useOptions';
+import { useMonthlyRealizedGain } from '../hooks';
 import { HoldingsTable, SearchFilter, HoldingForm } from '../components/holdings';
 import { LoadingSpinner } from '../components/shared';
 import apiClient from '../api/client';
@@ -39,6 +40,7 @@ function StatCard({
 export default function Holdings() {
   const { data: holdings, isLoading, isError } = useHoldings();
   const { data: options } = useOptions();
+  const { data: sellHistory } = useMonthlyRealizedGain();
 
   const openOptionTickers = useMemo(
     () => new Set((options ?? []).filter((o) => o.status === 'open').map((o) => o.ticker)),
@@ -68,8 +70,12 @@ export default function Holdings() {
     const totalInvested = holdingsList.reduce((s, h) => s + h.total_invested, 0);
     const totalGain = holdingsList.reduce((s, h) => s + h.unrealized_gain, 0);
     const dailyChange = holdingsList.reduce((s, h) => s + h.daily_change, 0);
-    return { totalValue, totalInvested, totalGain, dailyChange };
-  }, [holdingsList]);
+    const currentYear = new Date().getFullYear().toString();
+    const ytdRealizedGain = (sellHistory ?? [])
+      .filter((t) => t.transaction_date.startsWith(currentYear))
+      .reduce((s, t) => s + t.realized_gain, 0);
+    return { totalValue, totalInvested, totalGain, dailyChange, ytdRealizedGain };
+  }, [holdingsList, sellHistory]);
 
   if (isLoading) {
     return (
@@ -135,7 +141,7 @@ export default function Holdings() {
 
       {/* ── stat cards ── */}
       {holdingsList.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <StatCard
             label="Holdings"
             value={String(holdingsList.length)}
@@ -165,6 +171,12 @@ export default function Holdings() {
             value={`${stats.dailyChange >= 0 ? '+' : ''}${fmt(stats.dailyChange)}`}
             valueClass={stats.dailyChange >= 0 ? 'text-emerald-700' : 'text-red-600'}
             bgClass="bg-amber-100 border-2 border-amber-300 dark:bg-amber-900/50 dark:border-amber-600"
+          />
+          <StatCard
+            label="Realized Gain (YTD)"
+            value={`${stats.ytdRealizedGain >= 0 ? '+' : ''}${fmt(stats.ytdRealizedGain)}`}
+            valueClass={stats.ytdRealizedGain >= 0 ? 'text-emerald-700' : 'text-red-600'}
+            bgClass="bg-sky-100 border-2 border-sky-300 dark:bg-sky-900/50 dark:border-sky-600"
           />
         </div>
       )}
