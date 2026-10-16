@@ -37,6 +37,18 @@ class HoldingsRepository:
         )
 
     @staticmethod
+    def get_all_by_ticker(db: Session, ticker: str) -> list[Holding]:
+        """Retrieve all active holdings for a ticker (may span multiple brokers)."""
+        return list(
+            db.query(Holding)
+            .filter(
+                Holding.ticker == ticker,
+                Holding.quantity > ACTIVE_QUANTITY_THRESHOLD,
+            )
+            .all()
+        )
+
+    @staticmethod
     def get_by_ticker_and_type(
         db: Session, ticker: str, holding_type: str, broker: str | None = None
     ) -> Holding | None:

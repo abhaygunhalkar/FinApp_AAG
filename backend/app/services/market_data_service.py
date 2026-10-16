@@ -335,9 +335,9 @@ class MarketDataService:
                     )
                     continue
 
-                # Update current_price on holdings
-                holding = HoldingsRepository.get_by_ticker(db, ticker)
-                if holding is not None:
+                # Update current_price on all holdings for this ticker
+                # (same ticker may exist in multiple broker accounts)
+                for holding in HoldingsRepository.get_all_by_ticker(db, ticker):
                     holding.current_price = quote.current_price
                     holding.dividend_yield = quote.dividend_yield
                     db.add(holding)
