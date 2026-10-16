@@ -44,22 +44,24 @@ export default function SearchFilter({ holdings, scope = 'holdings' }: SearchFil
         />
       </div>
 
-      {/* Sector */}
-      <select
-        id="sector-filter"
-        value={filter.sector ?? ''}
-        onChange={(e) =>
-          setFilter({ sector: e.target.value === '' ? null : e.target.value })
-        }
-        className={selectClass}
-      >
-        <option value="">All Sectors</option>
-        {sectors.map((sector) => (
-          <option key={sector} value={sector}>
-            {sector}
-          </option>
-        ))}
-      </select>
+      {/* Sector — only shown when there are sectors to filter by */}
+      {scope !== 'etf' && sectors.length > 0 && (
+        <select
+          id="sector-filter"
+          value={filter.sector ?? ''}
+          onChange={(e) =>
+            setFilter({ sector: e.target.value === '' ? null : e.target.value })
+          }
+          className={selectClass}
+        >
+          <option value="">All Sectors</option>
+          {sectors.map((sector) => (
+            <option key={sector} value={sector}>
+              {sector}
+            </option>
+          ))}
+        </select>
+      )}
 
       {/* Performance */}
       <select
