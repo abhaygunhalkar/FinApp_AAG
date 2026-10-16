@@ -121,7 +121,7 @@ export default function HoldingsTable({ holdings, openOptionTickers, scope = 'ho
       result = result.filter((h) => h.unrealized_gain < 0);
     }
 
-    const { sortColumn, sortDirection } = holdingsFilter;
+    const { sortColumn, sortDirection } = holdingsFilterActive;
     result.sort((a, b) => {
       const aVal = a[sortColumn as keyof Holding];
       const bVal = b[sortColumn as keyof Holding];
@@ -138,7 +138,7 @@ export default function HoldingsTable({ holdings, openOptionTickers, scope = 'ho
     });
 
     return result;
-  }, [holdings, holdingsFilter]);
+  }, [holdings, holdingsFilterActive]);
 
   const handleSort = (column: string) => {
     if (holdingsFilterActive.sortColumn === column) {
