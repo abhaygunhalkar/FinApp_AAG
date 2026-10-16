@@ -163,10 +163,10 @@ export default function ETFHoldings() {
       )}
 
       {/* ── search / filter bar ── */}
-      <SearchFilter holdings={holdingsList} />
+      <SearchFilter holdings={holdingsList} scope="etf" />
 
       {/* ── table ── */}
-      <HoldingsTable holdings={holdingsList} />
+      <HoldingsTable holdings={holdingsList} scope="etf" />
 
       {showAddForm && <HoldingForm holdingType="etf" onClose={() => setShowAddForm(false)} />}
     </div>

@@ -12,9 +12,11 @@ export interface UIState {
   theme: 'light' | 'dark';
   sidebarCollapsed: boolean;
   holdingsFilter: HoldingsFilter;
+  etfFilter: HoldingsFilter;
   setTheme: (theme: 'light' | 'dark') => void;
   toggleSidebar: () => void;
   setHoldingsFilter: (filter: Partial<HoldingsFilter>) => void;
+  setEtfFilter: (filter: Partial<HoldingsFilter>) => void;
 }
 
 function getInitialTheme(): 'light' | 'dark' {
@@ -29,16 +31,19 @@ function getInitialTheme(): 'light' | 'dark' {
   return 'light';
 }
 
+const defaultFilter: HoldingsFilter = {
+  search: '',
+  sector: null,
+  performance: 'all',
+  sortColumn: 'ticker',
+  sortDirection: 'asc',
+};
+
 export const useUIStore = create<UIState>((set) => ({
   theme: getInitialTheme(),
   sidebarCollapsed: false,
-  holdingsFilter: {
-    search: '',
-    sector: null,
-    performance: 'all',
-    sortColumn: 'ticker',
-    sortDirection: 'asc',
-  },
+  holdingsFilter: { ...defaultFilter },
+  etfFilter: { ...defaultFilter },
 
   setTheme: (theme) => {
     try {
@@ -56,6 +61,12 @@ export const useUIStore = create<UIState>((set) => ({
   setHoldingsFilter: (filter) => {
     set((state) => ({
       holdingsFilter: { ...state.holdingsFilter, ...filter },
+    }));
+  },
+
+  setEtfFilter: (filter) => {
+    set((state) => ({
+      etfFilter: { ...state.etfFilter, ...filter },
     }));
   },
 }));

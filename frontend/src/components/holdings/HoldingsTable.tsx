@@ -7,6 +7,7 @@ import type { Holding } from '../../types';
 interface HoldingsTableProps {
   holdings: Holding[];
   openOptionTickers?: Set<string>;
+  scope?: 'holdings' | 'etf';
 }
 
 type SortColumn = keyof Holding | string;
@@ -93,14 +94,16 @@ function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
   );
 }
 
-export default function HoldingsTable({ holdings, openOptionTickers }: HoldingsTableProps) {
-  const { holdingsFilter, setHoldingsFilter } = useUIStore();
+export default function HoldingsTable({ holdings, openOptionTickers, scope = 'holdings' }: HoldingsTableProps) {
+  const { holdingsFilter, setHoldingsFilter, etfFilter, setEtfFilter } = useUIStore();
+  const holdingsFilterActive = scope === 'etf' ? etfFilter : holdingsFilter;
+  const setHoldingsFilterActive = scope === 'etf' ? setEtfFilter : setHoldingsFilter;
 
   const filteredAndSorted = useMemo(() => {
     let result = [...holdings];
 
-    if (holdingsFilter.search) {
-      const searchLower = holdingsFilter.search.toLowerCase();
+    if (holdingsFilterActive.search) {
+      const searchLower = holdingsFilterActive.search.toLowerCase();
       result = result.filter(
         (h) =>
           h.ticker.toLowerCase().includes(searchLower) ||
@@ -108,13 +111,13 @@ export default function HoldingsTable({ holdings, openOptionTickers }: HoldingsT
       );
     }
 
-    if (holdingsFilter.sector) {
-      result = result.filter((h) => h.sector === holdingsFilter.sector);
+    if (holdingsFilterActive.sector) {
+      result = result.filter((h) => h.sector === holdingsFilterActive.sector);
     }
 
-    if (holdingsFilter.performance === 'gainers') {
+    if (holdingsFilterActive.performance === 'gainers') {
       result = result.filter((h) => h.unrealized_gain > 0);
-    } else if (holdingsFilter.performance === 'losers') {
+    } else if (holdingsFilterActive.performance === 'losers') {
       result = result.filter((h) => h.unrealized_gain < 0);
     }
 
@@ -138,16 +141,16 @@ export default function HoldingsTable({ holdings, openOptionTickers }: HoldingsT
   }, [holdings, holdingsFilter]);
 
   const handleSort = (column: string) => {
-    if (holdingsFilter.sortColumn === column) {
-      setHoldingsFilter({ sortDirection: holdingsFilter.sortDirection === 'asc' ? 'desc' : 'asc' });
+    if (holdingsFilterActive.sortColumn === column) {
+      setHoldingsFilterActive({ sortDirection: holdingsFilterActive.sortDirection === 'asc' ? 'desc' : 'asc' });
     } else {
-      setHoldingsFilter({ sortColumn: column, sortDirection: getDefaultDirection(column) });
+      setHoldingsFilterActive({ sortColumn: column, sortDirection: getDefaultDirection(column) });
     }
   };
 
   if (filteredAndSorted.length === 0) {
     const hasFilters =
-      holdingsFilter.search || holdingsFilter.sector || holdingsFilter.performance !== 'all';
+      holdingsFilterActive.search || holdingsFilterActive.sector || holdingsFilterActive.performance !== 'all';
     return (
       <EmptyState
         icon={
@@ -186,8 +189,8 @@ export default function HoldingsTable({ holdings, openOptionTickers }: HoldingsT
                 >
                   {col.label}
                   <SortIcon
-                    active={holdingsFilter.sortColumn === col.key}
-                    dir={holdingsFilter.sortDirection}
+                    active={holdingsFilterActive.sortColumn === col.key}
+                    dir={holdingsFilterActive.sortDirection}
                   />
                 </th>
               ))}

@@ -3,13 +3,16 @@ import type { Holding } from '../../types';
 
 interface SearchFilterProps {
   holdings: Holding[];
+  scope?: 'holdings' | 'etf';
 }
 
 const selectClass =
   'px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent transition';
 
-export default function SearchFilter({ holdings }: SearchFilterProps) {
-  const { holdingsFilter, setHoldingsFilter } = useUIStore();
+export default function SearchFilter({ holdings, scope = 'holdings' }: SearchFilterProps) {
+  const { holdingsFilter, setHoldingsFilter, etfFilter, setEtfFilter } = useUIStore();
+  const filter = scope === 'etf' ? etfFilter : holdingsFilter;
+  const setFilter = scope === 'etf' ? setEtfFilter : setHoldingsFilter;
 
   const sectors = Array.from(
     new Set(holdings.map((h) => h.sector).filter((s): s is string => s !== null && s !== '')),
@@ -35,8 +38,8 @@ export default function SearchFilter({ holdings }: SearchFilterProps) {
           id="holdings-search"
           type="text"
           placeholder="Search by ticker or company…"
-          value={holdingsFilter.search}
-          onChange={(e) => setHoldingsFilter({ search: e.target.value })}
+          value={filter.search}
+          onChange={(e) => setFilter({ search: e.target.value })}
           className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent transition"
         />
       </div>
@@ -44,9 +47,9 @@ export default function SearchFilter({ holdings }: SearchFilterProps) {
       {/* Sector */}
       <select
         id="sector-filter"
-        value={holdingsFilter.sector ?? ''}
+        value={filter.sector ?? ''}
         onChange={(e) =>
-          setHoldingsFilter({ sector: e.target.value === '' ? null : e.target.value })
+          setFilter({ sector: e.target.value === '' ? null : e.target.value })
         }
         className={selectClass}
       >
@@ -61,9 +64,9 @@ export default function SearchFilter({ holdings }: SearchFilterProps) {
       {/* Performance */}
       <select
         id="performance-filter"
-        value={holdingsFilter.performance}
+        value={filter.performance}
         onChange={(e) =>
-          setHoldingsFilter({ performance: e.target.value as 'all' | 'gainers' | 'losers' })
+          setFilter({ performance: e.target.value as 'all' | 'gainers' | 'losers' })
         }
         className={selectClass}
       >
