@@ -24,17 +24,10 @@ export default function PlaidConnect() {
   const syncMutation = useSyncPlaid();
   const disconnectMutation = useDisconnectPlaid();
 
-  useEffect(() => {
-    setTokenLoading(true);
-    createLinkToken()
-      .then(setLinkToken)
-      .catch(() => setTokenError('Could not load Plaid — check your credentials.'))
-      .finally(() => setTokenLoading(false));
-  }, []);
-
   const onPlaidSuccess = useCallback(
     (publicToken: string) => {
       connectMutation.mutate(publicToken);
+      setLinkToken(null);
     },
     [connectMutation],
   );
@@ -44,13 +37,32 @@ export default function PlaidConnect() {
     onSuccess: onPlaidSuccess,
   });
 
+  useEffect(() => {
+    if (linkToken && ready) {
+      open();
+      setTokenLoading(false);
+    }
+  }, [linkToken, ready, open]);
+
+  async function handleConnectClick() {
+    setTokenLoading(true);
+    setTokenError(null);
+    try {
+      const token = await createLinkToken();
+      setLinkToken(token);
+    } catch {
+      setTokenError('Could not load Plaid — check your credentials.');
+      setTokenLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => open()}
-            disabled={!ready || tokenLoading || !!tokenError || connectMutation.isPending}
+            onClick={handleConnectClick}
+            disabled={tokenLoading || !!tokenError || connectMutation.isPending}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-semibold rounded-lg shadow-sm hover:bg-slate-700 dark:hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg
@@ -66,7 +78,7 @@ export default function PlaidConnect() {
                 clipRule="evenodd"
               />
             </svg>
-            {connectMutation.isPending ? 'Connecting…' : 'Connect a bank'}
+            {tokenLoading ? 'Loading…' : connectMutation.isPending ? 'Connecting…' : 'Connect a bank'}
           </button>
 
           {items.length > 0 && (
