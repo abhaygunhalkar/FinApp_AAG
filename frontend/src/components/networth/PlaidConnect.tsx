@@ -103,6 +103,11 @@ export default function PlaidConnect() {
       </div>
 
       {tokenError && <p className="text-xs text-red-500 dark:text-red-400">{tokenError}</p>}
+      {connectMutation.isError && (
+        <p className="text-xs text-red-500 dark:text-red-400">
+          Failed to connect account — {(connectMutation.error as Error)?.message ?? 'unknown error'}
+        </p>
+      )}
 
       {items.length > 0 && (
         <div className="divide-y divide-slate-100 dark:divide-slate-700 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden shadow-sm">

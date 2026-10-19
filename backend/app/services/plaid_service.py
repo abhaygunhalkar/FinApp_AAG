@@ -82,30 +82,30 @@ class PlaidService:
             language="en",
         )
         response = client.link_token_create(request)
-        return response["link_token"]
+        return response.to_dict()["link_token"]
 
     @staticmethod
     def exchange_public_token(db: Session, public_token: str) -> dict:
         client = PlaidService._get_client()
 
         exchange_request = ItemPublicTokenExchangeRequest(public_token=public_token)
-        exchange_response = client.item_public_token_exchange(exchange_request)
-        access_token: str = exchange_response["access_token"]
-        item_id: str = exchange_response["item_id"]
+        exchange_data = client.item_public_token_exchange(exchange_request).to_dict()
+        access_token: str = exchange_data["access_token"]
+        item_id: str = exchange_data["item_id"]
 
         institution_id: str | None = None
         institution_name: str | None = None
         try:
-            item_response = client.item_get(ItemGetRequest(access_token=access_token))
-            institution_id = item_response["item"]["institution_id"]
+            item_data = client.item_get(ItemGetRequest(access_token=access_token)).to_dict()
+            institution_id = item_data["item"]["institution_id"]
             if institution_id:
-                inst_response = client.institutions_get_by_id(
+                inst_data = client.institutions_get_by_id(
                     InstitutionsGetByIdRequest(
                         institution_id=institution_id,
                         country_codes=[CountryCode("US")],
                     )
-                )
-                institution_name = inst_response["institution"]["name"]
+                ).to_dict()
+                institution_name = inst_data["institution"]["name"]
         except Exception as exc:
             logger.warning("Could not fetch institution info: %s", exc)
 
@@ -125,8 +125,7 @@ class PlaidService:
         client = PlaidService._get_client()
 
         accounts_request = AccountsGetRequest(access_token=plaid_item.access_token)
-        accounts_response = client.accounts_get(accounts_request)
-        accounts = accounts_response["accounts"]
+        accounts: list[dict] = client.accounts_get(accounts_request).to_dict()["accounts"]
 
         synced = 0
         for acct in accounts:
@@ -138,7 +137,8 @@ class PlaidService:
             if account_type is None:
                 account_type = "other_liability" if plaid_type in LIABILITY_PLAID_TYPES else "other_asset"
 
-            raw_balance = acct["balances"].get("current") or 0.0
+            balances: dict = acct.get("balances") or {}
+            raw_balance = balances.get("current") or 0.0
             is_liability = account_type not in ASSET_TYPES
             balance = abs(float(raw_balance)) if is_liability else float(raw_balance)
 
