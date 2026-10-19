@@ -57,8 +57,14 @@ export default function AccountForm({ account, onClose }: AccountFormProps) {
     e.preventDefault();
     const name = formData.name.trim();
     const balance = parseFloat(formData.balance);
-    if (!name) { setError('Name is required'); return; }
-    if (isNaN(balance) || balance < 0) { setError('Balance must be 0 or greater'); return; }
+    if (!name) {
+      setError('Name is required');
+      return;
+    }
+    if (isNaN(balance) || balance < 0) {
+      setError('Balance must be 0 or greater');
+      return;
+    }
 
     const payload: FinancialAccountCreate = {
       name,
@@ -96,7 +102,9 @@ export default function AccountForm({ account, onClose }: AccountFormProps) {
               {isEditing ? 'Edit Account' : 'Add Account'}
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              {isEditing ? 'Update the details below' : 'Add a bank account, credit card, or other account'}
+              {isEditing
+                ? 'Update the details below'
+                : 'Add a bank account, credit card, or other account'}
             </p>
           </div>
           <button
@@ -104,7 +112,12 @@ export default function AccountForm({ account, onClose }: AccountFormProps) {
             onClick={onClose}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-4 h-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              className="w-4 h-4"
+            >
               <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
             </svg>
           </button>
@@ -153,12 +166,16 @@ export default function AccountForm({ account, onClose }: AccountFormProps) {
             >
               <optgroup label="Assets">
                 {ASSET_TYPES.map((t) => (
-                  <option key={t} value={t}>{ACCOUNT_TYPE_LABELS[t]}</option>
+                  <option key={t} value={t}>
+                    {ACCOUNT_TYPE_LABELS[t]}
+                  </option>
                 ))}
               </optgroup>
               <optgroup label="Liabilities">
                 {LIABILITY_TYPES.map((t) => (
-                  <option key={t} value={t}>{ACCOUNT_TYPE_LABELS[t]}</option>
+                  <option key={t} value={t}>
+                    {ACCOUNT_TYPE_LABELS[t]}
+                  </option>
                 ))}
               </optgroup>
             </select>
@@ -169,7 +186,9 @@ export default function AccountForm({ account, onClose }: AccountFormProps) {
               Balance <span className="text-red-400 font-normal normal-case">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+                $
+              </span>
               <input
                 type="number"
                 step="0.01"
