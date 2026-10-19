@@ -24,26 +24,14 @@ const fmt = (v: number) =>
     maximumFractionDigits: 0,
   }).format(v);
 
-function StatTile({
-  label,
-  value,
-  valueClass,
-  bgClass,
-}: {
-  label: string;
-  value: string;
-  valueClass: string;
-  bgClass: string;
-}) {
-  return (
-    <div className={`${bgClass} rounded-xl border-2 px-5 py-4 flex flex-col gap-1 shadow-sm`}>
-      <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-        {label}
-      </span>
-      <span className={`text-2xl font-bold tabular-nums ${valueClass}`}>{value}</span>
-    </div>
-  );
-}
+const fmtSigned = (v: number) =>
+  (v >= 0 ? '+' : '') +
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(v);
 
 export default function NetWorth() {
   const { data: accounts, isLoading } = useAccounts();
@@ -74,6 +62,18 @@ export default function NetWorth() {
         }
       : null;
 
+  const totalAssets = (summary?.total_assets ?? 0) + portfolioValue;
+  const totalLiabilities = summary?.total_liabilities ?? 0;
+  const netWorth = totalAssets - totalLiabilities;
+
+  const prevSnapshot = snapshotList.length >= 2 ? snapshotList[snapshotList.length - 2] : null;
+  const netWorthChange = prevSnapshot != null ? netWorth - prevSnapshot.net_worth : null;
+
+  const assetsBarWidth =
+    totalAssets + totalLiabilities > 0
+      ? Math.max(4, Math.round((totalAssets / (totalAssets + totalLiabilities)) * 100))
+      : 100;
+
   function handleEdit(account: FinancialAccount) {
     setEditingAccount(account);
     setShowForm(true);
@@ -97,76 +97,90 @@ export default function NetWorth() {
     );
   }
 
-  const totalAssets = (summary?.total_assets ?? 0) + portfolioValue;
-  const totalLiabilities = summary?.total_liabilities ?? 0;
-  const netWorth = totalAssets - totalLiabilities;
+  const hasAccounts = accountList.length > 0 || portfolioValue > 0;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Net Worth</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Your complete financial picture</p>
-        </div>
-        <button
-          onClick={() => {
-            setEditingAccount(null);
-            setShowForm(true);
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-semibold rounded-lg shadow-sm hover:bg-slate-700 dark:hover:bg-slate-100 transition-colors"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 16 16"
-            fill="currentColor"
-            className="w-4 h-4"
+      {/* Hero card */}
+      <div className="rounded-2xl bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 p-7 text-white shadow-xl ring-1 ring-white/10">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">
+              Net Worth
+            </p>
+            <p
+              className={`text-5xl font-bold tabular-nums tracking-tight ${
+                netWorth >= 0 ? 'text-white' : 'text-red-400'
+              }`}
+            >
+              {fmt(netWorth)}
+            </p>
+            {netWorthChange !== null && (
+              <p
+                className={`text-sm mt-1.5 font-medium ${
+                  netWorthChange >= 0 ? 'text-emerald-400' : 'text-red-400'
+                }`}
+              >
+                {fmtSigned(netWorthChange)} since last update
+              </p>
+            )}
+          </div>
+          <button
+            onClick={() => {
+              setEditingAccount(null);
+              setShowForm(true);
+            }}
+            className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
           >
-            <path d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z" />
-          </svg>
-          Add Account
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              className="w-3.5 h-3.5"
+            >
+              <path d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z" />
+            </svg>
+            Add Account
+          </button>
+        </div>
+
+        {/* Assets vs liabilities ratio bar */}
+        <div className="mt-7">
+          <div className="h-2 bg-slate-700 rounded-full overflow-hidden flex gap-0.5">
+            <div
+              className="h-full bg-emerald-400 rounded-l-full transition-all duration-700"
+              style={{ width: `${assetsBarWidth}%` }}
+            />
+            {totalLiabilities > 0 && (
+              <div className="h-full bg-red-400 rounded-r-full flex-1" />
+            )}
+          </div>
+          <div className="flex justify-between mt-3">
+            <div>
+              <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+                Assets
+              </p>
+              <p className="text-base font-bold text-emerald-400 tabular-nums mt-0.5">
+                {fmt(totalAssets)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+                Liabilities
+              </p>
+              <p className="text-base font-bold text-red-400 tabular-nums mt-0.5">
+                {fmt(totalLiabilities)}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Summary tiles */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <StatTile
-          label="Net Worth"
-          value={fmt(netWorth)}
-          valueClass={
-            netWorth >= 0
-              ? 'text-violet-700 dark:text-violet-300'
-              : 'text-red-600 dark:text-red-400'
-          }
-          bgClass="bg-violet-100 border-violet-300 dark:bg-violet-900/30 dark:border-violet-700"
-        />
-        <StatTile
-          label="Total Assets"
-          value={fmt(totalAssets)}
-          valueClass="text-emerald-700 dark:text-emerald-300"
-          bgClass="bg-emerald-100 border-emerald-300 dark:bg-emerald-900/30 dark:border-emerald-700"
-        />
-        <StatTile
-          label="Total Liabilities"
-          value={fmt(totalLiabilities)}
-          valueClass="text-red-600 dark:text-red-400"
-          bgClass="bg-red-100 border-red-300 dark:bg-red-900/30 dark:border-red-700"
-        />
-      </div>
-
-      {/* Chart */}
+      {/* Trend chart */}
       <NetWorthChart snapshots={snapshotList} />
 
-      {/* Connected accounts */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
-        <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">
-          Connected Accounts
-        </h2>
-        <PlaidConnect />
-      </div>
-
       {/* Empty state */}
-      {accountList.length === 0 && portfolioValue === 0 && (
+      {!hasAccounts && (
         <div className="rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 p-12 flex flex-col items-center gap-4 text-center">
           <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
             <svg
@@ -189,7 +203,7 @@ export default function NetWorth() {
               No accounts yet
             </p>
             <p className="text-xs text-slate-400 mt-1">
-              Add your bank accounts, credit cards, loans, and other assets to track your net worth.
+              Add accounts manually or connect your bank below.
             </p>
           </div>
           <button
@@ -201,13 +215,16 @@ export default function NetWorth() {
         </div>
       )}
 
-      {/* Accounts split */}
-      {(accountList.length > 0 || portfolioValue > 0) && (
+      {/* Assets / Liabilities columns */}
+      {hasAccounts && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Assets */}
           <div className="space-y-3">
-            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest px-1">
+            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
               Assets
+              <span className="text-slate-300 dark:text-slate-500 font-bold">
+                {fmt(totalAssets)}
+              </span>
             </h2>
             {ACCOUNT_GROUPS.assets.map((group) => {
               const groupAccounts = accountList.filter((a) =>
@@ -229,10 +246,13 @@ export default function NetWorth() {
             })}
           </div>
 
-          {/* Liabilities */}
           <div className="space-y-3">
-            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest px-1">
+            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
               Liabilities
+              <span className="text-slate-300 dark:text-slate-500 font-bold">
+                {fmt(totalLiabilities)}
+              </span>
             </h2>
             {ACCOUNT_GROUPS.liabilities.map((group) => {
               const groupAccounts = accountList.filter((a) =>
@@ -251,6 +271,28 @@ export default function NetWorth() {
           </div>
         </div>
       )}
+
+      {/* Connected accounts — bottom */}
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className="w-4 h-4 text-slate-400"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
+            Connected Accounts
+          </h2>
+        </div>
+        <PlaidConnect />
+      </div>
 
       {showForm && <AccountForm account={editingAccount} onClose={handleCloseForm} />}
     </div>

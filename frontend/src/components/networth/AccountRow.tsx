@@ -16,27 +16,27 @@ interface AccountRowProps {
 
 export default function AccountRow({ account, onEdit, onDelete }: AccountRowProps) {
   return (
-    <div className="group flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/40 rounded-lg transition-colors">
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
-          {account.name}
-        </p>
-        {account.institution && (
-          <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
-            {account.institution}
+    <div className="group flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
+      <div className="flex items-center gap-3 min-w-0">
+        {/* Initial avatar */}
+        <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+            {account.name.charAt(0).toUpperCase()}
+          </span>
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+            {account.name}
           </p>
-        )}
+          {account.institution && (
+            <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+              {account.institution}
+            </p>
+          )}
+        </div>
       </div>
+
       <div className="flex items-center gap-2 ml-4 shrink-0">
-        <span
-          className={`text-sm font-semibold tabular-nums ${
-            account.is_asset
-              ? 'text-slate-800 dark:text-slate-100'
-              : 'text-red-600 dark:text-red-400'
-          }`}
-        >
-          {account.is_asset ? fmt(account.balance) : `−${fmt(account.balance)}`}
-        </span>
         {account.id < 0 ? (
           <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">
             Auto-synced
@@ -45,7 +45,7 @@ export default function AccountRow({ account, onEdit, onDelete }: AccountRowProp
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => onEdit(account)}
-              className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
+              className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
               aria-label={`Edit ${account.name}`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
@@ -54,7 +54,7 @@ export default function AccountRow({ account, onEdit, onDelete }: AccountRowProp
             </button>
             <button
               onClick={() => onDelete(account)}
-              className="p-1 rounded text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              className="p-1.5 rounded-md text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               aria-label={`Delete ${account.name}`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
@@ -63,6 +63,15 @@ export default function AccountRow({ account, onEdit, onDelete }: AccountRowProp
             </button>
           </div>
         )}
+        <span
+          className={`text-sm font-semibold tabular-nums min-w-[80px] text-right ${
+            account.is_asset
+              ? 'text-slate-800 dark:text-slate-100'
+              : 'text-red-600 dark:text-red-400'
+          }`}
+        >
+          {account.is_asset ? fmt(account.balance) : `−${fmt(account.balance)}`}
+        </span>
       </div>
     </div>
   );

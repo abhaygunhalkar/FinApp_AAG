@@ -25,8 +25,8 @@ export default function PlaidConnect() {
   const disconnectMutation = useDisconnectPlaid();
 
   const onPlaidSuccess = useCallback(
-    (publicToken: string) => {
-      connectMutation.mutate(publicToken);
+    (publicToken: string | null) => {
+      if (publicToken) connectMutation.mutate(publicToken);
       setLinkToken(null);
     },
     [connectMutation],
