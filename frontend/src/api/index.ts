@@ -11,3 +11,11 @@ export {
 export { getSummary, getBrokerSummary, getActivity, getHistory, getSellHistory } from './dashboard';
 export { getOptions, getOption, createOption, updateOption, deleteOption, getOptionsSummary } from './options';
 export { getQuote, getHistory as getMarketHistory } from './market';
+export {
+  getAccounts,
+  createAccount,
+  updateAccount,
+  deleteAccount,
+  getNetWorthSummary,
+  getNetWorthSnapshots,
+} from './netWorth';

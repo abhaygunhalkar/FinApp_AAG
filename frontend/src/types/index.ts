@@ -5,3 +5,11 @@ export type { DashboardSummary, BrokerSummary, ActivityEvent, PortfolioSnapshot 
 export type { EarningsCalendarEntry } from './earnings';
 export type { MarketQuote, PricePoint } from './market';
 export type { ApiResponse } from './api';
+export type {
+  AccountType,
+  FinancialAccount,
+  FinancialAccountCreate,
+  FinancialAccountUpdate,
+  NetWorthSummary,
+  NetWorthSnapshot,
+} from './netWorth';
