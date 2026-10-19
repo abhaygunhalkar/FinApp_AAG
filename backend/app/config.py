@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     REFRESH_INTERVAL_MINUTES: int = 15
     BROKERS: str = "Robinhood,Schwab,Merrill"
     FINNHUB_API_KEY: str | None = None
+    PLAID_CLIENT_ID: str | None = None
+    PLAID_SECRET: str | None = None
+    PLAID_ENV: str = "sandbox"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

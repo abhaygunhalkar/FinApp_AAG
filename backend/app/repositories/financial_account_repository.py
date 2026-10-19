@@ -59,6 +59,22 @@ class FinancialAccountRepository:
             raise
 
     @staticmethod
+    def get_by_plaid_account_id(db: Session, plaid_account_id: str) -> FinancialAccount | None:
+        return (
+            db.query(FinancialAccount)
+            .filter(FinancialAccount.plaid_account_id == plaid_account_id)
+            .first()
+        )
+
+    @staticmethod
+    def get_by_plaid_item_id(db: Session, plaid_item_id: int) -> list[FinancialAccount]:
+        return list(
+            db.query(FinancialAccount)
+            .filter(FinancialAccount.plaid_item_id == plaid_item_id)
+            .all()
+        )
+
+    @staticmethod
     def delete(db: Session, account: FinancialAccount) -> None:
         try:
             db.delete(account)

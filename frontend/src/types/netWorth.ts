@@ -51,3 +51,11 @@ export interface NetWorthSnapshot {
   net_worth: number;
   created_at: string;
 }
+
+export interface PlaidItemInfo {
+  id: number;
+  item_id: string;
+  institution_name: string | null;
+  last_synced: string | null;
+  account_count: number;
+}

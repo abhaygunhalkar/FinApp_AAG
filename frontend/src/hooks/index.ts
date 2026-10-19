@@ -19,3 +19,4 @@ export {
   useUpdateAccount,
   useDeleteAccount,
 } from './useNetWorth';
+export { usePlaidItems, useConnectPlaid, useSyncPlaid, useDisconnectPlaid } from './usePlaid';

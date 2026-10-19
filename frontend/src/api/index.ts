@@ -19,3 +19,10 @@ export {
   getNetWorthSummary,
   getNetWorthSnapshots,
 } from './netWorth';
+export {
+  createLinkToken,
+  exchangePublicToken,
+  getPlaidItems,
+  syncPlaid,
+  disconnectPlaidItem,
+} from './plaid';

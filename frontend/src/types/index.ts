@@ -12,4 +12,5 @@ export type {
   FinancialAccountUpdate,
   NetWorthSummary,
   NetWorthSnapshot,
+  PlaidItemInfo,
 } from './netWorth';

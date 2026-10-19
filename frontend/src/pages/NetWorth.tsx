@@ -6,7 +6,13 @@ import {
   useDeleteAccount,
 } from '../hooks/useNetWorth';
 import { useDashboardSummary } from '../hooks';
-import { AccountForm, AccountGroup, NetWorthChart, ACCOUNT_GROUPS } from '../components/networth';
+import {
+  AccountForm,
+  AccountGroup,
+  NetWorthChart,
+  PlaidConnect,
+  ACCOUNT_GROUPS,
+} from '../components/networth';
 import { LoadingSpinner } from '../components/shared';
 import type { FinancialAccount } from '../types';
 
@@ -150,6 +156,14 @@ export default function NetWorth() {
 
       {/* Chart */}
       <NetWorthChart snapshots={snapshotList} />
+
+      {/* Connected accounts */}
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+        <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">
+          Connected Accounts
+        </h2>
+        <PlaidConnect />
+      </div>
 
       {/* Empty state */}
       {accountList.length === 0 && portfolioValue === 0 && (
