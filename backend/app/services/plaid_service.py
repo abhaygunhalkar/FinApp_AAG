@@ -2,7 +2,6 @@
 
 import logging
 
-import plaid
 from fastapi import HTTPException
 from plaid import ApiClient, Configuration
 from plaid.api import plaid_api
@@ -27,9 +26,9 @@ from app.services.financial_account_service import FinancialAccountService
 logger = logging.getLogger(__name__)
 
 ENV_MAP = {
-    "sandbox": plaid.Environment.Sandbox,
-    "development": plaid.Environment.Development,
-    "production": plaid.Environment.Production,
+    "sandbox": "https://sandbox.plaid.com",
+    "development": "https://development.plaid.com",
+    "production": "https://production.plaid.com",
 }
 
 ASSET_TYPES = {"checking", "savings", "investment", "real_estate", "vehicle", "other_asset"}
@@ -64,7 +63,7 @@ class PlaidService:
         settings = get_settings()
         if not settings.PLAID_CLIENT_ID or not settings.PLAID_SECRET:
             raise HTTPException(status_code=503, detail="Plaid credentials not configured")
-        host = ENV_MAP.get(settings.PLAID_ENV, plaid.Environment.Sandbox)
+        host = ENV_MAP.get(settings.PLAID_ENV, "https://sandbox.plaid.com")
         configuration = Configuration(
             host=host,
             api_key={"clientId": settings.PLAID_CLIENT_ID, "secret": settings.PLAID_SECRET},
