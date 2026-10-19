@@ -9,6 +9,7 @@ from plaid.api import plaid_api
 from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.country_code import CountryCode
 from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
+from plaid.model.item_get_request import ItemGetRequest
 from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
 from plaid.model.item_remove_request import ItemRemoveRequest
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
@@ -96,8 +97,8 @@ class PlaidService:
         institution_id: str | None = None
         institution_name: str | None = None
         try:
-            item_response = client.item_get({"access_token": access_token})
-            institution_id = item_response["item"].get("institution_id")
+            item_response = client.item_get(ItemGetRequest(access_token=access_token))
+            institution_id = item_response["item"]["institution_id"]
             if institution_id:
                 inst_response = client.institutions_get_by_id(
                     InstitutionsGetByIdRequest(
