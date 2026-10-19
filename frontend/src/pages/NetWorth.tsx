@@ -5,6 +5,7 @@ import {
   useNetWorthSnapshots,
   useDeleteAccount,
 } from '../hooks/useNetWorth';
+import { useDashboardSummary } from '../hooks';
 import { AccountForm, AccountGroup, NetWorthChart, ACCOUNT_GROUPS } from '../components/networth';
 import { LoadingSpinner } from '../components/shared';
 import type { FinancialAccount } from '../types';
@@ -42,6 +43,7 @@ export default function NetWorth() {
   const { data: accounts, isLoading } = useAccounts();
   const { data: summary } = useNetWorthSummary();
   const { data: snapshots } = useNetWorthSnapshots();
+  const { data: dashboardSummary } = useDashboardSummary();
   const deleteMutation = useDeleteAccount();
 
   const [showForm, setShowForm] = useState(false);
@@ -49,6 +51,22 @@ export default function NetWorth() {
 
   const accountList = accounts ?? [];
   const snapshotList = snapshots ?? [];
+
+  const portfolioValue = dashboardSummary?.total_portfolio_value ?? 0;
+  const portfolioAccount: FinancialAccount | null =
+    portfolioValue > 0
+      ? {
+          id: -1,
+          name: 'Stock & ETF Portfolio',
+          institution: 'FinApp Portfolio',
+          account_type: 'investment',
+          balance: portfolioValue,
+          is_asset: true,
+          notes: null,
+          created_at: '',
+          updated_at: '',
+        }
+      : null;
 
   function handleEdit(account: FinancialAccount) {
     setEditingAccount(account);
@@ -73,9 +91,9 @@ export default function NetWorth() {
     );
   }
 
-  const netWorth = summary?.net_worth ?? 0;
-  const totalAssets = summary?.total_assets ?? 0;
+  const totalAssets = (summary?.total_assets ?? 0) + portfolioValue;
   const totalLiabilities = summary?.total_liabilities ?? 0;
+  const netWorth = totalAssets - totalLiabilities;
 
   return (
     <div className="space-y-6">
@@ -134,7 +152,7 @@ export default function NetWorth() {
       <NetWorthChart snapshots={snapshotList} />
 
       {/* Empty state */}
-      {accountList.length === 0 && (
+      {accountList.length === 0 && portfolioValue === 0 && (
         <div className="rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 p-12 flex flex-col items-center gap-4 text-center">
           <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
             <svg
@@ -170,7 +188,7 @@ export default function NetWorth() {
       )}
 
       {/* Accounts split */}
-      {accountList.length > 0 && (
+      {(accountList.length > 0 || portfolioValue > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Assets */}
           <div className="space-y-3">
@@ -181,11 +199,15 @@ export default function NetWorth() {
               const groupAccounts = accountList.filter((a) =>
                 (group.types as string[]).includes(a.account_type),
               );
+              const withVirtual =
+                group.key === 'investments' && portfolioAccount
+                  ? [portfolioAccount, ...groupAccounts]
+                  : groupAccounts;
               return (
                 <AccountGroup
                   key={group.key}
                   group={group}
-                  accounts={groupAccounts}
+                  accounts={withVirtual}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                 />
