@@ -155,7 +155,7 @@ export default function PlaidConnect() {
                 onClick={() => {
                   if (
                     window.confirm(
-                      `Disconnect ${item.institution_name ?? 'this institution'}? Accounts will be kept with their last balance.`,
+                      `Disconnect ${item.institution_name ?? 'this institution'}? All linked accounts will be removed.`,
                     )
                   )
                     disconnectMutation.mutate(item.item_id);

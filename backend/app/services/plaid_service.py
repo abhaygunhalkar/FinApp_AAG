@@ -193,9 +193,7 @@ class PlaidService:
 
         linked_accounts = FinancialAccountRepository.get_by_plaid_item_id(db, plaid_item.id)
         for acct in linked_accounts:
-            acct.plaid_account_id = None
-            acct.plaid_item_id = None
-            db.add(acct)
+            db.delete(acct)
         db.commit()
 
         PlaidItemRepository.delete(db, plaid_item)
