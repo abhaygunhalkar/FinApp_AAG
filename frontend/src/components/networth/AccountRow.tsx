@@ -1,77 +1,171 @@
 import type { FinancialAccount } from '../../types';
+import { ACCOUNT_TYPE_LABELS, isCreditType, isLoanType } from './accountConfig';
+import { fmtMoney, fmtMonthYear, fmtPct, fmtShortDate, initials, timeAgo } from './format';
+import { share } from './netWorthMath';
 
-const fmt = (v: number) =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(v);
+export type DetailField = 'credit_limit' | 'original_amount' | 'apr';
 
 interface AccountRowProps {
   account: FinancialAccount;
-  onEdit: (account: FinancialAccount) => void;
-  onDelete: (account: FinancialAccount) => void;
+  /** Total of the column the row sits in (assets or liabilities). */
+  columnTotal: number;
+  hidden: boolean;
+  /** Omit for read-only rows such as the auto-synced portfolio. */
+  onEdit?: (account: FinancialAccount, focus?: DetailField) => void;
+  subtitleOverride?: string;
 }
 
-export default function AccountRow({ account, onEdit, onDelete }: AccountRowProps) {
-  return (
-    <div className="group flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
-      <div className="flex items-center gap-3 min-w-0">
-        {/* Initial avatar */}
-        <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
-          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-            {account.name.charAt(0).toUpperCase()}
-          </span>
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
-            {account.name}
-          </p>
-          {account.institution && (
-            <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
-              {account.institution}
-            </p>
-          )}
-        </div>
-      </div>
+export default function AccountRow({
+  account,
+  columnTotal,
+  hidden,
+  onEdit,
+  subtitleOverride,
+}: AccountRowProps) {
+  const isAsset = account.is_asset;
+  const credit = isCreditType(account.account_type);
+  const loan = isLoanType(account.account_type);
 
-      <div className="flex items-center gap-2 ml-4 shrink-0">
-        {account.id < 0 ? (
-          <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">
-            Auto-synced
-          </span>
-        ) : (
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={() => onEdit(account)}
-              className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
-              aria-label={`Edit ${account.name}`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
-                <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.774a2.75 2.75 0 0 0-.596.892l-.848 2.047a.75.75 0 0 0 .98.98l2.047-.848a2.75 2.75 0 0 0 .892-.596l4.261-4.263a1.75 1.75 0 0 0 0-2.474ZM4.75 13.25a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => onDelete(account)}
-              className="p-1.5 rounded-md text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-              aria-label={`Delete ${account.name}`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
-                <path fillRule="evenodd" d="M5 3.25V4H2.75a.75.75 0 0 0 0 1.5h.3l.815 8.15A1.5 1.5 0 0 0 5.357 15h5.285a1.5 1.5 0 0 0 1.493-1.35l.815-8.15h.3a.75.75 0 0 0 0-1.5H11v-.75A2.25 2.25 0 0 0 8.75 1h-1.5A2.25 2.25 0 0 0 5 3.25Zm2.25-.75a.75.75 0 0 0-.75.75V4h3v-.75a.75.75 0 0 0-.75-.75h-1.5ZM6.05 6a.75.75 0 0 1 .787.713l.275 5.5a.75.75 0 0 1-1.498.075l-.275-5.5A.75.75 0 0 1 6.05 6Zm3.9 0a.75.75 0 0 1 .712.787l-.275 5.5a.75.75 0 0 1-1.498-.075l.275-5.5a.75.75 0 0 1 .786-.712Z" clipRule="evenodd" />
-              </svg>
-            </button>
-          </div>
-        )}
+  const subtitle =
+    subtitleOverride ??
+    [
+      ACCOUNT_TYPE_LABELS[account.account_type],
+      !isAsset && account.apr != null ? `${account.apr}% APR` : null,
+      account.last_synced
+        ? `${account.is_linked ? 'synced' : 'updated'} ${timeAgo(account.last_synced)}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+
+  const main = (
+    <>
+      <span
+        className={`h-11 w-11 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold ${
+          isAsset
+            ? 'bg-blue-50 text-[#1D4ED8] dark:bg-blue-900/30 dark:text-blue-200'
+            : 'bg-orange-50 text-[#C2410C] dark:bg-orange-900/30 dark:text-orange-200'
+        }`}
+        aria-hidden="true"
+      >
+        {initials(account.institution || account.name)}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+          {account.name}
+        </span>
+        <span className="block truncate text-[13px] text-slate-500 dark:text-slate-400">
+          {subtitle}
+        </span>
+      </span>
+      <span className="shrink-0 text-right">
         <span
-          className={`text-sm font-semibold tabular-nums min-w-[80px] text-right ${
-            account.is_asset
-              ? 'text-slate-800 dark:text-slate-100'
-              : 'text-red-600 dark:text-red-400'
+          className={`block text-[15px] font-semibold ${
+            isAsset ? 'text-slate-900 dark:text-slate-100' : 'text-[#C2410C] dark:text-orange-300'
           }`}
         >
-          {account.is_asset ? fmt(account.balance) : `−${fmt(account.balance)}`}
+          {fmtMoney(account.balance, hidden)}
         </span>
+        <span className="block text-[13px] text-slate-500 dark:text-slate-400">
+          {fmtPct(share(account.balance, columnTotal))} of {isAsset ? 'assets' : 'liabilities'}
+        </span>
+      </span>
+    </>
+  );
+
+  return (
+    <li className="px-4 sm:px-5 py-3">
+      {onEdit ? (
+        <button
+          type="button"
+          onClick={() => onEdit(account)}
+          aria-label={`Edit ${account.name}`}
+          className="-mx-2 px-2 py-1 w-[calc(100%+1rem)] min-h-11 flex items-center gap-3.5 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
+        >
+          {main}
+        </button>
+      ) : (
+        <div className="py-1 flex items-center gap-3.5">{main}</div>
+      )}
+
+      {(credit || loan) && onEdit && (
+        <LiabilityDetail account={account} hidden={hidden} onEdit={onEdit} />
+      )}
+    </li>
+  );
+}
+
+function LiabilityDetail({
+  account,
+  hidden,
+  onEdit,
+}: {
+  account: FinancialAccount;
+  hidden: boolean;
+  onEdit: (account: FinancialAccount, focus?: DetailField) => void;
+}) {
+  const credit = isCreditType(account.account_type);
+  const addLink = (field: DetailField, label: string) => (
+    <button
+      type="button"
+      onClick={() => onEdit(account, field)}
+      className="-my-3 py-3 text-[13px] font-medium text-[#1D4ED8] dark:text-blue-300 hover:underline focus-visible:outline-2 focus-visible:outline-[#1D4ED8] rounded"
+    >
+      {label}
+    </button>
+  );
+
+  let bar: { pct: number; text: string; label: string } | null = null;
+  if (credit && account.credit_limit) {
+    const used = share(account.balance, account.credit_limit);
+    bar = {
+      pct: used,
+      label: 'Credit utilization',
+      text: [
+        `${fmtPct(used)} of ${fmtMoney(account.credit_limit, hidden)} used`,
+        account.due_date ? `due ${fmtShortDate(account.due_date)}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    };
+  } else if (!credit && account.original_amount) {
+    const paid = 100 - share(account.balance, account.original_amount);
+    bar = {
+      pct: paid,
+      label: 'Paid off',
+      text: [
+        `${fmtPct(paid)} paid off`,
+        account.payoff_date ? `payoff ${fmtMonthYear(account.payoff_date)}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    };
+  }
+
+  return (
+    <div className="mt-2 pl-[58px]">
+      {bar && (
+        <div
+          className="h-1.5 w-full overflow-hidden rounded-full bg-[#F2F4F7] dark:bg-slate-700"
+          role="progressbar"
+          aria-label={bar.label}
+          aria-valuenow={Math.round(bar.pct)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div
+            className={`h-full rounded-full transition-[width] duration-700 ${
+              credit ? 'bg-[#F97316]' : 'bg-[#C2410C]'
+            }`}
+            style={{ width: `${bar.pct}%` }}
+          />
+        </div>
+      )}
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+        {bar && <span className="text-[13px] text-slate-500 dark:text-slate-400">{bar.text}</span>}
+        {!bar && credit && addLink('credit_limit', 'Add credit limit')}
+        {!bar && !credit && addLink('original_amount', 'Add original amount')}
+        {account.apr == null && addLink('apr', 'Add APR')}
       </div>
     </div>
   );

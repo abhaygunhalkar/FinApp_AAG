@@ -27,13 +27,18 @@ def upgrade() -> None:
         sa.Column('last_synced', sa.DateTime(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
     )
-    op.add_column('financial_accounts', sa.Column('plaid_account_id', sa.String(100), nullable=True))
-    op.add_column('financial_accounts', sa.Column('plaid_item_id', sa.Integer(), sa.ForeignKey('plaid_items.id'), nullable=True))
-    op.create_unique_constraint('uq_financial_accounts_plaid_account_id', 'financial_accounts', ['plaid_account_id'])
+    # SQLite can't ALTER constraints in place, so use batch (copy-and-move) mode.
+    with op.batch_alter_table('financial_accounts') as batch_op:
+        batch_op.add_column(sa.Column('plaid_account_id', sa.String(100), nullable=True))
+        batch_op.add_column(sa.Column('plaid_item_id', sa.Integer(), nullable=True))
+        batch_op.create_foreign_key('fk_financial_accounts_plaid_item_id', 'plaid_items', ['plaid_item_id'], ['id'])
+        batch_op.create_unique_constraint('uq_financial_accounts_plaid_account_id', ['plaid_account_id'])
 
 
 def downgrade() -> None:
-    op.drop_constraint('uq_financial_accounts_plaid_account_id', 'financial_accounts', type_='unique')
-    op.drop_column('financial_accounts', 'plaid_item_id')
-    op.drop_column('financial_accounts', 'plaid_account_id')
+    with op.batch_alter_table('financial_accounts') as batch_op:
+        batch_op.drop_constraint('uq_financial_accounts_plaid_account_id', type_='unique')
+        batch_op.drop_constraint('fk_financial_accounts_plaid_item_id', type_='foreignkey')
+        batch_op.drop_column('plaid_item_id')
+        batch_op.drop_column('plaid_account_id')
     op.drop_table('plaid_items')

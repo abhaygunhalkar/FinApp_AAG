@@ -21,6 +21,7 @@ from app.models.financial_account import FinancialAccount
 from app.models.plaid_item import PlaidItem as plaid_item_type
 from app.repositories.financial_account_repository import FinancialAccountRepository
 from app.repositories.plaid_item_repository import PlaidItemRepository
+from app.schemas.financial_account import ASSET_TYPES
 from app.services.financial_account_service import FinancialAccountService
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,6 @@ ENV_MAP = {
     "production": "https://production.plaid.com",
 }
 
-ASSET_TYPES = {"checking", "savings", "investment", "real_estate", "vehicle", "other_asset"}
 
 SUBTYPE_MAP: dict[str, str] = {
     "checking": "checking",
@@ -145,11 +145,17 @@ class PlaidService:
             name: str = acct.get("name") or acct.get("official_name") or "Account"
             institution_name = plaid_item.institution_name or ""
 
+            raw_limit = balances.get("limit")
+            credit_limit = float(raw_limit) if raw_limit else None
+
             existing = FinancialAccountRepository.get_by_plaid_account_id(db, plaid_account_id)
             if existing:
                 existing.balance = balance
                 existing.name = name
                 existing.institution = institution_name
+                # Keep a user-entered limit when Plaid doesn't report one.
+                if credit_limit is not None:
+                    existing.credit_limit = credit_limit
                 db.add(existing)
             else:
                 new_acct = FinancialAccount(
@@ -157,6 +163,7 @@ class PlaidService:
                     institution=institution_name,
                     account_type=account_type,
                     balance=balance,
+                    credit_limit=credit_limit,
                     plaid_account_id=plaid_account_id,
                     plaid_item_id=plaid_item.id,
                 )

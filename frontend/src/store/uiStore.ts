@@ -10,10 +10,13 @@ export interface HoldingsFilter {
 
 export interface UIState {
   theme: 'light' | 'dark';
+  /** Mask every balance on the Net Worth page; persisted in localStorage. */
+  hideBalances: boolean;
   sidebarCollapsed: boolean;
   holdingsFilter: HoldingsFilter;
   etfFilter: HoldingsFilter;
   setTheme: (theme: 'light' | 'dark') => void;
+  toggleHideBalances: () => void;
   toggleSidebar: () => void;
   setHoldingsFilter: (filter: Partial<HoldingsFilter>) => void;
   setEtfFilter: (filter: Partial<HoldingsFilter>) => void;
@@ -31,6 +34,14 @@ function getInitialTheme(): 'light' | 'dark' {
   return 'light';
 }
 
+function getInitialHideBalances(): boolean {
+  try {
+    return localStorage.getItem('hideBalances') === 'true';
+  } catch {
+    return false;
+  }
+}
+
 const defaultFilter: HoldingsFilter = {
   search: '',
   sector: null,
@@ -41,6 +52,7 @@ const defaultFilter: HoldingsFilter = {
 
 export const useUIStore = create<UIState>((set) => ({
   theme: getInitialTheme(),
+  hideBalances: getInitialHideBalances(),
   sidebarCollapsed: false,
   holdingsFilter: { ...defaultFilter },
   etfFilter: { ...defaultFilter },
@@ -52,6 +64,18 @@ export const useUIStore = create<UIState>((set) => ({
       // localStorage may be unavailable
     }
     set({ theme });
+  },
+
+  toggleHideBalances: () => {
+    set((state) => {
+      const hideBalances = !state.hideBalances;
+      try {
+        localStorage.setItem('hideBalances', String(hideBalances));
+      } catch {
+        // localStorage may be unavailable
+      }
+      return { hideBalances };
+    });
   },
 
   toggleSidebar: () => {

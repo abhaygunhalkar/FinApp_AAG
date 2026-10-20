@@ -44,6 +44,12 @@ class NetWorthSnapshotRepository:
             raise
 
     @staticmethod
+    def get_all(db: Session) -> list[NetWorthSnapshot]:
+        return list(
+            db.query(NetWorthSnapshot).order_by(NetWorthSnapshot.date.asc()).all()
+        )
+
+    @staticmethod
     def get_recent(db: Session, days: int = 365) -> list[NetWorthSnapshot]:
         cutoff = date.today() - timedelta(days=days)
         return list(

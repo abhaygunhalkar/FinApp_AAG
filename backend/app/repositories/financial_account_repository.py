@@ -3,7 +3,13 @@
 from sqlalchemy.orm import Session
 
 from app.models.financial_account import FinancialAccount
-from app.schemas.financial_account import FinancialAccountCreate, FinancialAccountUpdate
+from app.schemas.financial_account import (
+    FinancialAccountCreate,
+    FinancialAccountUpdate,
+    LiabilityDetails,
+)
+
+LIABILITY_FIELDS = set(LiabilityDetails.model_fields)
 
 
 class FinancialAccountRepository:
@@ -28,6 +34,7 @@ class FinancialAccountRepository:
             account_type=data.account_type,
             balance=data.balance,
             notes=data.notes,
+            **data.model_dump(include=LIABILITY_FIELDS),
         )
         try:
             db.add(account)
@@ -50,6 +57,9 @@ class FinancialAccountRepository:
             account.balance = data.balance
         if data.notes is not None:
             account.notes = data.notes
+        # Liability details can be cleared, so apply every field that was sent.
+        for field in LIABILITY_FIELDS & data.model_fields_set:
+            setattr(account, field, getattr(data, field))
         try:
             db.commit()
             db.refresh(account)

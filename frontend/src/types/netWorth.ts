@@ -7,10 +7,22 @@ export type AccountType =
   | 'investment'
   | 'real_estate'
   | 'vehicle'
+  | 'crypto'
   | 'other_asset'
   | 'other_liability';
 
-export interface FinancialAccount {
+export interface LiabilityDetails {
+  credit_limit?: number | null;
+  original_amount?: number | null;
+  /** Annual percentage rate, e.g. 24.99 */
+  apr?: number | null;
+  /** ISO date (YYYY-MM-DD) */
+  due_date?: string | null;
+  /** ISO date (YYYY-MM-DD) */
+  payoff_date?: string | null;
+}
+
+export interface FinancialAccount extends LiabilityDetails {
   id: number;
   name: string;
   institution: string | null;
@@ -18,11 +30,15 @@ export interface FinancialAccount {
   balance: number;
   is_asset: boolean;
   notes: string | null;
+  /** True when the balance comes from a Plaid connection. */
+  is_linked: boolean;
+  /** Last Plaid sync for linked accounts, last edit for manual ones. */
+  last_synced: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export interface FinancialAccountCreate {
+export interface FinancialAccountCreate extends LiabilityDetails {
   name: string;
   institution?: string | null;
   account_type: AccountType;
@@ -30,7 +46,7 @@ export interface FinancialAccountCreate {
   notes?: string | null;
 }
 
-export interface FinancialAccountUpdate {
+export interface FinancialAccountUpdate extends LiabilityDetails {
   name?: string;
   institution?: string | null;
   balance?: number;
@@ -41,6 +57,7 @@ export interface NetWorthSummary {
   total_assets: number;
   total_liabilities: number;
   net_worth: number;
+  portfolio_value: number;
 }
 
 export interface NetWorthSnapshot {

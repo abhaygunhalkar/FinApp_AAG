@@ -1,6 +1,14 @@
 export { default as AccountForm } from './AccountForm';
-export { default as AccountGroup } from './AccountGroup';
+export type { AccountFormDefaults } from './AccountForm';
 export { default as AccountRow } from './AccountRow';
+export type { DetailField } from './AccountRow';
+export { default as AccountsCard } from './AccountsCard';
+export { default as BreakdownCard, HomeEquityCard } from './BreakdownCard';
+export { default as ConnectCard } from './ConnectCard';
 export { default as NetWorthChart } from './NetWorthChart';
-export { default as PlaidConnect } from './PlaidConnect';
+export { default as NetWorthHeader } from './NetWorthHeader';
+export type { AddAction } from './NetWorthHeader';
+export { default as NetWorthHero } from './NetWorthHero';
 export * from './accountConfig';
+export * from './format';
+export * from './netWorthMath';

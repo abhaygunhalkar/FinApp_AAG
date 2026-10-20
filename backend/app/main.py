@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from app.config import get_settings
 from app.database import SessionLocal, verify_database
 from app.routers import dashboard, earnings, etf_holdings, holdings, market, net_worth, plaid, transactions, watchlist, options, portfolio_analysis
+from app.services.financial_account_service import FinancialAccountService
 from app.services.market_data_service import MarketDataService
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,7 @@ def _refresh_market_data() -> None:
             result.success_count,
             result.failure_count,
         )
+        FinancialAccountService.record_snapshot(db)
     except Exception as exc:
         logger.error("Market data refresh job failed: %s", exc)
     finally:

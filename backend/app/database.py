@@ -38,6 +38,37 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
+LIABILITY_DETAIL_COLUMNS = {
+    "credit_limit": "FLOAT",
+    "original_amount": "FLOAT",
+    "apr": "FLOAT",
+    "due_date": "DATE",
+    "payoff_date": "DATE",
+}
+
+
+def _patch_financial_account_columns() -> None:
+    """Mirror of migration a7b8c9d0e1f2 for databases where Alembic didn't run.
+
+    Adds the liability detail columns and, in the same step, clears net worth
+    snapshots recorded before the portfolio was counted as an asset.
+    """
+    with engine.begin() as conn:
+        rows = conn.execute(text("PRAGMA table_info('financial_accounts')")).fetchall()
+        missing = [c for c in LIABILITY_DETAIL_COLUMNS if c not in {r[1] for r in rows}]
+        if not missing:
+            return
+        logger.info("Adding missing financial_accounts columns: %s", ", ".join(missing))
+        for column in missing:
+            conn.execute(
+                text(
+                    f"ALTER TABLE financial_accounts ADD COLUMN {column} "
+                    f"{LIABILITY_DETAIL_COLUMNS[column]}"
+                )
+            )
+        conn.execute(text("DELETE FROM net_worth_snapshots"))
+
+
 def verify_database() -> None:
     """Verify the database file exists and is accessible.
 
@@ -104,6 +135,7 @@ def verify_database() -> None:
 
         # Create any missing tables, including earnings_cache.
         Base.metadata.create_all(bind=engine)
+        _patch_financial_account_columns()
     except Exception as exc:
         logger.error(
             "Failed to open or verify database file '%s': %s. Exiting.",

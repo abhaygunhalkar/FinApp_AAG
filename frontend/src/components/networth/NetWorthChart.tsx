@@ -1,127 +1,112 @@
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
-import type { NetWorthSnapshot } from '../../types';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
+import { fmtCompact } from './format';
+import type { SeriesPoint } from './netWorthMath';
 
-function fmtShort(v: number): string {
-  if (Math.abs(v) >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
-  if (Math.abs(v) >= 1_000) return `$${(v / 1_000).toFixed(0)}k`;
-  return `$${v.toFixed(0)}`;
-}
-
-function fmtFull(v: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(v);
-}
-
-function fmtDate(dateStr: string): string {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
-}
+const LINE = '#7AB0FF';
+const CHART_HEIGHT = 220;
 
 interface NetWorthChartProps {
-  snapshots: NetWorthSnapshot[];
+  series: SeriesPoint[];
+  hidden: boolean;
+  /** Animate the line; off for the first render, on when the range changes. */
+  animate: boolean;
+  /** Called with the index under the pointer, or null when it leaves. */
+  onScrub: (index: number | null) => void;
 }
 
-export default function NetWorthChart({ snapshots }: NetWorthChartProps) {
-  if (snapshots.length < 2) {
-    return (
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm flex items-center justify-center h-52">
-        <div className="text-center">
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Not enough history yet</p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-            Your net worth trend will appear after balances are updated on multiple days.
-          </p>
-        </div>
-      </div>
-    );
-  }
+interface ChartPointerState {
+  activeTooltipIndex?: number | string | null;
+}
+
+export default function NetWorthChart({ series, hidden, animate, onScrub }: NetWorthChartProps) {
+  const values = series.map((p) => p.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  // Pad the domain so a flat line sits mid-chart and peaks don't touch the edges.
+  const pad = max === min ? Math.max(1, Math.abs(max) * 0.05) : (max - min) * 0.12;
+
+  const handleMove = (state: ChartPointerState) => {
+    const i = Number(state?.activeTooltipIndex);
+    onScrub(Number.isInteger(i) && i >= 0 && i < series.length ? i : null);
+  };
 
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
-      <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">
-        Net Worth Over Time
-      </h3>
-      <ResponsiveContainer width="100%" height={220}>
-        <AreaChart data={snapshots} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-          <svg>
-            <defs>
-              <linearGradient id="nwGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="assetGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-          </svg>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.2)" />
-          <XAxis
-            dataKey="date"
-            tick={{ fontSize: 11 }}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={fmtDate}
-            interval="preserveStartEnd"
-          />
+    <div
+      className="h-[220px] select-none touch-pan-y"
+      role="img"
+      aria-label={`Net worth trend from ${fmtCompact(series[0].value, hidden)} to ${fmtCompact(
+        series[series.length - 1].value,
+        hidden,
+      )}. Hover or drag across the chart to see a specific day.`}
+    >
+      <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+        <AreaChart
+          data={series}
+          margin={{ top: 8, right: 0, left: 0, bottom: 8 }}
+          onMouseMove={handleMove}
+          onMouseLeave={() => onScrub(null)}
+          onTouchMove={handleMove}
+          onTouchEnd={() => onScrub(null)}
+        >
+          <defs>
+            <linearGradient id="nwHeroFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={LINE} stopOpacity={0.35} />
+              <stop offset="100%" stopColor={LINE} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid vertical={false} strokeDasharray="4 6" stroke="rgba(255,255,255,0.10)" />
           <YAxis
-            tick={{ fontSize: 11 }}
+            orientation="right"
+            domain={[min - pad, max + pad]}
+            ticks={max === min ? [max] : [min, max]}
+            tickFormatter={(v: number) => fmtCompact(v, hidden)}
+            tick={{ fill: '#A3AEC2', fontSize: 12 }}
             tickLine={false}
             axisLine={false}
-            tickFormatter={fmtShort}
-            width={55}
+            width={64}
           />
           <Tooltip
-            formatter={(value, name) => {
-              const labels: Record<string, string> = {
-                net_worth: 'Net Worth',
-                total_assets: 'Total Assets',
-                total_liabilities: 'Total Liabilities',
-              };
-              return [fmtFull(Number(value)), labels[String(name)] ?? String(name)];
-            }}
-            labelFormatter={(label) => fmtDate(String(label))}
-            contentStyle={{
-              backgroundColor: 'white',
-              border: '1px solid #e2e8f0',
-              borderRadius: '0.5rem',
-              fontSize: '12px',
-            }}
+            content={() => null}
+            cursor={{ stroke: 'rgba(255,255,255,0.35)', strokeWidth: 1 }}
+            isAnimationActive={false}
           />
           <Area
             type="monotone"
-            dataKey="total_assets"
-            stroke="#10b981"
-            strokeWidth={1.5}
-            fill="url(#assetGradient)"
-            dot={false}
-            activeDot={{ r: 3 }}
-          />
-          <Area
-            type="monotone"
-            dataKey="net_worth"
-            stroke="#8b5cf6"
+            dataKey="value"
+            // Fill down to the lowest point, not to $0 (which may sit above a negative series).
+            baseValue="dataMin"
+            stroke={LINE}
             strokeWidth={2}
-            fill="url(#nwGradient)"
+            fill="url(#nwHeroFill)"
             dot={false}
-            activeDot={{ r: 4 }}
+            activeDot={{ r: 5, fill: LINE, stroke: '#0C1322', strokeWidth: 2 }}
+            isAnimationActive={animate}
+            animationDuration={600}
+            animationEasing="ease-out"
           />
         </AreaChart>
       </ResponsiveContainer>
+    </div>
+  );
+}
+
+/** Placeholder while there is less than a week of history. */
+export function NetWorthChartEmpty() {
+  return (
+    <div className="relative h-[220px] flex items-center justify-center">
+      <div
+        className="absolute inset-x-0 top-1/2 border-t border-dashed border-white/10"
+        aria-hidden="true"
+      />
+      <div className="relative flex flex-col items-center gap-3 text-center px-4">
+        <span className="relative flex h-3 w-3" aria-hidden="true">
+          <span className="absolute inline-flex h-full w-full rounded-full bg-[#7AB0FF] opacity-60 animate-ping motion-reduce:animate-none" />
+          <span className="relative inline-flex h-3 w-3 rounded-full bg-[#7AB0FF]" />
+        </span>
+        <p className="text-sm text-[#C3CDDD] bg-[#0C1322] px-2">
+          Your trend builds over time — check back in a week
+        </p>
+      </div>
     </div>
   );
 }
