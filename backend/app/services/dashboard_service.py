@@ -361,7 +361,7 @@ class DashboardService:
         """Get the most recent previous close price for a ticker.
 
         Uses open_price from the latest price_history record, which stores
-        fast_info.previous_close — the actual prior session close. Avoids
+        the regular-market previous close — the actual prior session close. Avoids
         comparing against close_price from the prior record, which can equal
         today's current_price when stock.info returns stale data.
         """

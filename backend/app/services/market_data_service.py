@@ -1,5 +1,6 @@
 """Market data service for fetching stock prices via yfinance."""
 
+import contextlib
 import logging
 import math
 import time
@@ -121,19 +122,19 @@ class MarketDataService:
                     )
                     return None
 
-                # fast_info.previous_close is more reliable than stock.info['previousClose'],
-                # which can return stale cached data (e.g. last Thursday's close on a Tuesday).
+                # Prefer the chart's regular-market previous close.
+                # stock.info['previousClose'] can be stale (last Thursday's close on
+                # a Tuesday), and fast_info.previous_close can be wrong outright
+                # (SMCI: 37.51 vs 32.47).
                 previous_close = 0.0
-                try:
-                    pc = fast_info.previous_close
-                    if pc is not None and not math.isnan(pc) and pc > 0:
+                candidates: list[Any] = [info.get("regularMarketPreviousClose")]
+                with contextlib.suppress(Exception):
+                    candidates.insert(0, fast_info.regular_market_previous_close)
+                candidates.append(info.get("previousClose"))
+                for pc in candidates:
+                    if isinstance(pc, (int, float)) and not math.isnan(pc) and pc > 0:
                         previous_close = float(pc)
-                except Exception:
-                    pass
-                if previous_close == 0.0:
-                    fallback = info.get("previousClose", 0.0)
-                    if isinstance(fallback, (int, float)):
-                        previous_close = float(fallback)
+                        break
 
                 daily_change = float(current_price) - float(previous_close)
                 daily_change_pct = (

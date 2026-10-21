@@ -50,6 +50,23 @@ class TestFetchQuote:
         assert result.analyst_rating == "buy"
 
     @patch("app.services.market_data_service.yf.Ticker")
+    def test_fetch_quote_prefers_regular_market_previous_close(
+        self, mock_ticker_cls: MagicMock
+    ) -> None:
+        """fast_info.previous_close can be wrong; use the regular-market value."""
+        mock_ticker = MagicMock()
+        mock_ticker.info = {"currentPrice": 36.045, "previousClose": 37.51}
+        mock_ticker.fast_info.previous_close = 37.51
+        mock_ticker.fast_info.regular_market_previous_close = 32.47
+        mock_ticker_cls.return_value = mock_ticker
+
+        result = MarketDataService.fetch_quote("SMCI")
+
+        assert result is not None
+        assert result.previous_close == 32.47
+        assert result.daily_change_pct == pytest.approx(11.01, abs=0.01)
+
+    @patch("app.services.market_data_service.yf.Ticker")
     def test_fetch_quote_uses_regular_market_price_fallback(
         self, mock_ticker_cls: MagicMock
     ) -> None:
