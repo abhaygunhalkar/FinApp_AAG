@@ -118,7 +118,7 @@ export default function HoldingRow({ holding, hasOpenOption = false }: HoldingRo
 
         {/* Gain/Loss % */}
         <td className={`${td} text-right font-semibold ${gainClass}`}>
-          {fmtPct(holding.unrealized_gain_pct)}
+          {hidden ? MASK : fmtPct(holding.unrealized_gain_pct)}
         </td>
 
         {/* Sector */}
