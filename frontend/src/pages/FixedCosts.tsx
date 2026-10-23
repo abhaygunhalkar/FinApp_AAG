@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react';
 import { useDeleteRecurringExpense, useRecurringExpenses } from '../hooks';
 import { HideNumbersToggle, LoadingSpinner } from '../components/shared';
 import ExpenseForm from '../components/fixedcosts/ExpenseForm';
+import CategoryBadge from '../components/fixedcosts/CategoryBadge';
 import {
   CATEGORIES,
   DUE_SOON_DAYS,
-  categoryColor,
   daysUntil,
   fmtUSD,
   frequencyLabel,
@@ -332,11 +332,10 @@ export default function FixedCosts() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1000px] text-sm">
+              <table className="w-full min-w-[900px] text-sm">
                 <thead>
                   <tr className="bg-[#1e3a5f] text-slate-100 text-xs uppercase tracking-wider">
                     <th className="text-left font-semibold px-4 py-3">Expense</th>
-                    <th className="text-left font-semibold px-3 py-3">Category</th>
                     <th className="text-left font-semibold px-3 py-3">How often</th>
                     <th className="text-left font-semibold px-3 py-3">Next due</th>
                     <th className="text-left font-semibold px-3 py-3">Paid from</th>
@@ -351,7 +350,7 @@ export default function FixedCosts() {
                 {groups.map((g) => (
                   <tbody key={g.name}>
                     <tr className="bg-slate-50 dark:bg-slate-900/40 border-y border-slate-200 dark:border-slate-700">
-                      <th colSpan={7} scope="rowgroup" className="text-left px-4 py-2.5">
+                      <th colSpan={6} scope="rowgroup" className="text-left px-4 py-2.5">
                         <span className="inline-flex items-center gap-2 font-bold text-slate-900 dark:text-white">
                           <span
                             className="h-2.5 w-2.5 rounded-sm"
@@ -378,20 +377,19 @@ export default function FixedCosts() {
                           className="border-b border-slate-100 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700/40"
                         >
                           <td className="px-4 py-2.5">
-                            <p className="font-semibold text-slate-900 dark:text-white">{e.name}</p>
-                            {e.notes && (
-                              <p className="text-xs text-slate-500 dark:text-slate-400">
-                                {e.notes}
-                              </p>
-                            )}
-                          </td>
-                          <td className="px-3 py-2.5">
-                            <span
-                              className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold text-white"
-                              style={{ background: categoryColor(e.category) }}
-                            >
-                              {e.category}
-                            </span>
+                            <div className="flex items-center gap-3">
+                              <CategoryBadge category={e.category} />
+                              <div className="min-w-0">
+                                <p className="font-semibold text-slate-900 dark:text-white">
+                                  {e.name}
+                                </p>
+                                {e.notes && (
+                                  <p className="text-[13px] text-slate-500 dark:text-slate-400">
+                                    {e.notes}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
                           </td>
                           <td className="px-3 py-2.5 text-slate-700 dark:text-slate-300">
                             {frequencyLabel(e.frequency)}
@@ -416,7 +414,7 @@ export default function FixedCosts() {
                               className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
                                 e.autopay
                                   ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
-                                  : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+                                  : 'bg-[#FEF3C7] text-[#92400E] dark:bg-amber-900/40 dark:text-amber-300'
                               }`}
                             >
                               {e.autopay ? 'On' : 'Manual'}
@@ -506,7 +504,7 @@ export default function FixedCosts() {
                 ))}
                 <tfoot>
                   <tr className="bg-slate-50 dark:bg-slate-900/40 border-t-2 border-slate-200 dark:border-slate-700 font-bold text-slate-900 dark:text-white">
-                    <td colSpan={7} className="px-4 py-3">
+                    <td colSpan={6} className="px-4 py-3">
                       {activeFilter === 'All' ? 'Total' : `${activeFilter} total`}
                     </td>
                     <td className="px-3 py-3 text-right tabular-nums">{money(shownMonthly)}</td>
