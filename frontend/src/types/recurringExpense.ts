@@ -9,6 +9,7 @@ export type ExpenseCategory =
   | 'Childcare & education'
   | 'Kids activities'
   | 'Savings & investing'
+  | 'Charity & social service'
   | 'Other';
 
 export type ExpenseFrequency =

@@ -75,7 +75,9 @@ def test_create_rejects_invalid_input(
     assert body["details"]
 
 
-@pytest.mark.parametrize("category", ["Auto loans", "Kids activities"])
+@pytest.mark.parametrize(
+    "category", ["Auto loans", "Kids activities", "Charity & social service"]
+)
 def test_create_accepts_new_categories(test_client: TestClient, category: str) -> None:
     response = test_client.post(
         "/api/recurring-expenses", json={**PAYLOAD, "category": category}

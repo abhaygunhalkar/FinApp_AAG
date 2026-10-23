@@ -16,6 +16,7 @@ ExpenseCategory = Literal[
     "Childcare & education",
     "Kids activities",
     "Savings & investing",
+    "Charity & social service",
     "Other",
 ]
 

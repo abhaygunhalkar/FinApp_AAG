@@ -13,6 +13,7 @@ export const CATEGORIES: { name: ExpenseCategory; color: string }[] = [
   { name: 'Childcare & education', color: '#059669' },
   { name: 'Kids activities', color: '#65a30d' },
   { name: 'Savings & investing', color: '#0f766e' },
+  { name: 'Charity & social service', color: '#4338ca' },
   { name: 'Other', color: '#64748b' },
 ];
 
