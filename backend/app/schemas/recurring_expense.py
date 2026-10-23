@@ -11,6 +11,7 @@ ExpenseCategory = Literal[
     "Transportation",
     "Auto loans",
     "Insurance",
+    "Health & fitness",
     "Subscriptions",
     "Debt payments",
     "Childcare & education",

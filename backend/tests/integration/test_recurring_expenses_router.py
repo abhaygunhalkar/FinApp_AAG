@@ -76,7 +76,8 @@ def test_create_rejects_invalid_input(
 
 
 @pytest.mark.parametrize(
-    "category", ["Auto loans", "Kids activities", "Charity & social service"]
+    "category",
+    ["Auto loans", "Kids activities", "Charity & social service", "Health & fitness"],
 )
 def test_create_accepts_new_categories(test_client: TestClient, category: str) -> None:
     response = test_client.post(

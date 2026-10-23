@@ -4,6 +4,7 @@ export type ExpenseCategory =
   | 'Transportation'
   | 'Auto loans'
   | 'Insurance'
+  | 'Health & fitness'
   | 'Subscriptions'
   | 'Debt payments'
   | 'Childcare & education'

@@ -8,6 +8,7 @@ export const CATEGORIES: { name: ExpenseCategory; color: string }[] = [
   { name: 'Transportation', color: '#d97706' },
   { name: 'Auto loans', color: '#92400e' },
   { name: 'Insurance', color: '#7c3aed' },
+  { name: 'Health & fitness', color: '#ea580c' },
   { name: 'Subscriptions', color: '#db2777' },
   { name: 'Debt payments', color: '#991b1b' },
   { name: 'Childcare & education', color: '#059669' },
