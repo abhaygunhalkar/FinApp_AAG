@@ -1,4 +1,6 @@
 import { useBrokerSummary } from '../../hooks';
+import { useUIStore } from '../../store/uiStore';
+import { MASK } from '../networth/format';
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -25,6 +27,8 @@ const FALLBACK_GRADIENT = 'from-slate-500 to-slate-700 shadow-slate-500/20';
 // Renders one tile per broker, meant to be dropped directly into the
 // dashboard's metric-cards grid (not its own grid) so it shares that layout.
 export default function BrokerTiles() {
+  const hidden = useUIStore((s) => s.hideBalances);
+  const money = (v: number) => (hidden ? MASK : formatCurrency(v));
   const { data } = useBrokerSummary();
 
   if (!data || data.length === 0) {
@@ -43,11 +47,11 @@ export default function BrokerTiles() {
           >
             <p className="text-sm font-medium text-white/80">{broker.broker}</p>
             <p className="mt-2 text-2xl font-bold text-white">
-              {formatCurrency(broker.market_value)}
+              {money(broker.market_value)}
             </p>
             <p className={`mt-1 text-sm font-semibold ${gainColor}`}>
               {broker.unrealized_gain >= 0 ? '+' : ''}
-              {formatCurrency(broker.unrealized_gain)}
+              {money(broker.unrealized_gain)}
             </p>
             <p className="mt-1 text-xs text-white/70">
               {broker.holding_count} holding{broker.holding_count === 1 ? '' : 's'}

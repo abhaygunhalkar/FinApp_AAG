@@ -11,6 +11,8 @@ import {
 import { usePortfolioHistory } from '../../hooks/useDashboard';
 import { parseLocalDateString } from '../../utils/date';
 import { EmptyState } from '../shared';
+import { useUIStore } from '../../store/uiStore';
+import { MASK } from '../networth/format';
 
 type Range = 7 | 30 | 90 | 365;
 
@@ -32,6 +34,8 @@ function formatCurrency(value: number): string {
 
 export default function PortfolioGrowthChart() {
   const [range, setRange] = useState<Range>(30);
+  const hidden = useUIStore((s) => s.hideBalances);
+  const money = (v: number) => (hidden ? MASK : formatCurrency(v));
   const { data: history, isLoading } = usePortfolioHistory(range);
 
   if (isLoading) {
@@ -100,10 +104,10 @@ export default function PortfolioGrowthChart() {
           <YAxis
             tick={{ fontSize: 12 }}
             className="text-gray-500 dark:text-gray-400"
-            tickFormatter={formatCurrency}
+            tickFormatter={money}
           />
           <Tooltip
-            formatter={(value) => [formatCurrency(Number(value)), 'Portfolio Value']}
+            formatter={(value) => [money(Number(value)), 'Portfolio Value']}
             labelFormatter={(label) => parseLocalDateString(String(label)).toLocaleDateString()}
             contentStyle={{
               backgroundColor: 'var(--color-white, #fff)',

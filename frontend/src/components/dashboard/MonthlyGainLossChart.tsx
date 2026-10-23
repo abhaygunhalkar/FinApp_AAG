@@ -14,6 +14,8 @@ import { useMonthlyRealizedGain } from '../../hooks/useDashboard';
 import { useOptionsMonthlyPnl } from '../../hooks/useOptions';
 import { parseLocalDateString } from '../../utils/date';
 import { EmptyState } from '../shared';
+import { useUIStore } from '../../store/uiStore';
+import { MASK } from '../networth/format';
 
 const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -30,6 +32,8 @@ function formatCurrency(value: number): string {
 
 export default function MonthlyGainLossChart() {
   const { data: sells, isLoading: sellsLoading } = useMonthlyRealizedGain();
+  const hidden = useUIStore((s) => s.hideBalances);
+  const money = (v: number) => (hidden ? MASK : formatCurrency(v));
   const { data: optionsPnl, isLoading: optionsLoading } = useOptionsMonthlyPnl();
 
   const isLoading = sellsLoading || optionsLoading;
@@ -106,10 +110,10 @@ export default function MonthlyGainLossChart() {
         <BarChart data={monthlyData} margin={{ top: 5, right: 12, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
           <XAxis dataKey="month" tick={{ fontSize: 12 }} className="text-gray-500 dark:text-gray-400" />
-          <YAxis tick={{ fontSize: 12 }} className="text-gray-500 dark:text-gray-400" tickFormatter={formatCurrency} />
+          <YAxis tick={{ fontSize: 12 }} className="text-gray-500 dark:text-gray-400" tickFormatter={money} />
           <Tooltip
             formatter={(value, name) => [
-              formatCurrency(Number(value)),
+              money(Number(value)),
               name === 'stocks' ? 'Stocks' : 'Options',
             ]}
             contentStyle={{

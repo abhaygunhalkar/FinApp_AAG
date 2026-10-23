@@ -12,6 +12,8 @@ import {
 import { useMonthlyRealizedGain } from '../../hooks/useDashboard';
 import { parseLocalDateString } from '../../utils/date';
 import { EmptyState } from '../shared';
+import { useUIStore } from '../../store/uiStore';
+import { MASK } from '../networth/format';
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -23,6 +25,8 @@ function formatCurrency(value: number): string {
 
 export default function RealizedGainByTickerChart() {
   const { data: sells, isLoading } = useMonthlyRealizedGain();
+  const hidden = useUIStore((s) => s.hideBalances);
+  const money = (v: number) => (hidden ? MASK : formatCurrency(v));
 
   const chartData = useMemo(() => {
     if (!sells) return [];
@@ -82,9 +86,9 @@ export default function RealizedGainByTickerChart() {
         <BarChart data={chartData} margin={{ top: 5, right: 12, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
           <XAxis dataKey="ticker" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} tickFormatter={formatCurrency} width={70} />
+          <YAxis tick={{ fontSize: 12 }} tickFormatter={money} width={70} />
           <Tooltip
-            formatter={(value) => [formatCurrency(Number(value)), 'Realized Gain']}
+            formatter={(value) => [money(Number(value)), 'Realized Gain']}
             contentStyle={{
               backgroundColor: 'var(--color-white, #fff)',
               border: '1px solid var(--color-gray-200, #e5e7eb)',

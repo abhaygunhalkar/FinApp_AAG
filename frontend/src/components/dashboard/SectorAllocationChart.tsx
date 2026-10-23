@@ -12,6 +12,8 @@ import {
 } from 'recharts';
 import { useHoldings } from '../../hooks/useHoldings';
 import { EmptyState } from '../shared';
+import { useUIStore } from '../../store/uiStore';
+import { MASK } from '../networth/format';
 
 const COLORS = [
   '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
@@ -26,6 +28,7 @@ interface SectorData {
 
 export default function SectorAllocationChart() {
   const { data: holdings, isLoading } = useHoldings();
+  const hidden = useUIStore((s) => s.hideBalances);
 
   const sectorData: SectorData[] = useMemo(() => {
     if (!holdings || holdings.length === 0) return [];
@@ -98,11 +101,13 @@ export default function SectorAllocationChart() {
             tick={{ fontSize: 12 }}
             className="text-gray-500 dark:text-gray-400"
             tickFormatter={(value) =>
-              new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-                maximumFractionDigits: 0,
-              }).format(Number(value))
+              hidden
+                ? MASK
+                : new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    maximumFractionDigits: 0,
+                  }).format(Number(value))
             }
           />
           <YAxis
@@ -114,7 +119,11 @@ export default function SectorAllocationChart() {
           />
           <Tooltip
             formatter={(value) => [
-              new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value)),
+              hidden
+                ? MASK
+                : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+                    Number(value),
+                  ),
               'Value',
             ]}
             contentStyle={{

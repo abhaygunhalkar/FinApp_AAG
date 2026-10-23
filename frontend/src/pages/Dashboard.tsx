@@ -6,7 +6,9 @@ import {
   SectorAllocationChart,
   RealizedGainByTickerChart,
 } from '../components/dashboard';
-import { LoadingSpinner, ErrorNotification } from '../components/shared';
+import { LoadingSpinner, ErrorNotification, HideNumbersToggle } from '../components/shared';
+import { MASK } from '../components/networth/format';
+import { useUIStore } from '../store/uiStore';
 import { useState } from 'react';
 import type { DashboardSummary } from '../types';
 
@@ -16,6 +18,8 @@ function formatCurrency(value: number): string {
 
 function OptionsStats() {
   const { data: trades } = useOptions();
+  const hidden = useUIStore((s) => s.hideBalances);
+  const money = (v: number) => (hidden ? MASK : formatCurrency(v));
 
   const creditTypes = new Set(['sell_call', 'sell_put']);
   const debitTypes = new Set(['buy_call', 'buy_put']);
@@ -41,19 +45,19 @@ function OptionsStats() {
     <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
   <div className="rounded-xl p-4 bg-green-100 border-2 border-green-300">
     <p className="text-sm font-medium text-green-800">Premium collected</p>
-    <p className="mt-2 text-xl font-bold text-green-900">{formatCurrency(collected)}</p>
+    <p className="mt-2 text-xl font-bold text-green-900">{money(collected)}</p>
   </div>
   <div className="rounded-xl p-4 bg-red-100 border-2 border-red-300">
     <p className="text-sm font-medium text-red-800">Premium paid</p>
-    <p className="mt-2 text-xl font-bold text-red-900">-{formatCurrency(paid)}</p>
+    <p className="mt-2 text-xl font-bold text-red-900">{hidden ? MASK : `-${formatCurrency(paid)}`}</p>
   </div>
   <div className={`rounded-xl p-4 ${net >= 0 ? 'bg-green-100 border-2 border-green-300' : 'bg-red-100 border-2 border-red-300'}`}>
     <p className="text-sm font-medium text-slate-600">Net premium</p>
-    <p className={`mt-2 text-xl font-bold ${net >= 0 ? 'text-green-900' : 'text-red-900'}`}>{formatCurrency(net)}</p>
+    <p className={`mt-2 text-xl font-bold ${net >= 0 ? 'text-green-900' : 'text-red-900'}`}>{money(net)}</p>
   </div>
   <div className="rounded-xl p-4 bg-slate-200 border-2 border-slate-300">
     <p className="text-sm font-medium text-slate-600">Realized P&L</p>
-    <p className="mt-2 text-xl font-bold text-slate-900">{formatCurrency(realized)}</p>
+    <p className="mt-2 text-xl font-bold text-slate-900">{money(realized)}</p>
   </div>
 </div>
   );
@@ -89,13 +93,14 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-          Dashboard
-        </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Your portfolio overview at a glance
-        </p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Your portfolio overview at a glance
+          </p>
+        </div>
+        <HideNumbersToggle />
       </div>
 
       {isError && showError && (

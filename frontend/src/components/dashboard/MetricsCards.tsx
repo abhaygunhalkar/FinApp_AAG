@@ -1,5 +1,7 @@
 import type { DashboardSummary } from '../../types';
 import BrokerTiles from './BrokerTiles';
+import { useUIStore } from '../../store/uiStore';
+import { MASK } from '../networth/format';
 
 interface MetricsCardsProps {
   data: DashboardSummary;
@@ -32,6 +34,7 @@ function getChangeColor(value: number): string {
 }
 
 function MetricCard({ label, value, changeValue, variant = 'default' }: MetricCardProps) {
+  const hidden = useUIStore((s) => s.hideBalances);
   const baseClasses = 'rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow duration-200';
   const variantClasses =
     variant === 'blue'
@@ -54,8 +57,9 @@ function MetricCard({ label, value, changeValue, variant = 'default' }: MetricCa
       <p className={valueClasses}>{value}</p>
       {changeValue !== undefined && (
         <p className={changeClasses}>
-          {changeValue > 0 ? '↑ +' : changeValue < 0 ? '↓ ' : ''}
-          {formatCurrency(changeValue)}
+          {hidden
+            ? MASK
+            : `${changeValue > 0 ? '↑ +' : changeValue < 0 ? '↓ ' : ''}${formatCurrency(changeValue)}`}
         </p>
       )}
     </div>
@@ -63,6 +67,8 @@ function MetricCard({ label, value, changeValue, variant = 'default' }: MetricCa
 }
 
 export default function MetricsCards({ data }: MetricsCardsProps) {
+  const hidden = useUIStore((s) => s.hideBalances);
+  const money = (v: number) => (hidden ? MASK : formatCurrency(v));
   return (
     <div>
       {data.stale_data && (
@@ -92,27 +98,27 @@ export default function MetricsCards({ data }: MetricsCardsProps) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 p-5 shadow-lg shadow-blue-500/20">
           <p className="text-sm font-medium text-blue-100">Total Portfolio Value</p>
-          <p className="mt-2 text-2xl font-bold text-white">{formatCurrency(data.total_portfolio_value)}</p>
+          <p className="mt-2 text-2xl font-bold text-white">{money(data.total_portfolio_value)}</p>
         </div>
         <BrokerTiles />
         <div className="rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 p-5 shadow-lg shadow-indigo-500/20">
           <p className="text-sm font-medium text-indigo-100">Total Invested</p>
-          <p className="mt-2 text-2xl font-bold text-white">{formatCurrency(data.total_invested)}</p>
+          <p className="mt-2 text-2xl font-bold text-white">{money(data.total_invested)}</p>
         </div>
         <MetricCard
           label="Unrealized Gain/Loss"
-          value={formatCurrency(data.unrealized_gain)}
+          value={money(data.unrealized_gain)}
           changeValue={data.unrealized_gain}
           variant="blue"
         />
         <MetricCard
           label="ETF Unrealized Gain/Loss"
-          value={formatCurrency(data.etf_unrealized_gain)}
+          value={money(data.etf_unrealized_gain)}
           variant="purple"
         />
         <MetricCard
           label="Realized Gain/Loss"
-          value={formatCurrency(data.realized_gain)}
+          value={money(data.realized_gain)}
           changeValue={data.realized_gain}
           variant="peacock"
         />
@@ -125,12 +131,14 @@ export default function MetricsCards({ data }: MetricsCardsProps) {
         }`}>
           <p className="text-sm font-medium text-white/80">Daily Change</p>
           <p className="mt-2 text-2xl font-bold text-white">
-            {data.daily_change > 0 ? '+' : ''}{formatCurrency(data.daily_change)}
+            {hidden
+              ? MASK
+              : `${data.daily_change > 0 ? '+' : ''}${formatCurrency(data.daily_change)}`}
           </p>
         </div>
         <div className="rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 p-5 shadow-lg shadow-amber-500/20">
           <p className="text-sm font-medium text-amber-100">Cash Position</p>
-          <p className="mt-2 text-2xl font-bold text-white">{formatCurrency(data.cash_position)}</p>
+          <p className="mt-2 text-2xl font-bold text-white">{money(data.cash_position)}</p>
         </div>
         <MetricCard
           label="Number of Holdings"
