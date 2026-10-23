@@ -26,3 +26,9 @@ export {
   syncPlaid,
   disconnectPlaidItem,
 } from './plaid';
+export {
+  getRecurringExpenses,
+  createRecurringExpense,
+  updateRecurringExpense,
+  deleteRecurringExpense,
+} from './recurringExpenses';

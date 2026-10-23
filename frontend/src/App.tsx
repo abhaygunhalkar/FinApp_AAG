@@ -16,6 +16,7 @@ import OptionsTradesPage from './pages/OptionsTradesPage';
 import Utilities from './pages/Utilities';
 import PortfolioAnalysisPage from './pages/PortfolioAnalysisPage';
 import NetWorth from './pages/NetWorth';
+import FixedCosts from './pages/FixedCosts';
 
 const router = createBrowserRouter([
   {
@@ -23,6 +24,7 @@ const router = createBrowserRouter([
     children: [
       { path: '/', element: <Dashboard /> },
       { path: '/net-worth', element: <NetWorth /> },
+      { path: '/fixed-costs', element: <FixedCosts /> },
       { path: '/holdings', element: <Holdings /> },
       { path: '/etf-holdings', element: <ETFHoldings /> },
       { path: '/watchlist', element: <Watchlist /> },

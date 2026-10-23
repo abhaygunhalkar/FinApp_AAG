@@ -5,6 +5,7 @@ import ThemeToggle from './ThemeToggle';
 const navItems = [
   { to: '/', label: 'Dashboard', icon: DashboardIcon },
   { to: '/net-worth', label: 'Net Worth', icon: NetWorthIcon },
+  { to: '/fixed-costs', label: 'Fixed Costs', icon: FixedCostsIcon },
   { to: '/holdings', label: 'Holdings', icon: HoldingsIcon },
   { to: '/etf-holdings', label: 'ETF Holdings', icon: ETFIcon },
   { to: '/watchlist', label: 'Watchlist', icon: WatchlistIcon },
@@ -102,6 +103,18 @@ export default function Sidebar() {
         </div>
       </aside>
     </>
+  );
+}
+
+function FixedCostsIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+      <path
+        fillRule="evenodd"
+        d="M6 2a1 1 0 0 0-1 1v1H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1V3a1 1 0 1 0-2 0v1H7V3a1 1 0 0 0-1-1Zm-2 7h12v7H4V9Zm2 2a1 1 0 1 0 0 2h3a1 1 0 1 0 0-2H6Z"
+        clipRule="evenodd"
+      />
+    </svg>
   );
 }
 

@@ -42,3 +42,9 @@ export { usePlaidItems, useConnectPlaid, useSyncPlaid, useDisconnectPlaid } from
 export { usePlaidConnectFlow } from './usePlaidConnectFlow';
 export type { PlaidConnectFlow } from './usePlaidConnectFlow';
 export { useCountUp } from './useCountUp';
+export {
+  useRecurringExpenses,
+  useCreateRecurringExpense,
+  useUpdateRecurringExpense,
+  useDeleteRecurringExpense,
+} from './useRecurringExpenses';

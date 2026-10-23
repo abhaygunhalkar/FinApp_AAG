@@ -14,3 +14,10 @@ export type {
   NetWorthSnapshot,
   PlaidItemInfo,
 } from './netWorth';
+export type {
+  ExpenseCategory,
+  ExpenseFrequency,
+  RecurringExpense,
+  RecurringExpenseCreate,
+  RecurringExpenseUpdate,
+} from './recurringExpense';

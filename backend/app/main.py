@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.database import SessionLocal, verify_database
-from app.routers import dashboard, earnings, etf_holdings, holdings, market, net_worth, plaid, transactions, watchlist, options, portfolio_analysis
+from app.routers import dashboard, earnings, etf_holdings, holdings, market, net_worth, plaid, transactions, watchlist, options, portfolio_analysis, recurring_expenses
 from app.services.financial_account_service import FinancialAccountService
 from app.services.market_data_service import MarketDataService
 
@@ -182,6 +182,7 @@ app.include_router(options.router)
 app.include_router(portfolio_analysis.router)
 app.include_router(plaid.router)
 app.include_router(net_worth.router)
+app.include_router(recurring_expenses.router)
 
 
 # --- Health Check ---
