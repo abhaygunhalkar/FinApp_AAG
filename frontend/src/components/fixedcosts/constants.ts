@@ -6,10 +6,12 @@ export const CATEGORIES: { name: ExpenseCategory; color: string }[] = [
   { name: 'Housing', color: '#1d4ed8' },
   { name: 'Utilities', color: '#0891b2' },
   { name: 'Transportation', color: '#d97706' },
+  { name: 'Auto loans', color: '#92400e' },
   { name: 'Insurance', color: '#7c3aed' },
   { name: 'Subscriptions', color: '#db2777' },
   { name: 'Debt payments', color: '#991b1b' },
   { name: 'Childcare & education', color: '#059669' },
+  { name: 'Kids activities', color: '#65a30d' },
   { name: 'Savings & investing', color: '#0f766e' },
   { name: 'Other', color: '#64748b' },
 ];

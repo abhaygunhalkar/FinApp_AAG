@@ -75,6 +75,15 @@ def test_create_rejects_invalid_input(
     assert body["details"]
 
 
+@pytest.mark.parametrize("category", ["Auto loans", "Kids activities"])
+def test_create_accepts_new_categories(test_client: TestClient, category: str) -> None:
+    response = test_client.post(
+        "/api/recurring-expenses", json={**PAYLOAD, "category": category}
+    )
+    assert response.status_code == 201
+    assert response.json()["data"]["category"] == category
+
+
 def test_update_and_delete_missing_return_404(test_client: TestClient) -> None:
     put = test_client.put("/api/recurring-expenses/999", json={"amount": 5})
     assert put.status_code == 404

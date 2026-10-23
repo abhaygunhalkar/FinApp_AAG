@@ -2,10 +2,12 @@ export type ExpenseCategory =
   | 'Housing'
   | 'Utilities'
   | 'Transportation'
+  | 'Auto loans'
   | 'Insurance'
   | 'Subscriptions'
   | 'Debt payments'
   | 'Childcare & education'
+  | 'Kids activities'
   | 'Savings & investing'
   | 'Other';
 
