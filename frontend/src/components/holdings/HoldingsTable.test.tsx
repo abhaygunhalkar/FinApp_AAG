@@ -55,7 +55,18 @@ describe('HoldingsTable', () => {
         sortColumn: 'ticker',
         sortDirection: 'asc',
       },
+      hideBalances: false,
     });
+  });
+
+  it('masks quantity and dollar amounts when hideBalances is on', () => {
+    useUIStore.setState({ hideBalances: true });
+    renderWithProviders(<HoldingsTable holdings={[mockHoldings[0]]} />);
+    // Qty, Invested, Value, Gain/Loss are masked; price and percentages stay visible
+    expect(screen.getAllByText('••••••')).toHaveLength(4);
+    expect(screen.queryByText('$1,750.00')).not.toBeInTheDocument();
+    expect(screen.getByText('$175.00')).toBeInTheDocument();
+    expect(screen.getByText('16.67%')).toBeInTheDocument();
   });
 
   it('renders all holdings rows', () => {

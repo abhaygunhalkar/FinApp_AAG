@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useTransactions, useCreateTransaction, useDeleteTransaction } from '../../hooks/useTransactions';
 import { LoadingSpinner, DeleteConfirmation } from '../shared';
 import { parseLocalDateString } from '../../utils/date';
+import { MASK } from '../networth/format';
+import { useUIStore } from '../../store/uiStore';
 import type { Transaction, TransactionCreate } from '../../types';
 
 interface TransactionHistoryProps {
@@ -42,6 +44,7 @@ export default function TransactionHistory({ holdingId, ticker }: TransactionHis
   const [formData, setFormData] = useState<TransactionFormData>(initialFormData);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
+  const hidden = useUIStore((s) => s.hideBalances);
 
   const formatCurrency = (value: number) =>
     value.toLocaleString('en-US', {
@@ -348,7 +351,7 @@ export default function TransactionHistory({ holdingId, ticker }: TransactionHis
                   </span>
                 </td>
                 <td className="py-1.5 pr-4 text-gray-900 dark:text-gray-100">
-                  {tx.quantity}
+                  {hidden ? MASK : tx.quantity}
                 </td>
                 <td className="py-1.5 pr-4 text-gray-900 dark:text-gray-100">
                   {formatCurrency(tx.price)}

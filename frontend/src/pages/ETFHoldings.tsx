@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useETFHoldings } from '../hooks/useETFHoldings';
 import { HoldingsTable, SearchFilter, HoldingForm } from '../components/holdings';
-import { LoadingSpinner } from '../components/shared';
+import { HideNumbersToggle, LoadingSpinner } from '../components/shared';
+import { MASK } from '../components/networth/format';
+import { useUIStore } from '../store/uiStore';
 import apiClient from '../api/client';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -40,6 +42,7 @@ export default function ETFHoldings() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const queryClient = useQueryClient();
+  const hidden = useUIStore((s) => s.hideBalances);
 
   const handleRefreshPrices = async () => {
     setIsRefreshing(true);
@@ -89,6 +92,7 @@ export default function ETFHoldings() {
           <p className="text-sm text-slate-400 mt-0.5">Track your ETF investments</p>
         </div>
         <div className="flex items-center gap-2">
+          <HideNumbersToggle />
           <button
             onClick={handleRefreshPrices}
             disabled={isRefreshing}
@@ -137,25 +141,25 @@ export default function ETFHoldings() {
           />
           <StatCard
             label="Total Invested"
-            value={fmt(stats.totalInvested)}
+            value={hidden ? MASK : fmt(stats.totalInvested)}
             valueClass="text-blue-900 dark:text-blue-100"
             bgClass="bg-blue-100 border-2 border-blue-300 dark:bg-blue-900/50 dark:border-blue-600"
           />
           <StatCard
             label="Total Value"
-            value={fmt(stats.totalValue)}
+            value={hidden ? MASK : fmt(stats.totalValue)}
             valueClass="text-violet-900 dark:text-violet-100"
             bgClass="bg-violet-100 border-2 border-violet-300 dark:bg-violet-900/50 dark:border-violet-600"
           />
           <StatCard
             label="Unrealized Gain/Loss"
-            value={`${stats.totalGain >= 0 ? '+' : ''}${fmt(stats.totalGain)}`}
+            value={hidden ? MASK : `${stats.totalGain >= 0 ? '+' : ''}${fmt(stats.totalGain)}`}
             valueClass={stats.totalGain >= 0 ? 'text-emerald-700' : 'text-red-600'}
             bgClass="bg-emerald-100 border-2 border-emerald-300 dark:bg-emerald-900/50 dark:border-emerald-600"
           />
           <StatCard
             label="Day's Change"
-            value={`${stats.dailyChange >= 0 ? '+' : ''}${fmt(stats.dailyChange)}`}
+            value={hidden ? MASK : `${stats.dailyChange >= 0 ? '+' : ''}${fmt(stats.dailyChange)}`}
             valueClass={stats.dailyChange >= 0 ? 'text-emerald-700' : 'text-red-600'}
             bgClass="bg-amber-100 border-2 border-amber-300 dark:bg-amber-900/50 dark:border-amber-600"
           />

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import TransactionHistory from './TransactionHistory';
+import { MASK } from '../networth/format';
+import { useUIStore } from '../../store/uiStore';
 import { parseLocalDateString } from '../../utils/date';
 import type { Holding } from '../../types';
 
@@ -12,6 +14,7 @@ const td = 'px-3 py-2 text-sm tabular-nums';
 
 export default function HoldingRow({ holding, hasOpenOption = false }: HoldingRowProps) {
   const [expanded, setExpanded] = useState(false);
+  const hidden = useUIStore((s) => s.hideBalances);
 
   const gainClass =
     holding.unrealized_gain > 0
@@ -80,7 +83,7 @@ export default function HoldingRow({ holding, hasOpenOption = false }: HoldingRo
 
         {/* Qty */}
         <td className={`${td} text-right text-slate-700 dark:text-slate-300`}>
-          {Number(holding.quantity).toFixed(2)}
+          {hidden ? MASK : Number(holding.quantity).toFixed(2)}
         </td>
 
         {/* Avg Cost */}
@@ -100,17 +103,17 @@ export default function HoldingRow({ holding, hasOpenOption = false }: HoldingRo
 
         {/* Total Invested */}
         <td className={`${td} text-right text-slate-600 dark:text-slate-400`}>
-          {fmt(holding.total_invested)}
+          {hidden ? MASK : fmt(holding.total_invested)}
         </td>
 
         {/* Current Value */}
         <td className={`${td} text-right font-medium text-slate-800 dark:text-slate-200`}>
-          {fmt(holding.current_value)}
+          {hidden ? MASK : fmt(holding.current_value)}
         </td>
 
         {/* Gain/Loss $ */}
         <td className={`${td} text-right font-semibold ${gainClass}`}>
-          {fmtSigned(holding.unrealized_gain)}
+          {hidden ? MASK : fmtSigned(holding.unrealized_gain)}
         </td>
 
         {/* Gain/Loss % */}
