@@ -30,5 +30,6 @@ export {
   getRecurringExpenses,
   createRecurringExpense,
   updateRecurringExpense,
+  markRecurringExpensePaid,
   deleteRecurringExpense,
 } from './recurringExpenses';

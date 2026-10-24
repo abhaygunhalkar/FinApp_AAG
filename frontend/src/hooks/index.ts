@@ -46,5 +46,6 @@ export {
   useRecurringExpenses,
   useCreateRecurringExpense,
   useUpdateRecurringExpense,
+  useMarkRecurringExpensePaid,
   useDeleteRecurringExpense,
 } from './useRecurringExpenses';

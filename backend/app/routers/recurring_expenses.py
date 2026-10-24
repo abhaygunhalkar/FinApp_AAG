@@ -6,7 +6,10 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.schemas.recurring_expense import RecurringExpenseCreate, RecurringExpenseUpdate
-from app.services.recurring_expense_service import RecurringExpenseService
+from app.services.recurring_expense_service import (
+    ExpenseNotFoundError,
+    RecurringExpenseService,
+)
 
 router = APIRouter(prefix="/api/recurring-expenses", tags=["recurring-expenses"])
 
@@ -59,6 +62,33 @@ def update_recurring_expense(
     except ValueError as e:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
+            content={"success": False, "data": None, "error": str(e)},
+        )
+
+
+@router.post("/{expense_id}/mark-paid")
+def mark_recurring_expense_paid(
+    expense_id: int, db: Session = Depends(get_db)
+) -> JSONResponse:
+    """Mark the current bill paid, advancing its due date by one period."""
+    try:
+        expense = RecurringExpenseService.mark_paid(db, expense_id)
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={
+                "success": True,
+                "data": expense.model_dump(mode="json"),
+                "error": None,
+            },
+        )
+    except ExpenseNotFoundError as e:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"success": False, "data": None, "error": str(e)},
+        )
+    except ValueError as e:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={"success": False, "data": None, "error": str(e)},
         )
 

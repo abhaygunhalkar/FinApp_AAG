@@ -8,6 +8,7 @@ import type { RecurringExpense } from '../../../types';
 const mocks = vi.hoisted(() => ({
   expenses: [] as RecurringExpense[],
   deleteMutate: vi.fn(),
+  markPaidMutate: vi.fn(),
   createMutateAsync: vi.fn(),
   updateMutateAsync: vi.fn(),
 }));
@@ -23,6 +24,7 @@ vi.stubGlobal('localStorage', {
 vi.mock('../../../hooks', () => ({
   useRecurringExpenses: () => ({ data: mocks.expenses, isLoading: false, isError: false }),
   useDeleteRecurringExpense: () => ({ mutate: mocks.deleteMutate, isPending: false }),
+  useMarkRecurringExpensePaid: () => ({ mutate: mocks.markPaidMutate, isPending: false }),
   useCreateRecurringExpense: () => ({ mutateAsync: mocks.createMutateAsync, isPending: false }),
   useUpdateRecurringExpense: () => ({ mutateAsync: mocks.updateMutateAsync, isPending: false }),
 }));
@@ -132,6 +134,30 @@ describe('FixedCosts page', () => {
     render(<FixedCosts />);
     expect(screen.queryByText('$2,170.00')).not.toBeInTheDocument();
     expect(screen.getAllByText('••••••').length).toBeGreaterThan(5);
+  });
+
+  it('shows overdue manual bills and lets them be marked paid', () => {
+    const iso = (offset: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() + offset);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+        d.getDate(),
+      ).padStart(2, '0')}`;
+    };
+    mocks.expenses = [
+      expense({ id: 7, name: 'Water', next_due_date: iso(-3), autopay: false }),
+      expense({ id: 8, name: 'Internet', next_due_date: iso(5), autopay: true }),
+    ];
+    render(<FixedCosts />);
+
+    expect(screen.getByText('Overdue by 3 days')).toBeInTheDocument();
+    expect(screen.getByText('overdue by 3 days')).toBeInTheDocument(); // "Coming up" list
+    expect(screen.getByText('2 bills · 1 overdue')).toBeInTheDocument();
+
+    // Only manual bills get the button; autopay bills advance on their own.
+    expect(screen.queryByRole('button', { name: 'Mark Internet paid' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Mark Water paid' }));
+    expect(mocks.markPaidMutate).toHaveBeenCalledWith(7);
   });
 
   it('shows an empty state with no expenses', () => {

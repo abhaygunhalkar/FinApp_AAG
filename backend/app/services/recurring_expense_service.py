@@ -1,5 +1,8 @@
 """Business logic for recurring (fixed) expenses."""
 
+import calendar
+from datetime import date, timedelta
+
 from sqlalchemy.orm import Session
 
 from app.models.recurring_expense import RecurringExpense
@@ -22,6 +25,46 @@ MONTHLY_FACTOR: dict[str, float] = {
 }
 
 
+# Length of one billing period: (months, days).
+PERIOD: dict[str, tuple[int, int]] = {
+    "weekly": (0, 7),
+    "biweekly": (0, 14),
+    "monthly": (1, 0),
+    "quarterly": (3, 0),
+    "semiannual": (6, 0),
+    "annual": (12, 0),
+}
+
+
+class ExpenseNotFoundError(ValueError):
+    """Raised when a recurring expense ID does not exist."""
+
+
+def add_periods(start: date, frequency: str, count: int = 1) -> date:
+    """Move `start` forward by `count` billing periods.
+
+    Month-based steps clamp to the last day of shorter months
+    (Jan 31 + 1 month -> Feb 28).
+    """
+    months, days = PERIOD.get(frequency, (1, 0))
+    if days:
+        return start + timedelta(days=days * count)
+    total = start.month - 1 + months * count
+    year, month = start.year + total // 12, total % 12 + 1
+    return date(year, month, min(start.day, calendar.monthrange(year, month)[1]))
+
+
+def roll_forward(due: date, frequency: str, today: date) -> date:
+    """First occurrence of the schedule on or after `today`."""
+    count = 0
+    nxt = due
+    while nxt < today:
+        count += 1
+        # Step from the original date each time so month clamping doesn't drift.
+        nxt = add_periods(due, frequency, count)
+    return nxt
+
+
 class RecurringExpenseService:
     """Service layer for recurring expense business logic."""
 
@@ -31,12 +74,40 @@ class RecurringExpenseService:
         return round(amount * MONTHLY_FACTOR.get(frequency, 1.0), 2)
 
     @staticmethod
-    def get_all(db: Session) -> list[RecurringExpenseResponse]:
-        """Retrieve all recurring expenses."""
-        return [
-            RecurringExpenseService._to_response(e)
-            for e in RecurringExpenseRepository.get_all(db)
-        ]
+    def get_all(
+        db: Session, today: date | None = None
+    ) -> list[RecurringExpenseResponse]:
+        """Retrieve all recurring expenses.
+
+        Autopay bills whose due date has passed are rolled forward to their
+        next occurrence (they were paid automatically). Manual bills keep the
+        past date so they show as overdue until marked paid.
+        """
+        today = today or date.today()
+        expenses = RecurringExpenseRepository.get_all(db)
+        for e in expenses:
+            if e.autopay and e.next_due_date is not None and e.next_due_date < today:
+                e.next_due_date = roll_forward(e.next_due_date, e.frequency, today)
+                RecurringExpenseRepository.update(db, e)
+        return [RecurringExpenseService._to_response(e) for e in expenses]
+
+    @staticmethod
+    def mark_paid(db: Session, expense_id: int) -> RecurringExpenseResponse:
+        """Record that the current bill was paid: advance the due date one period.
+
+        Raises:
+            ExpenseNotFoundError: If the expense does not exist.
+            ValueError: If the expense has no due date to advance.
+        """
+        expense = RecurringExpenseRepository.get_by_id(db, expense_id)
+        if expense is None:
+            raise ExpenseNotFoundError(f"Recurring expense {expense_id} not found")
+        if expense.next_due_date is None:
+            raise ValueError(f"'{expense.name}' has no due date to advance")
+        expense.next_due_date = add_periods(expense.next_due_date, expense.frequency)
+        return RecurringExpenseService._to_response(
+            RecurringExpenseRepository.update(db, expense)
+        )
 
     @staticmethod
     def create(db: Session, data: RecurringExpenseCreate) -> RecurringExpenseResponse:
@@ -62,11 +133,11 @@ class RecurringExpenseService:
         """Update the fields that were sent.
 
         Raises:
-            ValueError: If the expense does not exist.
+            ExpenseNotFoundError: If the expense does not exist.
         """
         expense = RecurringExpenseRepository.get_by_id(db, expense_id)
         if expense is None:
-            raise ValueError(f"Recurring expense {expense_id} not found")
+            raise ExpenseNotFoundError(f"Recurring expense {expense_id} not found")
 
         fields = data.model_dump(exclude_unset=True)
         if fields.get("name") is not None:
@@ -95,11 +166,11 @@ class RecurringExpenseService:
         """Delete a recurring expense.
 
         Raises:
-            ValueError: If the expense does not exist.
+            ExpenseNotFoundError: If the expense does not exist.
         """
         expense = RecurringExpenseRepository.get_by_id(db, expense_id)
         if expense is None:
-            raise ValueError(f"Recurring expense {expense_id} not found")
+            raise ExpenseNotFoundError(f"Recurring expense {expense_id} not found")
         RecurringExpenseRepository.delete(db, expense)
 
     @staticmethod

@@ -92,3 +92,24 @@ def test_update_and_delete_missing_return_404(test_client: TestClient) -> None:
     assert put.status_code == 404
     assert put.json()["success"] is False
     assert test_client.delete("/api/recurring-expenses/999").status_code == 404
+
+
+def test_mark_paid_endpoint(test_client: TestClient) -> None:
+    created = test_client.post(
+        "/api/recurring-expenses", json={**PAYLOAD, "next_due_date": "2026-11-05"}
+    ).json()["data"]
+
+    paid = test_client.post(f"/api/recurring-expenses/{created['id']}/mark-paid")
+    assert paid.status_code == 200
+    assert paid.json()["data"]["next_due_date"] == "2027-05-05"  # semiannual
+
+    no_date = test_client.post(
+        "/api/recurring-expenses", json={**PAYLOAD, "next_due_date": None}
+    ).json()["data"]
+    unprocessable = test_client.post(
+        f"/api/recurring-expenses/{no_date['id']}/mark-paid"
+    )
+    assert unprocessable.status_code == 422
+    assert unprocessable.json()["success"] is False
+
+    assert test_client.post("/api/recurring-expenses/999/mark-paid").status_code == 404

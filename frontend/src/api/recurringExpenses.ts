@@ -32,6 +32,13 @@ export async function updateRecurringExpense(
   return unwrapResponse(data);
 }
 
+export async function markRecurringExpensePaid(id: number): Promise<RecurringExpense> {
+  const { data } = await apiClient.post<ApiResponse<RecurringExpense>>(
+    `/api/recurring-expenses/${id}/mark-paid`,
+  );
+  return unwrapResponse(data);
+}
+
 export async function deleteRecurringExpense(id: number): Promise<null> {
   const { data } = await apiClient.delete<ApiResponse<null>>(`/api/recurring-expenses/${id}`);
   return unwrapResponse(data);

@@ -1,5 +1,9 @@
 import { useMemo, useState } from 'react';
-import { useDeleteRecurringExpense, useRecurringExpenses } from '../hooks';
+import {
+  useDeleteRecurringExpense,
+  useMarkRecurringExpensePaid,
+  useRecurringExpenses,
+} from '../hooks';
 import { HideNumbersToggle, LoadingSpinner } from '../components/shared';
 import ExpenseForm from '../components/fixedcosts/ExpenseForm';
 import CategoryBadge from '../components/fixedcosts/CategoryBadge';
@@ -43,7 +47,11 @@ function StatCard({
 
 function dueHint(days: number | null): { text: string; className: string } {
   if (days === null) return { text: 'No date set', className: 'text-slate-500' };
-  if (days < 0) return { text: 'Date has passed', className: 'text-red-600 dark:text-red-400' };
+  if (days < 0)
+    return {
+      text: `Overdue by ${-days} ${days === -1 ? 'day' : 'days'}`,
+      className: 'text-red-600 dark:text-red-400',
+    };
   if (days === 0) return { text: 'Due today', className: 'text-amber-700 dark:text-amber-400' };
   const text = `In ${days} ${days === 1 ? 'day' : 'days'}`;
   return {
@@ -58,6 +66,7 @@ const fmtDate = (iso: string, opts: Intl.DateTimeFormatOptions) =>
 export default function FixedCosts() {
   const { data, isLoading, isError } = useRecurringExpenses();
   const deleteMutation = useDeleteRecurringExpense();
+  const markPaidMutation = useMarkRecurringExpensePaid();
   const hidden = useUIStore((s) => s.hideBalances);
   const money = (v: number) => (hidden ? MASK : fmtUSD(v));
 
@@ -75,7 +84,7 @@ export default function FixedCosts() {
       .map((e) => ({ expense: e, days: daysUntil(e.next_due_date) }))
       .filter(
         (x): x is { expense: RecurringExpense; days: number } =>
-          x.days !== null && x.days >= 0 && x.days <= DUE_SOON_DAYS,
+          x.days !== null && x.days <= DUE_SOON_DAYS,
       )
       .sort((a, b) => a.days - b.days);
     const segments = CATEGORIES.map((c) => ({
@@ -92,6 +101,7 @@ export default function FixedCosts() {
       autopay,
       soon,
       soonTotal: soon.reduce((s, x) => s + x.expense.amount, 0),
+      overdue: soon.filter((x) => x.days < 0).length,
       segments,
     };
   }, [expenses]);
@@ -210,7 +220,9 @@ export default function FixedCosts() {
             <StatCard
               label={`Due in next ${DUE_SOON_DAYS} days`}
               value={money(stats.soonTotal)}
-              sub={`${stats.soon.length} ${stats.soon.length === 1 ? 'bill' : 'bills'}`}
+              sub={`${stats.soon.length} ${stats.soon.length === 1 ? 'bill' : 'bills'}${
+                stats.overdue ? ` · ${stats.overdue} overdue` : ''
+              }`}
               valueClass="text-amber-900 dark:text-amber-100"
               bgClass="bg-amber-100 border-2 border-amber-300 dark:bg-amber-900/50 dark:border-amber-600"
             />
@@ -288,7 +300,15 @@ export default function FixedCosts() {
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                           {expense.autopay ? 'Autopay' : 'Pay manually'} ·{' '}
-                          {days === 0 ? 'today' : `in ${days} ${days === 1 ? 'day' : 'days'}`}
+                          {days < 0 ? (
+                            <span className="font-semibold text-red-600 dark:text-red-400">
+                              overdue by {-days} {days === -1 ? 'day' : 'days'}
+                            </span>
+                          ) : days === 0 ? (
+                            'today'
+                          ) : (
+                            `in ${days} ${days === 1 ? 'day' : 'days'}`
+                          )}
                         </p>
                       </div>
                       <span className="text-sm font-semibold tabular-nums text-slate-900 dark:text-white">
@@ -452,6 +472,31 @@ export default function FixedCosts() {
                                 </>
                               ) : (
                                 <>
+                                  {/* Autopay bills advance on their own; manual ones are marked paid here. */}
+                                  {!e.autopay && e.next_due_date && (
+                                    <button
+                                      type="button"
+                                      onClick={() => markPaidMutation.mutate(e.id)}
+                                      disabled={markPaidMutation.isPending}
+                                      aria-label={`Mark ${e.name} paid`}
+                                      title="Mark as paid (moves the due date to the next period)"
+                                      className="h-10 w-10 inline-flex items-center justify-center rounded-lg text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 disabled:opacity-50"
+                                    >
+                                      <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth={1.9}
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        className="h-4 w-4"
+                                        aria-hidden="true"
+                                      >
+                                        <circle cx="12" cy="12" r="9" />
+                                        <path d="m8 12.5 2.5 2.5L16 9.5" />
+                                      </svg>
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
                                     onClick={() => openEdit(e)}

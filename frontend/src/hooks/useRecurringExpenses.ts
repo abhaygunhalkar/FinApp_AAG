@@ -3,6 +3,7 @@ import {
   getRecurringExpenses,
   createRecurringExpense,
   updateRecurringExpense,
+  markRecurringExpensePaid,
   deleteRecurringExpense,
 } from '../api';
 import type { RecurringExpenseCreate, RecurringExpenseUpdate } from '../types';
@@ -33,6 +34,17 @@ export function useUpdateRecurringExpense() {
   return useMutation({
     mutationFn: ({ id, expense }: { id: number; expense: RecurringExpenseUpdate }) =>
       updateRecurringExpense(id, expense),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: KEY });
+    },
+  });
+}
+
+export function useMarkRecurringExpensePaid() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => markRecurringExpensePaid(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: KEY });
     },
