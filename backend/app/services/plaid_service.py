@@ -200,6 +200,7 @@ class PlaidService:
 
         linked_accounts = FinancialAccountRepository.get_by_plaid_item_id(db, plaid_item.id)
         for acct in linked_accounts:
+            FinancialAccountService.detach_links(db, acct)
             db.delete(acct)
         db.commit()
 

@@ -48,6 +48,22 @@ class RecurringExpenseRepository:
             raise
 
     @staticmethod
+    def detach_account(db: Session, account_id: int, label: str) -> None:
+        """Unlink expenses from an account being deleted, keeping its name as text.
+
+        Does not commit; the caller commits together with the account deletion.
+        """
+        db.query(RecurringExpense).filter(
+            RecurringExpense.paid_from_account_id == account_id
+        ).update(
+            {
+                RecurringExpense.paid_from_account_id: None,
+                RecurringExpense.paid_from: label,
+            },
+            synchronize_session="fetch",
+        )
+
+    @staticmethod
     def delete(db: Session, expense: RecurringExpense) -> None:
         """Delete a recurring expense."""
         try:

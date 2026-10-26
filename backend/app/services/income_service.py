@@ -12,10 +12,13 @@ from app.schemas.income import (
     IncomeSourceResponse,
     IncomeSourceUpdate,
 )
+from app.services import account_link
 from app.services.recurring_expense_service import RecurringExpenseService
 
 # Account types counted as cash on hand; matches LIQUID_TYPES on the Net Worth page.
 LIQUID_ACCOUNT_TYPES = {"checking", "savings"}
+# Income can only be deposited to a bank account.
+DEPOSIT_ACCOUNT_TYPES = LIQUID_ACCOUNT_TYPES
 
 
 class IncomeNotFoundError(ValueError):
@@ -28,20 +31,32 @@ class IncomeService:
     @staticmethod
     def get_all(db: Session) -> list[IncomeSourceResponse]:
         """Retrieve all income sources."""
-        return [IncomeService._to_response(i) for i in IncomeRepository.get_all(db)]
+        labels = account_link.account_labels(db)
+        return [
+            IncomeService._to_response(db, i, labels)
+            for i in IncomeRepository.get_all(db)
+        ]
 
     @staticmethod
     def create(db: Session, data: IncomeSourceCreate) -> IncomeSourceResponse:
-        """Create an income source."""
+        """Create an income source.
+
+        Raises:
+            ValueError: If the linked account doesn't exist or isn't a bank account.
+        """
+        account_id, deposited_to = account_link.link_from_create(
+            db, data.deposited_to_account_id, data.deposited_to, DEPOSIT_ACCOUNT_TYPES
+        )
         income = IncomeSource(
             name=data.name.strip(),
             category=data.category,
             amount=round(data.amount, 2),
             frequency=data.frequency,
-            deposited_to=IncomeService._clean(data.deposited_to),
-            notes=IncomeService._clean(data.notes),
+            deposited_to_account_id=account_id,
+            deposited_to=deposited_to,
+            notes=account_link.clean_text(data.notes),
         )
-        return IncomeService._to_response(IncomeRepository.create(db, income))
+        return IncomeService._to_response(db, IncomeRepository.create(db, income))
 
     @staticmethod
     def update(
@@ -51,6 +66,7 @@ class IncomeService:
 
         Raises:
             IncomeNotFoundError: If the income source does not exist.
+            ValueError: If the linked account doesn't exist or isn't a bank account.
         """
         income = IncomeRepository.get_by_id(db, income_id)
         if income is None:
@@ -65,12 +81,20 @@ class IncomeService:
             income.amount = round(fields["amount"], 2)
         if fields.get("frequency") is not None:
             income.frequency = fields["frequency"]
-        if "deposited_to" in fields:
-            income.deposited_to = IncomeService._clean(fields["deposited_to"])
+        income.deposited_to_account_id, income.deposited_to = (
+            account_link.link_from_update(
+                db,
+                fields,
+                "deposited_to_account_id",
+                "deposited_to",
+                (income.deposited_to_account_id, income.deposited_to),
+                DEPOSIT_ACCOUNT_TYPES,
+            )
+        )
         if "notes" in fields:
-            income.notes = IncomeService._clean(fields["notes"])
+            income.notes = account_link.clean_text(fields["notes"])
 
-        return IncomeService._to_response(IncomeRepository.update(db, income))
+        return IncomeService._to_response(db, IncomeRepository.update(db, income))
 
     @staticmethod
     def delete(db: Session, income_id: int) -> None:
@@ -117,15 +141,9 @@ class IncomeService:
         )
 
     @staticmethod
-    def _clean(value: str | None) -> str | None:
-        """Trim optional text and store blanks as NULL."""
-        if value is None:
-            return None
-        value = value.strip()
-        return value or None
-
-    @staticmethod
-    def _to_response(income: IncomeSource) -> IncomeSourceResponse:
+    def _to_response(
+        db: Session, income: IncomeSource, labels: dict[int, str] | None = None
+    ) -> IncomeSourceResponse:
         return IncomeSourceResponse(
             id=income.id,
             name=income.name,
@@ -135,7 +153,10 @@ class IncomeService:
             monthly_amount=RecurringExpenseService.monthly_amount(
                 income.amount, income.frequency
             ),
-            deposited_to=income.deposited_to,
+            deposited_to_account_id=income.deposited_to_account_id,
+            deposited_to=account_link.display_label(
+                db, income.deposited_to_account_id, income.deposited_to, labels
+            ),
             notes=income.notes,
             created_at=income.created_at,
             updated_at=income.updated_at,

@@ -41,6 +41,7 @@ function expense(overrides: Partial<RecurringExpense>): RecurringExpense {
     frequency: 'monthly',
     monthly_amount: 100,
     next_due_date: null,
+    paid_from_account_id: null,
     paid_from: null,
     autopay: false,
     notes: null,
@@ -222,11 +223,11 @@ describe('Paid from', () => {
 
     fireEvent.change(within(dialog).getByLabelText('Name'), { target: { value: 'Gym' } });
     fireEvent.change(within(dialog).getByLabelText('Amount'), { target: { value: '45' } });
-    fireEvent.change(select, { target: { value: 'Rewards Card (Harbor Bank)' } });
+    fireEvent.change(select, { target: { value: '2' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Add expense' }));
     await waitFor(() =>
       expect(mocks.createMutateAsync).toHaveBeenCalledWith(
-        expect.objectContaining({ paid_from: 'Rewards Card (Harbor Bank)' }),
+        expect.objectContaining({ paid_from_account_id: 2, paid_from: null }),
       ),
     );
   });

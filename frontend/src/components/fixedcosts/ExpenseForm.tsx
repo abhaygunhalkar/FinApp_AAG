@@ -23,6 +23,8 @@ interface FormData {
   amount: string;
   frequency: ExpenseFrequency;
   next_due_date: string;
+  paid_from_account_id: number | null;
+  /** Free text kept from before linking; only used when no account is selected. */
   paid_from: string;
   autopay: boolean;
   notes: string;
@@ -35,7 +37,8 @@ function initialForm(expense?: RecurringExpense | null, category?: ExpenseCatego
     amount: expense ? String(expense.amount) : '',
     frequency: expense?.frequency ?? 'monthly',
     next_due_date: expense?.next_due_date ?? '',
-    paid_from: expense?.paid_from ?? '',
+    paid_from_account_id: expense?.paid_from_account_id ?? null,
+    paid_from: expense && expense.paid_from_account_id === null ? (expense.paid_from ?? '') : '',
     autopay: expense?.autopay ?? false,
     notes: expense?.notes ?? '',
   };
@@ -86,7 +89,8 @@ export default function ExpenseForm({ expense, defaultCategory, onClose }: Expen
       amount,
       frequency: formData.frequency,
       next_due_date: formData.next_due_date || null,
-      paid_from: formData.paid_from.trim() || null,
+      paid_from_account_id: formData.paid_from_account_id,
+      paid_from: formData.paid_from_account_id === null ? formData.paid_from.trim() || null : null,
       autopay: formData.autopay,
       notes: formData.notes.trim() || null,
     };
@@ -243,8 +247,12 @@ export default function ExpenseForm({ expense, defaultCategory, onClose }: Expen
               </label>
               <AccountSelect
                 id="expense-paid-from"
-                value={formData.paid_from}
-                onChange={(v) => update('paid_from', v)}
+                accountId={formData.paid_from_account_id}
+                legacyText={formData.paid_from}
+                onChange={(accountId, text) => {
+                  update('paid_from_account_id', accountId);
+                  update('paid_from', text);
+                }}
                 accountTypes={PAYMENT_TYPES}
                 emptyMessage="No bank accounts or credit cards yet."
                 className={inputClass}

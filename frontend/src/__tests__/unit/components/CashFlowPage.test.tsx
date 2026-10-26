@@ -46,6 +46,7 @@ function income(overrides: Partial<IncomeSource>): IncomeSource {
     amount: 3000,
     frequency: 'biweekly',
     monthly_amount: 6500,
+    deposited_to_account_id: null,
     deposited_to: 'Checking',
     notes: null,
     created_at: '2026-10-01T00:00:00Z',
@@ -63,6 +64,7 @@ function expense(overrides: Partial<RecurringExpense>): RecurringExpense {
     frequency: 'monthly',
     monthly_amount: 2500,
     next_due_date: null,
+    paid_from_account_id: null,
     paid_from: null,
     autopay: true,
     notes: null,
@@ -214,11 +216,11 @@ describe('CashFlow page', () => {
     fireEvent.change(within(dialog).getByLabelText('Take-home amount'), {
       target: { value: '100' },
     });
-    fireEvent.change(select, { target: { value: 'Everyday Checking (Harbor Bank)' } });
+    fireEvent.change(select, { target: { value: '1' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Add income' }));
     await waitFor(() =>
       expect(mocks.createMutateAsync).toHaveBeenCalledWith(
-        expect.objectContaining({ deposited_to: 'Everyday Checking (Harbor Bank)' }),
+        expect.objectContaining({ deposited_to_account_id: 1, deposited_to: null }),
       ),
     );
   });
@@ -230,8 +232,36 @@ describe('CashFlow page', () => {
     const select = within(screen.getByRole('dialog')).getByLabelText(
       'Deposited to',
     ) as HTMLSelectElement;
-    expect(select.value).toBe('Chase chk');
+    expect(select.value).toBe('legacy');
     expect(select.selectedOptions[0].text).toBe('Chase chk (not on Net Worth)');
+  });
+
+  it('pre-selects the linked account when editing, and can unlink it', async () => {
+    mocks.updateMutateAsync.mockResolvedValue(undefined);
+    mocks.incomes = [
+      income({
+        id: 5,
+        name: 'Linked pay',
+        deposited_to_account_id: 2,
+        deposited_to: 'Emergency Savings',
+      }),
+    ];
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Linked pay' }));
+    const dialog = screen.getByRole('dialog');
+    const select = within(dialog).getByLabelText('Deposited to') as HTMLSelectElement;
+    expect(select.value).toBe('2');
+    // A linked record never shows its label as a separate "not on Net Worth" option.
+    expect([...select.options].some((o) => o.text.includes('not on Net Worth'))).toBe(false);
+
+    fireEvent.change(select, { target: { value: '' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    await waitFor(() =>
+      expect(mocks.updateMutateAsync).toHaveBeenCalledWith({
+        id: 5,
+        income: expect.objectContaining({ deposited_to_account_id: null, deposited_to: null }),
+      }),
+    );
   });
 
   it('points to Net Worth when there are no bank accounts', () => {

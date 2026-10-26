@@ -30,6 +30,9 @@ export interface RecurringExpense {
   /** `amount` converted to a per-month figure by the backend. */
   monthly_amount: number;
   next_due_date: string | null;
+  /** Linked Net Worth account, if any. */
+  paid_from_account_id: number | null;
+  /** The linked account's current "Name (Bank)", else free text saved before linking. */
   paid_from: string | null;
   autopay: boolean;
   notes: string | null;
@@ -43,6 +46,8 @@ export interface RecurringExpenseCreate {
   amount: number;
   frequency: ExpenseFrequency;
   next_due_date: string | null;
+  paid_from_account_id: number | null;
+  /** Free text, only used when no account is linked. */
   paid_from: string | null;
   autopay: boolean;
   notes: string | null;

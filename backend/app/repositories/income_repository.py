@@ -46,6 +46,22 @@ class IncomeRepository:
             raise
 
     @staticmethod
+    def detach_account(db: Session, account_id: int, label: str) -> None:
+        """Unlink income from an account being deleted, keeping its name as text.
+
+        Does not commit; the caller commits together with the account deletion.
+        """
+        db.query(IncomeSource).filter(
+            IncomeSource.deposited_to_account_id == account_id
+        ).update(
+            {
+                IncomeSource.deposited_to_account_id: None,
+                IncomeSource.deposited_to: label,
+            },
+            synchronize_session="fetch",
+        )
+
+    @staticmethod
     def delete(db: Session, income: IncomeSource) -> None:
         """Delete an income source."""
         try:

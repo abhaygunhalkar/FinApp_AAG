@@ -17,6 +17,9 @@ export interface IncomeSource {
   amount: number;
   frequency: ExpenseFrequency;
   monthly_amount: number;
+  /** Linked Net Worth account, if any. */
+  deposited_to_account_id: number | null;
+  /** The linked account's current "Name (Bank)", else free text saved before linking. */
   deposited_to: string | null;
   notes: string | null;
   created_at: string;
@@ -28,6 +31,8 @@ export interface IncomeSourceCreate {
   category: IncomeCategory;
   amount: number;
   frequency: ExpenseFrequency;
+  deposited_to_account_id: number | null;
+  /** Free text, only used when no account is linked. */
   deposited_to: string | null;
   notes: string | null;
 }

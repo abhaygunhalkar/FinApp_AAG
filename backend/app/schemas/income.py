@@ -25,6 +25,8 @@ class IncomeSourceCreate(BaseModel):
     category: IncomeCategory
     amount: float = Field(..., gt=0, le=10_000_000)
     frequency: ExpenseFrequency = "monthly"
+    # Link to a Net Worth account; deposited_to is free text used only without a link.
+    deposited_to_account_id: int | None = None
     deposited_to: str | None = Field(default=None, max_length=200)
     notes: str | None = Field(default=None, max_length=500)
 
@@ -36,6 +38,7 @@ class IncomeSourceUpdate(BaseModel):
     category: IncomeCategory | None = None
     amount: float | None = Field(default=None, gt=0, le=10_000_000)
     frequency: ExpenseFrequency | None = None
+    deposited_to_account_id: int | None = None
     deposited_to: str | None = Field(default=None, max_length=200)
     notes: str | None = Field(default=None, max_length=500)
 
@@ -49,6 +52,8 @@ class IncomeSourceResponse(BaseModel):
     amount: float
     frequency: str
     monthly_amount: float
+    deposited_to_account_id: int | None
+    # Linked account's current "Name (Institution)", else the stored free text.
     deposited_to: str | None
     notes: str | None
     created_at: datetime

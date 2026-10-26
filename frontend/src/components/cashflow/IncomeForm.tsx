@@ -22,6 +22,8 @@ interface FormData {
   category: IncomeCategory;
   amount: string;
   frequency: ExpenseFrequency;
+  deposited_to_account_id: number | null;
+  /** Free text kept from before linking; only used when no account is selected. */
   deposited_to: string;
   notes: string;
 }
@@ -32,7 +34,9 @@ function initialForm(income?: IncomeSource | null): FormData {
     category: income?.category ?? 'Salary',
     amount: income ? String(income.amount) : '',
     frequency: income?.frequency ?? 'biweekly',
-    deposited_to: income?.deposited_to ?? '',
+    deposited_to_account_id: income?.deposited_to_account_id ?? null,
+    deposited_to:
+      income && income.deposited_to_account_id === null ? (income.deposited_to ?? '') : '',
     notes: income?.notes ?? '',
   };
 }
@@ -81,7 +85,9 @@ export default function IncomeForm({ income, onClose }: IncomeFormProps) {
       category: formData.category,
       amount,
       frequency: formData.frequency,
-      deposited_to: formData.deposited_to.trim() || null,
+      deposited_to_account_id: formData.deposited_to_account_id,
+      deposited_to:
+        formData.deposited_to_account_id === null ? formData.deposited_to.trim() || null : null,
       notes: formData.notes.trim() || null,
     };
 
@@ -229,8 +235,12 @@ export default function IncomeForm({ income, onClose }: IncomeFormProps) {
               </label>
               <AccountSelect
                 id="income-deposited-to"
-                value={formData.deposited_to}
-                onChange={(v) => update('deposited_to', v)}
+                accountId={formData.deposited_to_account_id}
+                legacyText={formData.deposited_to}
+                onChange={(accountId, text) => {
+                  update('deposited_to_account_id', accountId);
+                  update('deposited_to', text);
+                }}
                 accountTypes={DEPOSIT_TYPES}
                 emptyMessage="No checking or savings accounts yet."
                 className={inputClass}

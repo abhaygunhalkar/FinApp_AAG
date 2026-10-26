@@ -12,6 +12,7 @@ from app.schemas.recurring_expense import (
     RecurringExpenseResponse,
     RecurringExpenseUpdate,
 )
+from app.services import account_link
 
 # How many times per month each frequency occurs, used to normalise every
 # bill to a monthly amount.
@@ -24,6 +25,9 @@ MONTHLY_FACTOR: dict[str, float] = {
     "annual": 1 / 12,
 }
 
+
+# Net Worth account types a bill can be paid from.
+PAYMENT_ACCOUNT_TYPES = {"checking", "savings", "credit_card"}
 
 # Length of one billing period: (months, days).
 PERIOD: dict[str, tuple[int, int]] = {
@@ -89,7 +93,8 @@ class RecurringExpenseService:
             if e.autopay and e.next_due_date is not None and e.next_due_date < today:
                 e.next_due_date = roll_forward(e.next_due_date, e.frequency, today)
                 RecurringExpenseRepository.update(db, e)
-        return [RecurringExpenseService._to_response(e) for e in expenses]
+        labels = account_link.account_labels(db)
+        return [RecurringExpenseService._to_response(db, e, labels) for e in expenses]
 
     @staticmethod
     def mark_paid(db: Session, expense_id: int) -> RecurringExpenseResponse:
@@ -106,24 +111,32 @@ class RecurringExpenseService:
             raise ValueError(f"'{expense.name}' has no due date to advance")
         expense.next_due_date = add_periods(expense.next_due_date, expense.frequency)
         return RecurringExpenseService._to_response(
-            RecurringExpenseRepository.update(db, expense)
+            db, RecurringExpenseRepository.update(db, expense)
         )
 
     @staticmethod
     def create(db: Session, data: RecurringExpenseCreate) -> RecurringExpenseResponse:
-        """Create a recurring expense."""
+        """Create a recurring expense.
+
+        Raises:
+            ValueError: If the linked account doesn't exist or can't pay bills.
+        """
+        account_id, paid_from = account_link.link_from_create(
+            db, data.paid_from_account_id, data.paid_from, PAYMENT_ACCOUNT_TYPES
+        )
         expense = RecurringExpense(
             name=data.name.strip(),
             category=data.category,
             amount=round(data.amount, 2),
             frequency=data.frequency,
             next_due_date=data.next_due_date,
-            paid_from=RecurringExpenseService._clean(data.paid_from),
+            paid_from_account_id=account_id,
+            paid_from=paid_from,
             autopay=data.autopay,
-            notes=RecurringExpenseService._clean(data.notes),
+            notes=account_link.clean_text(data.notes),
         )
         return RecurringExpenseService._to_response(
-            RecurringExpenseRepository.create(db, expense)
+            db, RecurringExpenseRepository.create(db, expense)
         )
 
     @staticmethod
@@ -134,6 +147,7 @@ class RecurringExpenseService:
 
         Raises:
             ExpenseNotFoundError: If the expense does not exist.
+            ValueError: If the linked account doesn't exist or can't pay bills.
         """
         expense = RecurringExpenseRepository.get_by_id(db, expense_id)
         if expense is None:
@@ -150,15 +164,21 @@ class RecurringExpenseService:
             expense.frequency = fields["frequency"]
         if "next_due_date" in fields:
             expense.next_due_date = fields["next_due_date"]
-        if "paid_from" in fields:
-            expense.paid_from = RecurringExpenseService._clean(fields["paid_from"])
+        expense.paid_from_account_id, expense.paid_from = account_link.link_from_update(
+            db,
+            fields,
+            "paid_from_account_id",
+            "paid_from",
+            (expense.paid_from_account_id, expense.paid_from),
+            PAYMENT_ACCOUNT_TYPES,
+        )
         if fields.get("autopay") is not None:
             expense.autopay = fields["autopay"]
         if "notes" in fields:
-            expense.notes = RecurringExpenseService._clean(fields["notes"])
+            expense.notes = account_link.clean_text(fields["notes"])
 
         return RecurringExpenseService._to_response(
-            RecurringExpenseRepository.update(db, expense)
+            db, RecurringExpenseRepository.update(db, expense)
         )
 
     @staticmethod
@@ -174,15 +194,9 @@ class RecurringExpenseService:
         RecurringExpenseRepository.delete(db, expense)
 
     @staticmethod
-    def _clean(value: str | None) -> str | None:
-        """Trim optional text and store blanks as NULL."""
-        if value is None:
-            return None
-        value = value.strip()
-        return value or None
-
-    @staticmethod
-    def _to_response(expense: RecurringExpense) -> RecurringExpenseResponse:
+    def _to_response(
+        db: Session, expense: RecurringExpense, labels: dict[int, str] | None = None
+    ) -> RecurringExpenseResponse:
         return RecurringExpenseResponse(
             id=expense.id,
             name=expense.name,
@@ -193,7 +207,10 @@ class RecurringExpenseService:
                 expense.amount, expense.frequency
             ),
             next_due_date=expense.next_due_date,
-            paid_from=expense.paid_from,
+            paid_from_account_id=expense.paid_from_account_id,
+            paid_from=account_link.display_label(
+                db, expense.paid_from_account_id, expense.paid_from, labels
+            ),
             autopay=expense.autopay,
             notes=expense.notes,
             created_at=expense.created_at,

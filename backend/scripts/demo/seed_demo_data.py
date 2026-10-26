@@ -184,19 +184,6 @@ WATCHLIST = {
 }
 
 
-# Institution of each demo bank account and card, used to build the "Name (Bank)"
-# labels that the app's account dropdowns store.
-DEMO_BANKS = {
-    "Everyday Checking": "Harbor Bank",
-    "High-Yield Savings": "Summit Savings",
-    "Rewards Card": "Harbor Bank",
-}
-
-
-def account_label(name: str) -> str:
-    return f"{name} ({DEMO_BANKS[name]})" if name in DEMO_BANKS else name
-
-
 def fetch_closes(tickers: list[str]) -> dict[str, dict[date, float]]:
     data = yf.download(
         tickers, period="1y", interval="1d", auto_adjust=False, progress=False
@@ -426,6 +413,10 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
         due_date=TODAY + timedelta(days=11),
     )
 
+    # Bills and income link to these accounts by ID, like the app's dropdowns do.
+    db.flush()
+    account_ids = {a.name: a.id for a in db.query(FinancialAccount).all()}
+
     # Net worth trend: weekly snapshots for 6 months, built from real portfolio prices.
     holdings_qty = {h.ticker: h.quantity for h in db.query(Holding).all()}
     for week in range(26, -1, -1):
@@ -464,7 +455,7 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
                 amount=amount,
                 frequency=freq,
                 next_due_date=TODAY + timedelta(days=due_in),
-                paid_from=account_label(paid_from),
+                paid_from_account_id=account_ids[paid_from],
                 autopay=autopay,
                 notes=notes,
             )
@@ -601,7 +592,7 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
                 category=cat,
                 amount=amount,
                 frequency=freq,
-                deposited_to=account_label(to),
+                deposited_to_account_id=account_ids[to],
                 notes=notes,
             )
         )

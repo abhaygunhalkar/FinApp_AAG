@@ -30,15 +30,21 @@ def create_income_source(
     data: IncomeSourceCreate, db: Session = Depends(get_db)
 ) -> JSONResponse:
     """Add an income source."""
-    source = IncomeService.create(db, data)
-    return JSONResponse(
-        status_code=status.HTTP_201_CREATED,
-        content={
-            "success": True,
-            "data": source.model_dump(mode="json"),
-            "error": None,
-        },
-    )
+    try:
+        source = IncomeService.create(db, data)
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content={
+                "success": True,
+                "data": source.model_dump(mode="json"),
+                "error": None,
+            },
+        )
+    except ValueError as e:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={"success": False, "data": None, "error": str(e)},
+        )
 
 
 @router.put("/income/{income_id}")
@@ -59,6 +65,11 @@ def update_income_source(
     except IncomeNotFoundError as e:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
+            content={"success": False, "data": None, "error": str(e)},
+        )
+    except ValueError as e:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={"success": False, "data": None, "error": str(e)},
         )
 

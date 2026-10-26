@@ -8,8 +8,10 @@ from sqlalchemy.orm import Session
 from app.models.financial_account import FinancialAccount
 from app.repositories.financial_account_repository import FinancialAccountRepository
 from app.repositories.holdings_repository import HoldingsRepository
+from app.repositories.income_repository import IncomeRepository
 from app.repositories.net_worth_snapshot_repository import NetWorthSnapshotRepository
 from app.repositories.plaid_item_repository import PlaidItemRepository
+from app.repositories.recurring_expense_repository import RecurringExpenseRepository
 from app.schemas.financial_account import (
     ASSET_TYPES,
     FinancialAccountCreate,
@@ -21,6 +23,26 @@ from app.schemas.financial_account import (
 
 
 class FinancialAccountService:
+    @staticmethod
+    def label(account: FinancialAccount) -> str:
+        """How an account is named elsewhere in the app: "Name (Institution)"."""
+        return (
+            f"{account.name} ({account.institution})"
+            if account.institution
+            else account.name
+        )
+
+    @staticmethod
+    def detach_links(db: Session, account: FinancialAccount) -> None:
+        """Before deleting an account, unlink bills and income that point to it.
+
+        They keep the account's last name as plain text. SQLite doesn't enforce the
+        foreign keys' ON DELETE SET NULL here, so this is done explicitly. Does not
+        commit; the caller's deletion commit includes it.
+        """
+        label = FinancialAccountService.label(account)
+        RecurringExpenseRepository.detach_account(db, account.id, label)
+        IncomeRepository.detach_account(db, account.id, label)
 
     @staticmethod
     def _is_asset(account_type: str) -> bool:
@@ -132,6 +154,7 @@ class FinancialAccountService:
         account = FinancialAccountRepository.get_by_id(db, account_id)
         if account is None:
             raise HTTPException(status_code=404, detail="Account not found")
+        FinancialAccountService.detach_links(db, account)
         FinancialAccountRepository.delete(db, account)
         FinancialAccountService._snapshot(db)
 

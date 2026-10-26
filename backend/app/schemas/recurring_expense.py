@@ -34,6 +34,8 @@ class RecurringExpenseCreate(BaseModel):
     amount: float = Field(..., gt=0, le=10_000_000)
     frequency: ExpenseFrequency = "monthly"
     next_due_date: date | None = None
+    # Link to a Net Worth account; paid_from is free text used only without a link.
+    paid_from_account_id: int | None = None
     paid_from: str | None = Field(default=None, max_length=200)
     autopay: bool = False
     notes: str | None = Field(default=None, max_length=500)
@@ -47,6 +49,7 @@ class RecurringExpenseUpdate(BaseModel):
     amount: float | None = Field(default=None, gt=0, le=10_000_000)
     frequency: ExpenseFrequency | None = None
     next_due_date: date | None = None
+    paid_from_account_id: int | None = None
     paid_from: str | None = Field(default=None, max_length=200)
     autopay: bool | None = None
     notes: str | None = Field(default=None, max_length=500)
@@ -62,6 +65,8 @@ class RecurringExpenseResponse(BaseModel):
     frequency: str
     monthly_amount: float
     next_due_date: date | None
+    paid_from_account_id: int | None
+    # Linked account's current "Name (Institution)", else the stored free text.
     paid_from: str | None
     autopay: bool
     notes: str | None

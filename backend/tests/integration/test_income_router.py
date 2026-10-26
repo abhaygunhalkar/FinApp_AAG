@@ -67,3 +67,11 @@ def test_create_rejects_invalid_input(
 def test_missing_returns_404(test_client: TestClient) -> None:
     assert test_client.put("/api/income/999", json={"amount": 5}).status_code == 404
     assert test_client.delete("/api/income/999").status_code == 404
+
+
+def test_linking_to_a_missing_account_returns_422(test_client: TestClient) -> None:
+    bad = test_client.post(
+        "/api/income", json={**PAYLOAD, "deposited_to_account_id": 999}
+    )
+    assert bad.status_code == 422
+    assert bad.json()["success"] is False

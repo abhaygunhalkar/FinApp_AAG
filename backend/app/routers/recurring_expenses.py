@@ -33,15 +33,21 @@ def create_recurring_expense(
     data: RecurringExpenseCreate, db: Session = Depends(get_db)
 ) -> JSONResponse:
     """Add a recurring expense."""
-    expense = RecurringExpenseService.create(db, data)
-    return JSONResponse(
-        status_code=status.HTTP_201_CREATED,
-        content={
-            "success": True,
-            "data": expense.model_dump(mode="json"),
-            "error": None,
-        },
-    )
+    try:
+        expense = RecurringExpenseService.create(db, data)
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content={
+                "success": True,
+                "data": expense.model_dump(mode="json"),
+                "error": None,
+            },
+        )
+    except ValueError as e:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={"success": False, "data": None, "error": str(e)},
+        )
 
 
 @router.put("/{expense_id}")
@@ -59,9 +65,14 @@ def update_recurring_expense(
                 "error": None,
             },
         )
-    except ValueError as e:
+    except ExpenseNotFoundError as e:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
+            content={"success": False, "data": None, "error": str(e)},
+        )
+    except ValueError as e:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={"success": False, "data": None, "error": str(e)},
         )
 

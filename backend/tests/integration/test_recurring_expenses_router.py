@@ -113,3 +113,17 @@ def test_mark_paid_endpoint(test_client: TestClient) -> None:
     assert unprocessable.json()["success"] is False
 
     assert test_client.post("/api/recurring-expenses/999/mark-paid").status_code == 404
+
+
+def test_linking_to_an_unusable_account_returns_422(test_client: TestClient) -> None:
+    bad = test_client.post(
+        "/api/recurring-expenses", json={**PAYLOAD, "paid_from_account_id": 999}
+    )
+    assert bad.status_code == 422
+    assert "not found" in bad.json()["error"]
+
+    created = test_client.post("/api/recurring-expenses", json=PAYLOAD).json()["data"]
+    bad_update = test_client.put(
+        f"/api/recurring-expenses/{created['id']}", json={"paid_from_account_id": 999}
+    )
+    assert bad_update.status_code == 422
