@@ -33,3 +33,10 @@ export {
   markRecurringExpensePaid,
   deleteRecurringExpense,
 } from './recurringExpenses';
+export {
+  getIncomeSources,
+  createIncomeSource,
+  updateIncomeSource,
+  deleteIncomeSource,
+  getCashFlowSummary,
+} from './income';

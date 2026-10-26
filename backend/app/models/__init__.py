@@ -4,6 +4,7 @@ from app.models.cash_balance import CashBalance
 from app.models.earnings_cache import EarningsCache
 from app.models.financial_account import FinancialAccount
 from app.models.holding import Holding
+from app.models.income_source import IncomeSource
 from app.models.net_worth_snapshot import NetWorthSnapshot
 from app.models.options_trade import OptionsTrade
 from app.models.plaid_item import PlaidItem
@@ -17,6 +18,7 @@ __all__ = [
     "EarningsCache",
     "FinancialAccount",
     "Holding",
+    "IncomeSource",
     "NetWorthSnapshot",
     "OptionsTrade",
     "PlaidItem",

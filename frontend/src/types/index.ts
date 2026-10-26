@@ -21,3 +21,10 @@ export type {
   RecurringExpenseCreate,
   RecurringExpenseUpdate,
 } from './recurringExpense';
+export type {
+  CashFlowSummary,
+  IncomeCategory,
+  IncomeSource,
+  IncomeSourceCreate,
+  IncomeSourceUpdate,
+} from './income';

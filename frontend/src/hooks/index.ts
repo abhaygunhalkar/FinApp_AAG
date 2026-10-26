@@ -49,3 +49,10 @@ export {
   useMarkRecurringExpensePaid,
   useDeleteRecurringExpense,
 } from './useRecurringExpenses';
+export {
+  useIncomeSources,
+  useCashFlowSummary,
+  useCreateIncomeSource,
+  useUpdateIncomeSource,
+  useDeleteIncomeSource,
+} from './useIncome';

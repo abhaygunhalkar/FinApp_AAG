@@ -6,6 +6,7 @@ const navItems = [
   { to: '/', label: 'Dashboard', icon: DashboardIcon },
   { to: '/net-worth', label: 'Net Worth', icon: NetWorthIcon },
   { to: '/fixed-costs', label: 'Fixed Costs', icon: FixedCostsIcon },
+  { to: '/cash-flow', label: 'Cash Flow', icon: CashFlowIcon },
   { to: '/holdings', label: 'Holdings', icon: HoldingsIcon },
   { to: '/etf-holdings', label: 'ETF Holdings', icon: ETFIcon },
   { to: '/watchlist', label: 'Watchlist', icon: WatchlistIcon },
@@ -103,6 +104,18 @@ export default function Sidebar() {
         </div>
       </aside>
     </>
+  );
+}
+
+function CashFlowIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+      <path
+        fillRule="evenodd"
+        d="M3 6a1 1 0 0 1 1-1h9.586l-1.293-1.293a1 1 0 1 1 1.414-1.414l3 3a1 1 0 0 1 0 1.414l-3 3a1 1 0 0 1-1.414-1.414L13.586 7H4a1 1 0 0 1-1-1Zm14 8a1 1 0 0 1-1 1H6.414l1.293 1.293a1 1 0 0 1-1.414 1.414l-3-3a1 1 0 0 1 0-1.414l3-3a1 1 0 1 1 1.414 1.414L6.414 13H16a1 1 0 0 1 1 1Z"
+        clipRule="evenodd"
+      />
+    </svg>
   );
 }
 
