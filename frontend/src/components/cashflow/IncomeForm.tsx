@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useCreateIncomeSource, useUpdateIncomeSource } from '../../hooks';
 import type {
+  AccountType,
   ExpenseFrequency,
   IncomeCategory,
   IncomeSource,
   IncomeSourceCreate,
 } from '../../types';
 import { FREQUENCIES, MONTHLY_FACTOR, fmtUSD } from '../fixedcosts/constants';
+import AccountSelect from '../shared/AccountSelect';
 import { INCOME_CATEGORIES } from './constants';
 
 interface IncomeFormProps {
@@ -37,6 +39,9 @@ function initialForm(income?: IncomeSource | null): FormData {
 
 const inputClass =
   'w-full h-11 px-3 rounded-xl border border-[#D0D5DD] dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/40 focus:border-[#1D4ED8] transition';
+
+/** Income lands in a bank account. */
+const DEPOSIT_TYPES: AccountType[] = ['checking', 'savings'];
 
 const labelClass = 'block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5';
 
@@ -222,14 +227,14 @@ export default function IncomeForm({ income, onClose }: IncomeFormProps) {
               <label htmlFor="income-deposited-to" className={labelClass}>
                 Deposited to
               </label>
-              <input
+              <AccountSelect
                 id="income-deposited-to"
-                type="text"
                 value={formData.deposited_to}
-                onChange={(e) => update('deposited_to', e.target.value)}
-                placeholder="e.g. Chase checking"
-                maxLength={200}
+                onChange={(v) => update('deposited_to', v)}
+                accountTypes={DEPOSIT_TYPES}
+                emptyMessage="No checking or savings accounts yet."
                 className={inputClass}
+                onNavigate={onClose}
               />
             </div>
           </div>

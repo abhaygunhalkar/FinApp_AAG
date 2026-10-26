@@ -1,12 +1,14 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import FixedCosts from '../../../pages/FixedCosts';
 import { useUIStore } from '../../../store/uiStore';
 import { daysUntil } from '../../../components/fixedcosts/constants';
-import type { RecurringExpense } from '../../../types';
+import type { FinancialAccount, RecurringExpense } from '../../../types';
 
 const mocks = vi.hoisted(() => ({
   expenses: [] as RecurringExpense[],
+  accounts: [] as FinancialAccount[],
   deleteMutate: vi.fn(),
   markPaidMutate: vi.fn(),
   createMutateAsync: vi.fn(),
@@ -22,6 +24,7 @@ vi.stubGlobal('localStorage', {
 });
 
 vi.mock('../../../hooks', () => ({
+  useAccounts: () => ({ data: mocks.accounts }),
   useRecurringExpenses: () => ({ data: mocks.expenses, isLoading: false, isError: false }),
   useDeleteRecurringExpense: () => ({ mutate: mocks.deleteMutate, isPending: false }),
   useMarkRecurringExpensePaid: () => ({ mutate: mocks.markPaidMutate, isPending: false }),
@@ -47,8 +50,16 @@ function expense(overrides: Partial<RecurringExpense>): RecurringExpense {
   };
 }
 
+const renderPage = () =>
+  render(
+    <MemoryRouter>
+      <FixedCosts />
+    </MemoryRouter>,
+  );
+
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.accounts = [];
   useUIStore.setState({ hideBalances: false });
   mocks.expenses = [
     expense({ id: 1, name: 'Mortgage', category: 'Housing', amount: 2000, monthly_amount: 2000 }),
@@ -66,14 +77,14 @@ beforeEach(() => {
 
 describe('FixedCosts page', () => {
   it('totals bills as monthly and yearly amounts', () => {
-    render(<FixedCosts />);
+    renderPage();
     expect(screen.getAllByText('$2,170.00').length).toBeGreaterThan(0);
     expect(screen.getByText('$26,040.00')).toBeInTheDocument();
     expect(screen.getByText('1 on autopay · 2 paid manually')).toBeInTheDocument();
   });
 
   it('filters the table by category', () => {
-    render(<FixedCosts />);
+    renderPage();
     fireEvent.click(screen.getByRole('button', { name: 'Utilities (1)' }));
     const table = screen.getByRole('table');
     expect(within(table).getByText('Internet')).toBeInTheDocument();
@@ -82,7 +93,7 @@ describe('FixedCosts page', () => {
   });
 
   it('asks before deleting, then deletes', () => {
-    render(<FixedCosts />);
+    renderPage();
     fireEvent.click(screen.getByRole('button', { name: 'Delete Internet' }));
     fireEvent.click(screen.getByRole('button', { name: 'Keep' }));
     expect(mocks.deleteMutate).not.toHaveBeenCalled();
@@ -94,7 +105,7 @@ describe('FixedCosts page', () => {
 
   it('edits an expense with its current values filled in', async () => {
     mocks.updateMutateAsync.mockResolvedValue(undefined);
-    render(<FixedCosts />);
+    renderPage();
     fireEvent.click(screen.getByRole('button', { name: 'Edit Internet' }));
     const amount = screen.getByLabelText('Amount') as HTMLInputElement;
     expect(amount.value).toBe('70');
@@ -110,7 +121,7 @@ describe('FixedCosts page', () => {
 
   it('validates the add form before saving', async () => {
     mocks.createMutateAsync.mockResolvedValue(undefined);
-    render(<FixedCosts />);
+    renderPage();
     fireEvent.click(screen.getByRole('button', { name: 'Add expense' }));
     const dialog = screen.getByRole('dialog');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Add expense' }));
@@ -131,7 +142,7 @@ describe('FixedCosts page', () => {
 
   it('masks amounts when numbers are hidden', () => {
     useUIStore.setState({ hideBalances: true });
-    render(<FixedCosts />);
+    renderPage();
     expect(screen.queryByText('$2,170.00')).not.toBeInTheDocument();
     expect(screen.getAllByText('••••••').length).toBeGreaterThan(5);
   });
@@ -148,7 +159,7 @@ describe('FixedCosts page', () => {
       expense({ id: 7, name: 'Water', next_due_date: iso(-3), autopay: false }),
       expense({ id: 8, name: 'Internet', next_due_date: iso(5), autopay: true }),
     ];
-    render(<FixedCosts />);
+    renderPage();
 
     expect(screen.getByText('Overdue by 3 days')).toBeInTheDocument();
     expect(screen.getByText('overdue by 3 days')).toBeInTheDocument(); // "Coming up" list
@@ -162,8 +173,62 @@ describe('FixedCosts page', () => {
 
   it('shows an empty state with no expenses', () => {
     mocks.expenses = [];
-    render(<FixedCosts />);
+    renderPage();
     expect(screen.getByText('No fixed costs yet')).toBeInTheDocument();
+  });
+});
+
+describe('Paid from', () => {
+  const account = (overrides: Partial<FinancialAccount>): FinancialAccount => ({
+    id: 1,
+    name: 'Account',
+    institution: null,
+    account_type: 'checking',
+    balance: 0,
+    is_asset: true,
+    is_linked: false,
+    last_synced: null,
+    notes: null,
+    created_at: '2026-10-01T00:00:00Z',
+    updated_at: '2026-10-01T00:00:00Z',
+    ...overrides,
+  });
+
+  it('lists bank accounts and credit cards from Net Worth, grouped', async () => {
+    mocks.createMutateAsync.mockResolvedValue(undefined);
+    mocks.accounts = [
+      account({ id: 1, name: 'Everyday Checking', institution: 'Harbor Bank' }),
+      account({
+        id: 2,
+        name: 'Rewards Card',
+        institution: 'Harbor Bank',
+        account_type: 'credit_card',
+      }),
+      account({ id: 3, name: 'Home Mortgage', account_type: 'mortgage' }),
+    ];
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Add expense' }));
+    const dialog = screen.getByRole('dialog');
+    const select = within(dialog).getByLabelText('Paid from') as HTMLSelectElement;
+    expect([...select.querySelectorAll('optgroup')].map((g) => g.label)).toEqual([
+      'Bank accounts',
+      'Credit cards',
+    ]);
+    expect([...select.options].map((o) => o.text)).toEqual([
+      'Not specified',
+      'Everyday Checking (Harbor Bank)',
+      'Rewards Card (Harbor Bank)',
+    ]);
+
+    fireEvent.change(within(dialog).getByLabelText('Name'), { target: { value: 'Gym' } });
+    fireEvent.change(within(dialog).getByLabelText('Amount'), { target: { value: '45' } });
+    fireEvent.change(select, { target: { value: 'Rewards Card (Harbor Bank)' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add expense' }));
+    await waitFor(() =>
+      expect(mocks.createMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ paid_from: 'Rewards Card (Harbor Bank)' }),
+      ),
+    );
   });
 });
 

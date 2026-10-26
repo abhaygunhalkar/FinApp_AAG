@@ -3,12 +3,18 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import CashFlow from '../../../pages/CashFlow';
 import { useUIStore } from '../../../store/uiStore';
-import type { CashFlowSummary, IncomeSource, RecurringExpense } from '../../../types';
+import type {
+  CashFlowSummary,
+  FinancialAccount,
+  IncomeSource,
+  RecurringExpense,
+} from '../../../types';
 
 const mocks = vi.hoisted(() => ({
   summary: null as CashFlowSummary | null,
   incomes: [] as IncomeSource[],
   expenses: [] as RecurringExpense[],
+  accounts: [] as FinancialAccount[],
   deleteMutate: vi.fn(),
   createMutateAsync: vi.fn(),
   updateMutateAsync: vi.fn(),
@@ -26,6 +32,7 @@ vi.mock('../../../hooks', () => ({
   useCashFlowSummary: () => ({ data: mocks.summary, isLoading: false, isError: false }),
   useIncomeSources: () => ({ data: mocks.incomes, isLoading: false }),
   useRecurringExpenses: () => ({ data: mocks.expenses }),
+  useAccounts: () => ({ data: mocks.accounts }),
   useDeleteIncomeSource: () => ({ mutate: mocks.deleteMutate, isPending: false }),
   useCreateIncomeSource: () => ({ mutateAsync: mocks.createMutateAsync, isPending: false }),
   useUpdateIncomeSource: () => ({ mutateAsync: mocks.updateMutateAsync, isPending: false }),
@@ -72,8 +79,31 @@ const renderPage = () =>
     </MemoryRouter>,
   );
 
+function account(overrides: Partial<FinancialAccount>): FinancialAccount {
+  return {
+    id: 1,
+    name: 'Account',
+    institution: null,
+    account_type: 'checking',
+    balance: 0,
+    is_asset: true,
+    is_linked: false,
+    last_synced: null,
+    notes: null,
+    created_at: '2026-10-01T00:00:00Z',
+    updated_at: '2026-10-01T00:00:00Z',
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.accounts = [
+    account({ id: 1, name: 'Everyday Checking', institution: 'Harbor Bank' }),
+    account({ id: 2, name: 'Emergency Savings', account_type: 'savings' }),
+    account({ id: 3, name: 'Rewards Card', account_type: 'credit_card', is_asset: false }),
+    account({ id: 4, name: 'Brokerage', account_type: 'investment' }),
+  ];
   useUIStore.setState({ hideBalances: false });
   mocks.incomes = [
     income({ id: 1 }),
@@ -166,6 +196,49 @@ describe('CashFlow page', () => {
         }),
       ),
     );
+  });
+
+  it('offers checking and savings accounts from Net Worth as deposit options', async () => {
+    mocks.createMutateAsync.mockResolvedValue(undefined);
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Add income' }));
+    const dialog = screen.getByRole('dialog');
+    const select = within(dialog).getByLabelText('Deposited to') as HTMLSelectElement;
+    expect([...select.options].map((o) => o.text)).toEqual([
+      'Not specified',
+      'Everyday Checking (Harbor Bank)',
+      'Emergency Savings',
+    ]);
+
+    fireEvent.change(within(dialog).getByLabelText('Name'), { target: { value: 'Paycheck' } });
+    fireEvent.change(within(dialog).getByLabelText('Take-home amount'), {
+      target: { value: '100' },
+    });
+    fireEvent.change(select, { target: { value: 'Everyday Checking (Harbor Bank)' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add income' }));
+    await waitFor(() =>
+      expect(mocks.createMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ deposited_to: 'Everyday Checking (Harbor Bank)' }),
+      ),
+    );
+  });
+
+  it('keeps a typed-in deposit value that is not on Net Worth when editing', () => {
+    mocks.incomes = [income({ id: 9, name: 'Old paycheck', deposited_to: 'Chase chk' })];
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Old paycheck' }));
+    const select = within(screen.getByRole('dialog')).getByLabelText(
+      'Deposited to',
+    ) as HTMLSelectElement;
+    expect(select.value).toBe('Chase chk');
+    expect(select.selectedOptions[0].text).toBe('Chase chk (not on Net Worth)');
+  });
+
+  it('points to Net Worth when there are no bank accounts', () => {
+    mocks.accounts = [];
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Add income' }));
+    expect(screen.getByRole('link', { name: 'Add them on Net Worth' })).toBeInTheDocument();
   });
 
   it('masks amounts but keeps months when numbers are hidden', () => {

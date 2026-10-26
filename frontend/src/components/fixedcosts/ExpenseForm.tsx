@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useCreateRecurringExpense, useUpdateRecurringExpense } from '../../hooks';
 import type {
+  AccountType,
   ExpenseCategory,
   ExpenseFrequency,
   RecurringExpense,
   RecurringExpenseCreate,
 } from '../../types';
+import AccountSelect from '../shared/AccountSelect';
 import { CATEGORIES, FREQUENCIES, MONTHLY_FACTOR, fmtUSD } from './constants';
 
 interface ExpenseFormProps {
@@ -41,6 +43,9 @@ function initialForm(expense?: RecurringExpense | null, category?: ExpenseCatego
 
 const inputClass =
   'w-full h-11 px-3 rounded-xl border border-[#D0D5DD] dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/40 focus:border-[#1D4ED8] transition';
+
+/** Bills are paid from a bank account or charged to a card. */
+const PAYMENT_TYPES: AccountType[] = ['checking', 'savings', 'credit_card'];
 
 const labelClass = 'block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5';
 
@@ -236,14 +241,14 @@ export default function ExpenseForm({ expense, defaultCategory, onClose }: Expen
               <label htmlFor="expense-paid-from" className={labelClass}>
                 Paid from
               </label>
-              <input
+              <AccountSelect
                 id="expense-paid-from"
-                type="text"
                 value={formData.paid_from}
-                onChange={(e) => update('paid_from', e.target.value)}
-                placeholder="e.g. Chase checking"
-                maxLength={200}
+                onChange={(v) => update('paid_from', v)}
+                accountTypes={PAYMENT_TYPES}
+                emptyMessage="No bank accounts or credit cards yet."
                 className={inputClass}
+                onNavigate={onClose}
               />
             </div>
             <label
