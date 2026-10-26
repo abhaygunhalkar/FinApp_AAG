@@ -117,3 +117,13 @@ def test_cash_flow_summary_negative_surplus(db_session: Session) -> None:
     s = IncomeService.get_cash_flow_summary(db_session)
     assert s.monthly_surplus == -500.0
     assert s.kept_pct == -25.0
+
+
+def test_twice_a_month_income_is_exactly_double(db_session: Session) -> None:
+    income = IncomeService.create(
+        db_session,
+        IncomeSourceCreate(
+            name="Pay", category="Salary", amount=2600.0, frequency="semimonthly"
+        ),
+    )
+    assert income.monthly_amount == 5200.0

@@ -22,7 +22,7 @@ ExpenseCategory = Literal[
 ]
 
 ExpenseFrequency = Literal[
-    "weekly", "biweekly", "monthly", "quarterly", "semiannual", "annual"
+    "weekly", "biweekly", "semimonthly", "monthly", "quarterly", "semiannual", "annual"
 ]
 
 

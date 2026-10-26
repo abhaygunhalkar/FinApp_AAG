@@ -16,6 +16,7 @@ export type ExpenseCategory =
 export type ExpenseFrequency =
   | 'weekly'
   | 'biweekly'
+  | 'semimonthly'
   | 'monthly'
   | 'quarterly'
   | 'semiannual'

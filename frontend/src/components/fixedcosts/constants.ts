@@ -21,6 +21,7 @@ export const CATEGORIES: { name: ExpenseCategory; color: string }[] = [
 export const FREQUENCIES: { value: ExpenseFrequency; label: string }[] = [
   { value: 'weekly', label: 'Weekly' },
   { value: 'biweekly', label: 'Every 2 weeks' },
+  { value: 'semimonthly', label: 'Twice a month' },
   { value: 'monthly', label: 'Monthly' },
   { value: 'quarterly', label: 'Quarterly' },
   { value: 'semiannual', label: 'Every 6 months' },
@@ -31,6 +32,7 @@ export const FREQUENCIES: { value: ExpenseFrequency; label: string }[] = [
 export const MONTHLY_FACTOR: Record<ExpenseFrequency, number> = {
   weekly: 52 / 12,
   biweekly: 26 / 12,
+  semimonthly: 2,
   monthly: 1,
   quarterly: 1 / 3,
   semiannual: 1 / 6,

@@ -271,6 +271,19 @@ describe('CashFlow page', () => {
     expect(screen.getByRole('link', { name: 'Add them on Net Worth' })).toBeInTheDocument();
   });
 
+  it('offers twice-a-month pay and previews it as exactly double', () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Add income' }));
+    const dialog = screen.getByRole('dialog');
+    const freq = within(dialog).getByLabelText('How often') as HTMLSelectElement;
+    expect([...freq.options].map((o) => o.text)).toContain('Twice a month');
+    fireEvent.change(freq, { target: { value: 'semimonthly' } });
+    fireEvent.change(within(dialog).getByLabelText('Take-home amount'), {
+      target: { value: '2600' },
+    });
+    expect(within(dialog).getByText(/Works out to \$5,200\.00 per month/)).toBeInTheDocument();
+  });
+
   it('masks amounts but keeps months when numbers are hidden', () => {
     useUIStore.setState({ hideBalances: true });
     renderPage();

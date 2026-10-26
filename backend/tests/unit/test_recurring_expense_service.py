@@ -34,6 +34,7 @@ def _create(db: Session, **overrides: object) -> int:
         (600.0, "semiannual", 100.0),
         (120.0, "weekly", 520.0),
         (120.0, "biweekly", 260.0),
+        (2600.0, "semimonthly", 5200.0),
     ],
 )
 def test_monthly_amount(amount: float, frequency: str, expected: float) -> None:
@@ -117,6 +118,8 @@ def test_delete_missing_raises(db_session: Session) -> None:
     [
         (date(2026, 10, 28), "weekly", date(2026, 11, 4)),
         (date(2026, 10, 28), "biweekly", date(2026, 11, 11)),
+        (date(2026, 10, 6), "semimonthly", date(2026, 10, 21)),
+        (date(2026, 10, 22), "semimonthly", date(2026, 11, 6)),
         (date(2026, 10, 28), "monthly", date(2026, 11, 28)),
         (date(2026, 1, 31), "monthly", date(2026, 2, 28)),
         (date(2028, 1, 31), "monthly", date(2028, 2, 29)),
@@ -181,3 +184,16 @@ def test_mark_paid_without_due_date_raises(db_session: Session) -> None:
 def test_mark_paid_missing_raises_not_found(db_session: Session) -> None:
     with pytest.raises(ExpenseNotFoundError):
         RecurringExpenseService.mark_paid(db_session, 999)
+
+
+def test_semimonthly_alternates_without_drift() -> None:
+    start = date(2026, 10, 6)
+    steps = [add_periods(start, "semimonthly", n) for n in range(1, 5)]
+    assert steps == [
+        date(2026, 10, 21),
+        date(2026, 11, 6),
+        date(2026, 11, 21),
+        date(2026, 12, 6),
+    ]
+    # Rolling forward from a missed date lands on the next half-month slot.
+    assert roll_forward(start, "semimonthly", date(2026, 11, 10)) == date(2026, 11, 21)

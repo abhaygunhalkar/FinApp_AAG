@@ -19,6 +19,7 @@ from app.services import account_link
 MONTHLY_FACTOR: dict[str, float] = {
     "weekly": 52 / 12,
     "biweekly": 26 / 12,
+    "semimonthly": 2.0,
     "monthly": 1.0,
     "quarterly": 1 / 3,
     "semiannual": 1 / 6,
@@ -33,6 +34,7 @@ PAYMENT_ACCOUNT_TYPES = {"checking", "savings", "credit_card"}
 PERIOD: dict[str, tuple[int, int]] = {
     "weekly": (0, 7),
     "biweekly": (0, 14),
+    "semimonthly": (0, 0),  # handled separately in add_periods
     "monthly": (1, 0),
     "quarterly": (3, 0),
     "semiannual": (6, 0),
@@ -50,6 +52,11 @@ def add_periods(start: date, frequency: str, count: int = 1) -> date:
     Month-based steps clamp to the last day of shorter months
     (Jan 31 + 1 month -> Feb 28).
     """
+    if frequency == "semimonthly":
+        # Twice a month, with only one stored date: alternate between that day
+        # and 15 days later (the 6th -> the 21st -> the 6th of next month).
+        base = add_periods(start, "monthly", count // 2)
+        return base + timedelta(days=15) if count % 2 else base
     months, days = PERIOD.get(frequency, (1, 0))
     if days:
         return start + timedelta(days=days * count)
