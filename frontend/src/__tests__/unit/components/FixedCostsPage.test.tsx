@@ -107,6 +107,7 @@ describe('FixedCosts page', () => {
     mocks.cashFlow = { monthly_income: 2500 } as CashFlowSummary;
     renderPage();
     expect(screen.getByText('87%')).toBeInTheDocument(); // $2,170 of $2,500
+    expect(screen.getByText('0% savings ($0.00) ·')).toBeInTheDocument(); // savings still shown
     expect(screen.getByText('Only $330.00/mo left over')).toBeInTheDocument();
   });
 

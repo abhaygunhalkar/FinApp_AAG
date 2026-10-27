@@ -111,28 +111,32 @@ export default function IncomeShareCard({
   // Left over always shows a sliver (unless overspent); empty costs/savings are left out.
   const segments = rows.filter((r) => (r.key === 'left' ? r.value >= 0 : r.value > 0));
 
-  const sub =
+  // Savings always shows; only the left-over half turns into a warning when it's thin.
+  const leftPart =
     leftOver < 0 ? (
-      <span className="flex items-center gap-1 font-medium text-red-700 dark:text-red-300">
+      <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-red-700 dark:text-red-300">
         <WarningIcon />
         Over take-home by {money(-leftOver)}
       </span>
     ) : leftOver < LEFT_OVER_WARN ? (
-      <span className="flex items-center gap-1 font-medium text-amber-800 dark:text-amber-300">
+      <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-amber-800 dark:text-amber-300">
         <WarningIcon />
         Only {money(leftOver)}/mo left over
       </span>
     ) : (
-      <span className="text-slate-600 dark:text-slate-400">
-        {/* Each part stays whole, so a narrow card breaks the line at the dot. */}
-        <span className="whitespace-nowrap">
-          {fmtPct(pct(savings))} savings ({money(savings)}) ·
-        </span>{' '}
-        <span className="whitespace-nowrap">
-          {fmtPct(pct(leftOver))} left over ({money(leftOver)})
-        </span>
+      <span className="whitespace-nowrap">
+        {fmtPct(pct(leftOver))} left over ({money(leftOver)})
       </span>
     );
+  const sub = (
+    <span className="text-slate-600 dark:text-slate-400">
+      {/* Each part stays whole, so a narrow card breaks the line at the dot. */}
+      <span className="whitespace-nowrap">
+        {fmtPct(pct(savings))} savings ({money(savings)}) ·
+      </span>{' '}
+      {leftPart}
+    </span>
+  );
 
   return (
     // Focusable so the breakdown opens from the keyboard and on tap, not just on hover.
