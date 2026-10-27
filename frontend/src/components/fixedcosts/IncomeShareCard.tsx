@@ -112,14 +112,15 @@ export default function IncomeShareCard({
   const segments = rows.filter((r) => (r.key === 'left' ? r.value >= 0 : r.value > 0));
 
   // Savings always shows; only the left-over half turns into a warning when it's thin.
+  // Warnings are solid pills so they stand out on the card's own amber/red tint.
   const leftPart =
     leftOver < 0 ? (
-      <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-red-700 dark:text-red-300">
+      <span className="mt-0.5 inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-red-600 px-2 py-0.5 font-semibold text-white">
         <WarningIcon />
         Over take-home by {money(-leftOver)}
       </span>
     ) : leftOver < LEFT_OVER_WARN ? (
-      <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-amber-800 dark:text-amber-300">
+      <span className="mt-0.5 inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-amber-600 px-2 py-0.5 font-semibold text-white">
         <WarningIcon />
         Only {money(leftOver)}/mo left over
       </span>
