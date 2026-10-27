@@ -280,7 +280,7 @@ export default function AccountsPanel({ days }: { days: number }) {
                     {c.institution}
                   </p>
                 )}
-                <p className="mt-auto pt-2 text-base font-bold tabular-nums text-slate-900 dark:text-white">
+                <p className="mt-2.5 text-base font-bold tabular-nums text-slate-900 dark:text-white">
                   {money(c.total)}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
