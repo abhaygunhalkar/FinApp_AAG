@@ -195,15 +195,19 @@ export default function AccountsPanel({ days }: { days: number }) {
                     }`}
                     className="w-full px-4 pt-3 text-left"
                   >
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    {/* One line: long names truncate so the pill stays top right. */}
+                    <div className="flex items-center gap-3">
                       <span
                         className={`h-9 w-9 shrink-0 rounded-lg flex items-center justify-center text-xs font-bold ${badgeTint(a.name)}`}
                         aria-hidden="true"
                       >
                         {initials(a.name)}
                       </span>
-                      <div className="flex-1 min-w-[9rem]">
-                        <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className="text-sm font-semibold text-slate-900 dark:text-white truncate"
+                          title={a.name}
+                        >
                           {a.name}
                         </p>
                         {showInstitution && (
@@ -213,12 +217,17 @@ export default function AccountsPanel({ days }: { days: number }) {
                         )}
                       </div>
                       <span
-                        className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${style.pill}`}
+                        className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${style.pill}`}
+                        title={
+                          tier === 'tight'
+                            ? `Lowest balance stays under ${money(BALANCE_BUFFER)}`
+                            : undefined
+                        }
                       >
                         {tier === 'short'
-                          ? `Short ${money(-a.lowest_balance)} on ${fmtDay(a.short_date!)}`
+                          ? `Short ${money(-a.lowest_balance)}`
                           : tier === 'tight'
-                            ? `Tight · under ${money(BALANCE_BUFFER)}`
+                            ? 'Tight'
                             : 'Covered'}
                       </span>
                     </div>

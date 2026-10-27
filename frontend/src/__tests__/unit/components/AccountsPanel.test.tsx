@@ -128,7 +128,7 @@ describe('AccountsPanel', () => {
   it('flags an account that goes below $0 and explains why', () => {
     renderPanel(14);
     expect(mocks.days).toContain(14);
-    expect(screen.getByText('Short $550.00 on Nov 15')).toBeInTheDocument();
+    expect(screen.getByText('Short $550.00')).toBeInTheDocument();
     expect(screen.getByText(/Rent on Nov 15 takes this account below \$0/)).toBeInTheDocument();
 
     const timeline = screen.getByRole('table', {
@@ -177,7 +177,10 @@ describe('AccountsPanel', () => {
       accounts: [account({ lowest_balance: 320, short_date: null, short_bill: null })],
     });
     renderPanel(14);
-    expect(screen.getByText('Tight · under $500.00')).toBeInTheDocument();
+    expect(screen.getByText('Tight')).toHaveAttribute(
+      'title',
+      'Lowest balance stays under $500.00',
+    );
     expect(
       screen.getByRole('img', { name: '$1,000.00 today, lowest $320.00 · Nov 15' }),
     ).toBeInTheDocument();
@@ -194,7 +197,7 @@ describe('AccountsPanel', () => {
     useUIStore.setState({ hideBalances: true });
     renderPanel(14);
     expect(screen.queryByText(/\$550\.00/)).not.toBeInTheDocument();
-    expect(screen.getByText('Short •••••• on Nov 15')).toBeInTheDocument();
+    expect(screen.getByText('Short ••••••')).toBeInTheDocument();
   });
 
   it('says so when nothing is due', () => {
