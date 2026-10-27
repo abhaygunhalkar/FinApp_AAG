@@ -105,7 +105,8 @@ export default function AccountForm({
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     const name = formData.name.trim();
-    const balance = parseFloat(formData.balance);
+    // A card with nothing owed can be added without typing 0.
+    const balance = credit && formData.balance.trim() === '' ? 0 : parseFloat(formData.balance);
     if (!name) return setError('Name is required');
     if (isNaN(balance) || balance < 0) return setError('Balance must be 0 or greater');
 
@@ -279,7 +280,7 @@ export default function AccountForm({
               inputMode: 'decimal',
               placeholder: '0.00',
               prefix: '$',
-              required: true,
+              required: !credit,
             })}
           </div>
 
