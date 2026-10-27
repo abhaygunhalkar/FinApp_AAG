@@ -92,7 +92,28 @@ describe('FixedCosts page', () => {
     mocks.cashFlow = { monthly_income: 4000 } as CashFlowSummary;
     renderPage();
     expect(screen.getByText('54%')).toBeInTheDocument(); // $2,170 of $4,000
-    expect(screen.getByText('of $4,000.00 take-home per month')).toBeInTheDocument();
+    expect(screen.getByText('goes to costs')).toBeInTheDocument();
+    expect(screen.getByText('$2,170.00 · 54%')).toBeInTheDocument();
+    expect(screen.getByText('$0.00 · 0%')).toBeInTheDocument(); // no savings
+    expect(screen.getByText('$1,830.00 · 46%')).toBeInTheDocument();
+    expect(screen.getByText('0% savings ($0.00) ·')).toBeInTheDocument();
+    expect(screen.getByText('46% left over ($1,830.00)')).toBeInTheDocument();
+    // The full breakdown lives in a popover the card opens on hover or focus.
+    expect(screen.getByRole('tooltip')).toHaveTextContent('of $4,000.00 take-home per month');
+    expect(screen.getByRole('tooltip').parentElement).toHaveAttribute('tabindex', '0');
+  });
+
+  it('warns when little is left over after fixed costs', () => {
+    mocks.cashFlow = { monthly_income: 2500 } as CashFlowSummary;
+    renderPage();
+    expect(screen.getByText('87%')).toBeInTheDocument(); // $2,170 of $2,500
+    expect(screen.getByText('Only $330.00/mo left over')).toBeInTheDocument();
+  });
+
+  it('flags fixed costs above take-home', () => {
+    mocks.cashFlow = { monthly_income: 2000 } as CashFlowSummary;
+    renderPage();
+    expect(screen.getByText('Over take-home by $170.00')).toBeInTheDocument();
   });
 
   it('links to Cash Flow when no income is entered', () => {
@@ -118,11 +139,15 @@ describe('FixedCosts page', () => {
     expect(
       screen.getByText('$30,840.00 per year · includes $400.00 to savings'),
     ).toBeInTheDocument();
-    expect(screen.getByText('64%')).toBeInTheDocument(); // $2,570 of $4,000
-    expect(screen.getByText('54% costs + 10% savings of $4,000.00 take-home')).toBeInTheDocument();
-    expect(screen.getByText('you keep this')).toBeInTheDocument();
+    // The headline counts costs only: $2,170 of $4,000; savings is shown beside it.
+    expect(screen.getByText('54%')).toBeInTheDocument();
+    expect(screen.getByText('$400.00 · 10%')).toBeInTheDocument();
+    expect(screen.getByText('$1,430.00 · 36%')).toBeInTheDocument();
+    const tag = screen
+      .getAllByText('you keep this')
+      .find((el) => el.closest('ul')?.textContent?.includes('/ mo'))!;
     // Savings is listed after every spending category.
-    const rows = screen.getByText('you keep this').closest('ul')!.querySelectorAll('li');
+    const rows = tag.closest('ul')!.querySelectorAll('li');
     expect(rows[rows.length - 1]).toHaveTextContent('Savings & investing');
   });
 

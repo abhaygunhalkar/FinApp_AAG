@@ -54,6 +54,14 @@ export function categoryColor(name: string): string {
   return CATEGORIES.find((c) => c.name === name)?.color ?? '#64748b';
 }
 
+/** Chart fill: savings gets diagonal stripes in its colour so it reads as kept, not spent. */
+export function categoryFill(name: string): string {
+  const color = categoryColor(name);
+  return isSavingsCategory(name)
+    ? `repeating-linear-gradient(135deg, ${color} 0 3px, ${color}59 3px 6px)`
+    : color;
+}
+
 export function frequencyLabel(value: string): string {
   return FREQUENCIES.find((f) => f.value === value)?.label ?? value;
 }

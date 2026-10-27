@@ -1,5 +1,4 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
 import {
   useCashFlowSummary,
   useDeleteRecurringExpense,
@@ -10,9 +9,11 @@ import { HideNumbersToggle, LoadingSpinner } from '../components/shared';
 import ExpenseForm from '../components/fixedcosts/ExpenseForm';
 import CategoryBadge from '../components/fixedcosts/CategoryBadge';
 import AccountsPanel from '../components/fixedcosts/AccountsPanel';
+import IncomeShareCard from '../components/fixedcosts/IncomeShareCard';
 import {
   CATEGORIES,
   DUE_SOON_DAYS,
+  categoryFill,
   daysUntil,
   fmtUSD,
   frequencyLabel,
@@ -62,41 +63,6 @@ function dueHint(days: number | null): { text: string; className: string } {
     text,
     className: days <= DUE_SOON_DAYS ? 'text-amber-700 dark:text-amber-400' : 'text-slate-500',
   };
-}
-
-/** Fixed costs above these shares of take-home income turn the tile amber, then red. */
-const INCOME_SHARE_OK = 50;
-const INCOME_SHARE_HIGH = 65;
-
-function incomeShareTone(pct: number | null): { bgClass: string; valueClass: string } {
-  if (pct === null)
-    return {
-      bgClass:
-        'bg-slate-100 border-2 border-dashed border-slate-300 dark:bg-slate-800 dark:border-slate-600',
-      valueClass: 'text-slate-500 dark:text-slate-400',
-    };
-  if (pct > INCOME_SHARE_HIGH)
-    return {
-      bgClass: 'bg-red-100 border-2 border-red-300 dark:bg-red-900/50 dark:border-red-600',
-      valueClass: 'text-red-900 dark:text-red-100',
-    };
-  if (pct >= INCOME_SHARE_OK)
-    return {
-      bgClass: 'bg-amber-100 border-2 border-amber-300 dark:bg-amber-900/50 dark:border-amber-600',
-      valueClass: 'text-amber-900 dark:text-amber-100',
-    };
-  return {
-    bgClass:
-      'bg-emerald-100 border-2 border-emerald-300 dark:bg-emerald-900/50 dark:border-emerald-600',
-    valueClass: 'text-emerald-900 dark:text-emerald-100',
-  };
-}
-
-/** Savings gets diagonal stripes in its colour so it reads as kept, not spent. */
-function segmentFill(category: string, color: string): string {
-  return isSavingsCategory(category)
-    ? `repeating-linear-gradient(135deg, ${color} 0 3px, ${color}59 3px 6px)`
-    : color;
 }
 
 const COMING_UP_WINDOWS: ComingUpDays[] = [7, 14, 30];
@@ -166,12 +132,6 @@ export default function FixedCosts() {
   }, [expenses, comingUpDays]);
 
   const monthlyIncome = cashFlow?.monthly_income ?? 0;
-  const incomeSharePct = monthlyIncome > 0 ? (stats.monthly / monthlyIncome) * 100 : null;
-  // The tile's colour judges spending only; money moved to savings shouldn't push it to red.
-  const costsSharePct =
-    monthlyIncome > 0 ? ((stats.monthly - stats.savings) / monthlyIncome) * 100 : null;
-  const savingsSharePct = monthlyIncome > 0 ? (stats.savings / monthlyIncome) * 100 : null;
-
   const presentCategories = CATEGORIES.filter((c) => expenses.some((e) => e.category === c.name));
   // Fall back to "All" when the filtered category's last bill was deleted.
   const activeFilter: Filter = presentCategories.some((c) => c.name === filter) ? filter : 'All';
@@ -271,24 +231,11 @@ export default function FixedCosts() {
               valueClass="text-blue-900 dark:text-blue-100"
               bgClass="bg-blue-100 border-2 border-blue-300 dark:bg-blue-900/50 dark:border-blue-600"
             />
-            <StatCard
-              label="Share of income"
-              value={incomeSharePct === null ? '—' : `${incomeSharePct.toFixed(0)}%`}
-              sub={
-                incomeSharePct === null ? (
-                  <>
-                    <Link to="/cash-flow" className="underline">
-                      Add your income
-                    </Link>{' '}
-                    to see this
-                  </>
-                ) : stats.savings > 0 && costsSharePct !== null && savingsSharePct !== null ? (
-                  `${costsSharePct.toFixed(0)}% costs + ${savingsSharePct.toFixed(0)}% savings of ${money(monthlyIncome)} take-home`
-                ) : (
-                  `of ${money(monthlyIncome)} take-home per month`
-                )
-              }
-              {...incomeShareTone(costsSharePct)}
+            <IncomeShareCard
+              monthly={stats.monthly}
+              savings={stats.savings}
+              income={monthlyIncome}
+              money={money}
             />
             <StatCard
               label="Bills"
@@ -327,7 +274,7 @@ export default function FixedCosts() {
                 {stats.segments.map((s) => (
                   <div
                     key={s.name}
-                    style={{ width: `${s.pct}%`, background: segmentFill(s.name, s.color) }}
+                    style={{ width: `${s.pct}%`, background: categoryFill(s.name) }}
                   />
                 ))}
               </div>
@@ -336,7 +283,7 @@ export default function FixedCosts() {
                   <li key={s.name} className="flex items-center gap-2.5 text-sm">
                     <span
                       className="h-2.5 w-2.5 rounded-sm shrink-0"
-                      style={{ background: segmentFill(s.name, s.color) }}
+                      style={{ background: categoryFill(s.name) }}
                       aria-hidden="true"
                     />
                     <span className="flex-1 min-w-0 text-slate-700 dark:text-slate-300">
