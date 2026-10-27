@@ -29,3 +29,9 @@ export type {
   IncomeSourceUpdate,
   WeekendRule,
 } from './income';
+export type {
+  AccountForecast,
+  AccountForecastResponse,
+  CardCharges,
+  ForecastEvent,
+} from './accountForecast';

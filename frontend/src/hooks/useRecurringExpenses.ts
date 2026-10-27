@@ -7,6 +7,7 @@ import {
   deleteRecurringExpense,
 } from '../api';
 import type { RecurringExpenseCreate, RecurringExpenseUpdate } from '../types';
+import { ACCOUNT_FORECAST_KEY } from './useIncome';
 
 const KEY = ['recurring-expenses'];
 
@@ -24,6 +25,7 @@ export function useCreateRecurringExpense() {
     mutationFn: (expense: RecurringExpenseCreate) => createRecurringExpense(expense),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: KEY });
+      queryClient.invalidateQueries({ queryKey: ACCOUNT_FORECAST_KEY });
     },
   });
 }
@@ -36,6 +38,7 @@ export function useUpdateRecurringExpense() {
       updateRecurringExpense(id, expense),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: KEY });
+      queryClient.invalidateQueries({ queryKey: ACCOUNT_FORECAST_KEY });
     },
   });
 }
@@ -47,6 +50,7 @@ export function useMarkRecurringExpensePaid() {
     mutationFn: (id: number) => markRecurringExpensePaid(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: KEY });
+      queryClient.invalidateQueries({ queryKey: ACCOUNT_FORECAST_KEY });
     },
   });
 }
@@ -58,6 +62,7 @@ export function useDeleteRecurringExpense() {
     mutationFn: (id: number) => deleteRecurringExpense(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: KEY });
+      queryClient.invalidateQueries({ queryKey: ACCOUNT_FORECAST_KEY });
     },
   });
 }

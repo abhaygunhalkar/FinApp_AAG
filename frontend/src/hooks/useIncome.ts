@@ -5,11 +5,14 @@ import {
   updateIncomeSource,
   deleteIncomeSource,
   getCashFlowSummary,
+  getAccountForecast,
 } from '../api';
 import type { IncomeSourceCreate, IncomeSourceUpdate } from '../types';
 
 const KEY = ['income'];
 const SUMMARY_KEY = ['cash-flow-summary'];
+/** Changes with bills, income and account balances; bill hooks invalidate it too. */
+export const ACCOUNT_FORECAST_KEY = ['account-forecast'];
 
 export function useIncomeSources() {
   return useQuery({ queryKey: KEY, queryFn: getIncomeSources });
@@ -20,11 +23,21 @@ export function useCashFlowSummary() {
   return useQuery({ queryKey: SUMMARY_KEY, queryFn: getCashFlowSummary, staleTime: 0 });
 }
 
+export function useAccountForecast(days: number) {
+  // Built from balances edited on Net Worth, so always refetch on open.
+  return useQuery({
+    queryKey: [...ACCOUNT_FORECAST_KEY, days],
+    queryFn: () => getAccountForecast(days),
+    staleTime: 0,
+  });
+}
+
 function useInvalidateIncome() {
   const queryClient = useQueryClient();
   return () => {
     queryClient.invalidateQueries({ queryKey: KEY });
     queryClient.invalidateQueries({ queryKey: SUMMARY_KEY });
+    queryClient.invalidateQueries({ queryKey: ACCOUNT_FORECAST_KEY });
   };
 }
 

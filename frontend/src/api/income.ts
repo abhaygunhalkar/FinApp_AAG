@@ -1,5 +1,6 @@
 import apiClient, { unwrapResponse } from './client';
 import type {
+  AccountForecastResponse,
   ApiResponse,
   CashFlowSummary,
   IncomeSource,
@@ -32,5 +33,14 @@ export async function deleteIncomeSource(id: number): Promise<null> {
 
 export async function getCashFlowSummary(): Promise<CashFlowSummary> {
   const { data } = await apiClient.get<ApiResponse<CashFlowSummary>>('/api/cash-flow/summary');
+  return unwrapResponse(data);
+}
+
+/** Each bank account's balance through the bills and paydays of the next `days` days. */
+export async function getAccountForecast(days: number): Promise<AccountForecastResponse> {
+  const { data } = await apiClient.get<ApiResponse<AccountForecastResponse>>(
+    '/api/cash-flow/forecast',
+    { params: { days } },
+  );
   return unwrapResponse(data);
 }

@@ -52,6 +52,7 @@ export {
 export {
   useIncomeSources,
   useCashFlowSummary,
+  useAccountForecast,
   useCreateIncomeSource,
   useUpdateIncomeSource,
   useDeleteIncomeSource,

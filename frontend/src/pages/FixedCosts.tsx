@@ -9,6 +9,7 @@ import {
 import { HideNumbersToggle, LoadingSpinner } from '../components/shared';
 import ExpenseForm from '../components/fixedcosts/ExpenseForm';
 import CategoryBadge from '../components/fixedcosts/CategoryBadge';
+import AccountsPanel from '../components/fixedcosts/AccountsPanel';
 import {
   CATEGORIES,
   DUE_SOON_DAYS,
@@ -450,6 +451,8 @@ export default function FixedCosts() {
               )}
             </div>
           </div>
+
+          <AccountsPanel days={comingUpDays} />
 
           {/* ── table ── */}
           <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">

@@ -1,11 +1,12 @@
 """Income sources and cash flow summary API router."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.schemas.income import IncomeSourceCreate, IncomeSourceUpdate
+from app.services.account_forecast_service import AccountForecastService
 from app.services.income_service import IncomeNotFoundError, IncomeService
 
 router = APIRouter(prefix="/api", tags=["income"])
@@ -99,6 +100,22 @@ def get_cash_flow_summary(db: Session = Depends(get_db)) -> JSONResponse:
         content={
             "success": True,
             "data": summary.model_dump(mode="json"),
+            "error": None,
+        },
+    )
+
+
+@router.get("/cash-flow/forecast")
+def get_account_forecast(
+    days: int = Query(14, ge=1, le=90), db: Session = Depends(get_db)
+) -> JSONResponse:
+    """Per-account balance through the bills and paydays of the next `days` days."""
+    forecast = AccountForecastService.get_forecast(db, days)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "success": True,
+            "data": forecast.model_dump(mode="json"),
             "error": None,
         },
     )

@@ -27,6 +27,7 @@ vi.stubGlobal('localStorage', {
 vi.mock('../../../hooks', () => ({
   useAccounts: () => ({ data: mocks.accounts }),
   useCashFlowSummary: () => ({ data: mocks.cashFlow }),
+  useAccountForecast: () => ({ data: undefined, isLoading: true, isError: false }),
   useRecurringExpenses: () => ({ data: mocks.expenses, isLoading: false, isError: false }),
   useDeleteRecurringExpense: () => ({ mutate: mocks.deleteMutate, isPending: false }),
   useMarkRecurringExpensePaid: () => ({ mutate: mocks.markPaidMutate, isPending: false }),

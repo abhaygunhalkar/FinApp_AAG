@@ -75,3 +75,13 @@ def test_linking_to_a_missing_account_returns_422(test_client: TestClient) -> No
     )
     assert bad.status_code == 422
     assert bad.json()["success"] is False
+
+
+def test_forecast_endpoint(test_client: TestClient) -> None:
+    response = test_client.get("/api/cash-flow/forecast?days=7")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["accounts"] == [] and data["unlinked_count"] == 0
+
+    assert test_client.get("/api/cash-flow/forecast?days=0").status_code == 422
+    assert test_client.get("/api/cash-flow/forecast?days=91").status_code == 422

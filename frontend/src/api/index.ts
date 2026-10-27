@@ -39,4 +39,5 @@ export {
   updateIncomeSource,
   deleteIncomeSource,
   getCashFlowSummary,
+  getAccountForecast,
 } from './income';
