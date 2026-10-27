@@ -1,6 +1,7 @@
 export type ExpenseCategory =
   | 'Housing'
   | 'Utilities'
+  | 'Groceries'
   | 'Transportation'
   | 'Auto loans'
   | 'Insurance'

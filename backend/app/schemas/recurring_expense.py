@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 ExpenseCategory = Literal[
     "Housing",
     "Utilities",
+    "Groceries",
     "Transportation",
     "Auto loans",
     "Insurance",

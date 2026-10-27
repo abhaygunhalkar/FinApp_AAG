@@ -1,20 +1,21 @@
 import type { ExpenseCategory, ExpenseFrequency } from '../../types';
 import { parseLocalDateString } from '../../utils/date';
 
-/** Categories in display order, each with its chart/chip colour. */
+/** Categories A–Z ("Other" last), each with its chart/chip colour. */
 export const CATEGORIES: { name: ExpenseCategory; color: string }[] = [
-  { name: 'Housing', color: '#1d4ed8' },
-  { name: 'Utilities', color: '#0891b2' },
-  { name: 'Transportation', color: '#d97706' },
   { name: 'Auto loans', color: '#92400e' },
-  { name: 'Insurance', color: '#7c3aed' },
-  { name: 'Health & fitness', color: '#ea580c' },
-  { name: 'Subscriptions', color: '#db2777' },
-  { name: 'Debt payments', color: '#991b1b' },
+  { name: 'Charity & social service', color: '#4338ca' },
   { name: 'Childcare & education', color: '#059669' },
+  { name: 'Debt payments', color: '#991b1b' },
+  { name: 'Groceries', color: '#16a34a' },
+  { name: 'Health & fitness', color: '#ea580c' },
+  { name: 'Housing', color: '#1d4ed8' },
+  { name: 'Insurance', color: '#7c3aed' },
   { name: 'Kids activities', color: '#65a30d' },
   { name: 'Savings & investing', color: '#0f766e' },
-  { name: 'Charity & social service', color: '#4338ca' },
+  { name: 'Subscriptions', color: '#db2777' },
+  { name: 'Transportation', color: '#d97706' },
+  { name: 'Utilities', color: '#0891b2' },
   { name: 'Other', color: '#64748b' },
 ];
 

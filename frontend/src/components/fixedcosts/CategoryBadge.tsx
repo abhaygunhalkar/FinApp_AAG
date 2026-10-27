@@ -11,6 +11,13 @@ const ICONS: Partial<Record<string, ReactNode>> = {
       <circle cx="17" cy="17" r="2" />
     </>
   ),
+  Groceries: (
+    <>
+      <circle cx="8" cy="21" r="1" />
+      <circle cx="19" cy="21" r="1" />
+      <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+    </>
+  ),
   Insurance: <path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z" />,
   'Health & fitness': <path d="M6 7v10M18 7v10M3 9v6M21 9v6M6 12h12" />,
   Subscriptions: (

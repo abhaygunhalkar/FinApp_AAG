@@ -63,7 +63,7 @@ def test_crud_flow(test_client: TestClient) -> None:
 
 @pytest.mark.parametrize(
     "override",
-    [{"amount": 0}, {"name": ""}, {"category": "Groceries"}, {"frequency": "daily"}],
+    [{"amount": 0}, {"name": ""}, {"category": "Vacation"}, {"frequency": "daily"}],
 )
 def test_create_rejects_invalid_input(
     test_client: TestClient, override: dict[str, object]
@@ -77,7 +77,13 @@ def test_create_rejects_invalid_input(
 
 @pytest.mark.parametrize(
     "category",
-    ["Auto loans", "Kids activities", "Charity & social service", "Health & fitness"],
+    [
+        "Auto loans",
+        "Kids activities",
+        "Charity & social service",
+        "Health & fitness",
+        "Groceries",
+    ],
 )
 def test_create_accepts_new_categories(test_client: TestClient, category: str) -> None:
     response = test_client.post(
