@@ -9,6 +9,7 @@ from app.schemas.dashboard import (
     ActivityEvent,
     BrokerSummary,
     DashboardSummary,
+    IntradaySeries,
     PortfolioSnapshot,
 )
 from app.services.dashboard_service import DashboardService
@@ -51,3 +52,12 @@ def get_dashboard_history(
     """Return portfolio value history for the specified number of days."""
     history = DashboardService.get_portfolio_history(db, days=days)
     return ApiResponse(success=True, data=history, error=None)
+
+
+@router.get("/intraday", response_model=ApiResponse[IntradaySeries])
+def get_dashboard_intraday(
+    db: Session = Depends(get_db),
+) -> ApiResponse[IntradaySeries]:
+    """Return portfolio value through today's session (or the last trading day)."""
+    series = DashboardService.get_intraday(db)
+    return ApiResponse(success=True, data=series, error=None)

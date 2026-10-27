@@ -159,3 +159,12 @@ def test_get_history_days_too_large(test_client: TestClient) -> None:
     """GET /api/dashboard/history rejects days > 365."""
     response = test_client.get("/api/dashboard/history?days=500")
     assert response.status_code == 422
+
+
+def test_get_intraday_empty_portfolio(test_client: TestClient) -> None:
+    """GET /api/dashboard/intraday returns no points when there are no holdings."""
+    response = test_client.get("/api/dashboard/intraday")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["data"] == {"session_date": None, "is_today": False, "points": []}

@@ -20,10 +20,12 @@ export {
   useActivity,
   usePortfolioHistory,
   useMonthlyRealizedGain,
+  useIntraday,
 } from './useDashboard';
 export {
   useOptions,
   useOptionsSummary,
+  useOptionsMonthlyPnl,
   useOpenTradeQuotes,
   useCreateOption,
   useUpdateOption,

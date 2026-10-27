@@ -52,3 +52,22 @@ class PortfolioSnapshot(BaseModel):
 
     date: date
     total_value: float
+
+
+class IntradayPoint(BaseModel):
+    """Portfolio value at one 5-minute bar."""
+
+    time: datetime
+    value: float
+
+
+class IntradaySeries(BaseModel):
+    """Portfolio value through one trading session.
+
+    `is_today` is False when the market hasn't traded yet today (weekend,
+    holiday, before the open): the points are then the last trading day.
+    """
+
+    session_date: date | None
+    is_today: bool
+    points: list[IntradayPoint]

@@ -5,6 +5,7 @@ import { queryClient } from './hooks/queryClient';
 import { useUIStore } from './store/uiStore';
 import AppLayout from './components/layout/AppLayout';
 import Dashboard from './pages/Dashboard';
+import Dashboard2 from './pages/Dashboard2';
 import Holdings from './pages/Holdings';
 import ETFHoldings from './pages/ETFHoldings';
 import Watchlist from './pages/Watchlist';
@@ -24,6 +25,7 @@ const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { path: '/', element: <Dashboard /> },
+      { path: '/dashboard-2', element: <Dashboard2 /> },
       { path: '/net-worth', element: <NetWorth /> },
       { path: '/fixed-costs', element: <FixedCosts /> },
       { path: '/cash-flow', element: <CashFlow /> },

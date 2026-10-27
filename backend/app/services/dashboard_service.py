@@ -1,6 +1,7 @@
 """Service layer for dashboard summary, activity feed, and portfolio history."""
 
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 
 from sqlalchemy.orm import Session
@@ -19,8 +20,11 @@ from app.schemas.dashboard import (
     ActivityEvent,
     BrokerSummary,
     DashboardSummary,
+    IntradayPoint,
+    IntradaySeries,
     PortfolioSnapshot,
 )
+from app.services.market_data_service import MarketDataService
 
 
 class DashboardService:
@@ -272,6 +276,73 @@ class DashboardService:
             PortfolioSnapshot(date=d, total_value=daily_values[d])
             for d in sorted_dates
         ]
+
+    @staticmethod
+    def get_intraday(db: Session, today: date | None = None) -> IntradaySeries:
+        """Portfolio value at each 5-minute bar of the latest trading session.
+
+        The session is today's when the market has traded today, else the last
+        trading day. A ticker is valued at its previous close until its first bar
+        of the session, and at its current price if yfinance has no bars for it.
+        """
+        holdings = HoldingsRepository.get_all(db)
+        quantities: dict[str, float] = defaultdict(float)
+        fallback: dict[str, float] = {}
+        for h in holdings:
+            quantities[h.ticker] += h.quantity
+            fallback[h.ticker] = h.current_price
+        empty = IntradaySeries(session_date=None, is_today=False, points=[])
+        if not quantities:
+            return empty
+
+        tickers = list(quantities)
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            bars = dict(
+                zip(
+                    tickers,
+                    pool.map(MarketDataService.fetch_intraday_closes, tickers),
+                    strict=True,
+                )
+            )
+
+        last_bars = [series[-1][0] for series in bars.values() if series]
+        if not last_bars:
+            return empty
+        latest = max(last_bars)
+        session = latest.date()
+        times = sorted(
+            {t for series in bars.values() for t, _ in series if t.date() == session}
+        )
+
+        values = [0.0] * len(times)
+        for ticker, qty in quantities.items():
+            series = bars[ticker]
+            if not series:
+                for i in range(len(times)):
+                    values[i] += fallback[ticker] * qty
+                continue
+            before = [c for t, c in series if t.date() < session]
+            during = [(t, c) for t, c in series if t.date() == session]
+            price = (
+                before[-1] if before else (during[0][1] if during else series[-1][1])
+            )
+            j = 0
+            for i, t in enumerate(times):
+                while j < len(during) and during[j][0] <= t:
+                    price = during[j][1]
+                    j += 1
+                values[i] += price * qty
+
+        # "Today" in the market's own time zone, which the bars carry.
+        market_today = today or datetime.now(latest.tzinfo).date()
+        return IntradaySeries(
+            session_date=session,
+            is_today=session == market_today,
+            points=[
+                IntradayPoint(time=t, value=v)
+                for t, v in zip(times, values, strict=True)
+            ],
+        )
 
     @staticmethod
     def _consume_fifo_cost_basis(

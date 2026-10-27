@@ -4,6 +4,7 @@ import ThemeToggle from './ThemeToggle';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: DashboardIcon },
+  { to: '/dashboard-2', label: 'Dashboard 2 (beta)', icon: DashboardIcon },
   { to: '/net-worth', label: 'Net Worth', icon: NetWorthIcon },
   { to: '/fixed-costs', label: 'Fixed Costs', icon: FixedCostsIcon },
   { to: '/cash-flow', label: 'Cash Flow', icon: CashFlowIcon },

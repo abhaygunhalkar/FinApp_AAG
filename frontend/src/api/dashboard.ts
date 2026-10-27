@@ -5,6 +5,7 @@ import type {
   BrokerSummary,
   ActivityEvent,
   PortfolioSnapshot,
+  IntradaySeries,
 } from '../types';
 
 type SellTransaction = {
@@ -37,5 +38,10 @@ export async function getHistory(days: number = 30): Promise<PortfolioSnapshot[]
 
 export async function getSellHistory(): Promise<SellTransaction[]> {
   const { data } = await apiClient.get<ApiResponse<SellTransaction[]>>('/api/transactions/sells');
+  return unwrapResponse(data);
+}
+
+export async function getIntraday(): Promise<IntradaySeries> {
+  const { data } = await apiClient.get<ApiResponse<IntradaySeries>>('/api/dashboard/intraday');
   return unwrapResponse(data);
 }

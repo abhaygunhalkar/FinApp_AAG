@@ -21,7 +21,12 @@ export interface BrokerSummary {
 }
 
 export interface ActivityEvent {
-  event_type: 'holding_added' | 'stock_sold' | 'watchlist_added' | 'watchlist_removed' | 'notes_updated';
+  event_type:
+    | 'holding_added'
+    | 'stock_sold'
+    | 'watchlist_added'
+    | 'watchlist_removed'
+    | 'notes_updated';
   ticker: string;
   details: Record<string, unknown>;
   timestamp: string;
@@ -30,4 +35,16 @@ export interface ActivityEvent {
 export interface PortfolioSnapshot {
   date: string;
   total_value: number;
+}
+
+export interface IntradayPoint {
+  time: string;
+  value: number;
+}
+
+/** Portfolio value through the latest session; `is_today` false = last trading day. */
+export interface IntradaySeries {
+  session_date: string | null;
+  is_today: boolean;
+  points: IntradayPoint[];
 }

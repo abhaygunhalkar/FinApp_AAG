@@ -1,6 +1,7 @@
 """Unit tests for the DashboardService."""
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
+from unittest.mock import patch
 
 from sqlalchemy.orm import Session
 
@@ -10,6 +11,7 @@ from app.models.price_history import PriceHistory
 from app.models.transaction import Transaction
 from app.models.watchlist_item import WatchlistItem
 from app.services.dashboard_service import DashboardService
+from app.services.market_data_service import MarketDataService
 
 
 class TestGetSummary:
@@ -627,3 +629,71 @@ class TestGetPortfolioHistory:
         # Verify ascending date order
         for i in range(len(result) - 1):
             assert result[i].date < result[i + 1].date
+
+
+class TestGetIntraday:
+    """Tests for DashboardService.get_intraday."""
+
+    NY = timezone(timedelta(hours=-4))
+
+    def _bar(
+        self, day: int, hour: int, minute: int, close: float
+    ) -> tuple[datetime, float]:
+        return (datetime(2026, 10, day, hour, minute, tzinfo=self.NY), close)
+
+    def test_empty_without_holdings(self, db_session: Session) -> None:
+        result = DashboardService.get_intraday(db_session)
+        assert result.points == []
+        assert result.session_date is None
+
+    def test_sums_latest_session_using_previous_close_until_first_bar(
+        self, db_session: Session
+    ) -> None:
+        db_session.add_all(
+            [
+                Holding(
+                    ticker="AAA", quantity=2, average_buy_price=1, current_price=11
+                ),
+                Holding(
+                    ticker="BBB", quantity=10, average_buy_price=1, current_price=5
+                ),
+                Holding(
+                    ticker="NOBARS", quantity=1, average_buy_price=1, current_price=100
+                ),
+            ]
+        )
+        db_session.commit()
+        bars = {
+            "AAA": [
+                self._bar(26, 15, 55, 9),
+                self._bar(27, 9, 30, 10),
+                self._bar(27, 9, 35, 11),
+            ],
+            # BBB's first bar today is 9:35, so 9:30 uses its previous close (4).
+            "BBB": [self._bar(26, 15, 55, 4), self._bar(27, 9, 35, 5)],
+            "NOBARS": [],
+        }
+        with patch.object(
+            MarketDataService, "fetch_intraday_closes", side_effect=lambda t: bars[t]
+        ):
+            result = DashboardService.get_intraday(db_session, today=date(2026, 10, 27))
+
+        assert result.session_date == date(2026, 10, 27)
+        assert result.is_today is True
+        # 9:30 → 2*10 + 10*4 + 100 ; 9:35 → 2*11 + 10*5 + 100
+        assert [p.value for p in result.points] == [160.0, 172.0]
+
+    def test_falls_back_to_last_trading_day(self, db_session: Session) -> None:
+        db_session.add(
+            Holding(ticker="AAA", quantity=1, average_buy_price=1, current_price=10)
+        )
+        db_session.commit()
+        bars = [self._bar(24, 9, 30, 10), self._bar(24, 15, 55, 12)]
+        with patch.object(
+            MarketDataService, "fetch_intraday_closes", return_value=bars
+        ):
+            result = DashboardService.get_intraday(db_session, today=date(2026, 10, 25))
+
+        assert result.session_date == date(2026, 10, 24)
+        assert result.is_today is False
+        assert [p.value for p in result.points] == [10.0, 12.0]

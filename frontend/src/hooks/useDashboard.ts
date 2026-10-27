@@ -1,5 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { getSummary, getBrokerSummary, getActivity, getHistory, getSellHistory } from '../api';
+import {
+  getSummary,
+  getBrokerSummary,
+  getActivity,
+  getHistory,
+  getSellHistory,
+  getIntraday,
+} from '../api';
 
 export function useDashboardSummary() {
   return useQuery({
@@ -33,5 +40,14 @@ export function useMonthlyRealizedGain() {
   return useQuery({
     queryKey: ['dashboard', 'monthly_gain_loss'],
     queryFn: getSellHistory,
+  });
+}
+
+/** Today's 5-minute portfolio values; refreshed every 5 minutes, matching the server cache. */
+export function useIntraday() {
+  return useQuery({
+    queryKey: ['dashboard', 'intraday'],
+    queryFn: getIntraday,
+    refetchInterval: 5 * 60_000,
   });
 }

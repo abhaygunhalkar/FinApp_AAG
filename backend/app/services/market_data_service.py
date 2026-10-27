@@ -5,7 +5,7 @@ import logging
 import math
 import time
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 
 import yfinance as yf
@@ -22,6 +22,10 @@ logger = logging.getLogger(__name__)
 MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 5
 RSI_PERIOD = 14
+INTRADAY_CACHE_SECONDS = 300
+
+# ticker -> (fetched at, 5-minute closes); intraday bars are reused for a few minutes.
+_intraday_cache: dict[str, tuple[float, list[tuple[datetime, float]]]] = {}
 
 
 def _safe_positive_float(value: Any) -> float | None:
@@ -262,6 +266,28 @@ class MarketDataService:
                 exc,
             )
             return []
+
+    @staticmethod
+    def fetch_intraday_closes(ticker: str) -> list[tuple[datetime, float]]:
+        """5-minute closes for the last few sessions, tz-aware, oldest first.
+
+        Cached for INTRADAY_CACHE_SECONDS. Returns [] when yfinance has nothing.
+        """
+        cached = _intraday_cache.get(ticker)
+        if cached and time.monotonic() - cached[0] < INTRADAY_CACHE_SECONDS:
+            return cached[1]
+        try:
+            hist = yf.Ticker(ticker).history(period="5d", interval="5m")
+            closes: list[tuple[datetime, float]] = []
+            for idx, row in hist.iterrows():
+                close = _safe_positive_float(row["Close"])
+                if close is not None:
+                    closes.append((idx.to_pydatetime(), close))
+        except Exception as exc:
+            logger.error("Failed to fetch intraday prices for '%s': %s", ticker, exc)
+            return []
+        _intraday_cache[ticker] = (time.monotonic(), closes)
+        return closes
 
     @staticmethod
     def fetch_rsi(ticker: str) -> tuple[float | None, float | None]:
