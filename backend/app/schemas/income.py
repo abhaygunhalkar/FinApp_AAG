@@ -1,6 +1,6 @@
 """Pydantic schemas for income sources and the cash flow summary."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -17,6 +17,9 @@ IncomeCategory = Literal[
     "Other",
 ]
 
+# What happens when a payday falls on a weekend.
+WeekendRule = Literal["before", "after", "none"]
+
 
 class IncomeSourceCreate(BaseModel):
     """Schema for adding an income source."""
@@ -28,6 +31,12 @@ class IncomeSourceCreate(BaseModel):
     # Link to a Net Worth account; deposited_to is free text used only without a link.
     deposited_to_account_id: int | None = None
     deposited_to: str | None = Field(default=None, max_length=200)
+    # Twice a month: the two days of the month (31 = last day). Other
+    # frequencies: any one pay date, past or upcoming.
+    pay_date: date | None = None
+    pay_day_1: int | None = Field(default=None, ge=1, le=31)
+    pay_day_2: int | None = Field(default=None, ge=1, le=31)
+    weekend_rule: WeekendRule = "before"
     notes: str | None = Field(default=None, max_length=500)
 
 
@@ -40,6 +49,10 @@ class IncomeSourceUpdate(BaseModel):
     frequency: ExpenseFrequency | None = None
     deposited_to_account_id: int | None = None
     deposited_to: str | None = Field(default=None, max_length=200)
+    pay_date: date | None = None
+    pay_day_1: int | None = Field(default=None, ge=1, le=31)
+    pay_day_2: int | None = Field(default=None, ge=1, le=31)
+    weekend_rule: WeekendRule | None = None
     notes: str | None = Field(default=None, max_length=500)
 
 
@@ -55,6 +68,12 @@ class IncomeSourceResponse(BaseModel):
     deposited_to_account_id: int | None
     # Linked account's current "Name (Institution)", else the stored free text.
     deposited_to: str | None
+    pay_date: date | None
+    pay_day_1: int | None
+    pay_day_2: int | None
+    weekend_rule: str
+    # Next day money arrives (weekend rule applied); None without a schedule.
+    next_pay_date: date | None
     notes: str | None
     created_at: datetime
     updated_at: datetime

@@ -1,5 +1,7 @@
 """Unit tests for IncomeService and the cash flow summary."""
 
+from datetime import date
+
 import pytest
 from sqlalchemy.orm import Session
 
@@ -127,3 +129,47 @@ def test_twice_a_month_income_is_exactly_double(db_session: Session) -> None:
         ),
     )
     assert income.monthly_amount == 5200.0
+
+
+def test_twice_a_month_pay_days_are_saved_sorted(db_session: Session) -> None:
+    income_id = _income(
+        db_session,
+        frequency="semimonthly",
+        pay_day_1=22,
+        pay_day_2=6,
+        pay_date="2026-11-06",
+    )
+    saved = IncomeService.get_all(db_session, today=date(2026, 11, 7))[0]
+    assert saved.id == income_id
+    assert (saved.pay_day_1, saved.pay_day_2) == (6, 22)
+    assert saved.pay_date is None  # not used for twice a month
+    assert saved.weekend_rule == "before"
+    assert saved.next_pay_date == date(2026, 11, 20)  # the 22nd is a Sunday
+
+
+def test_twice_a_month_needs_two_different_days(db_session: Session) -> None:
+    with pytest.raises(ValueError, match="both pay days"):
+        _income(db_session, frequency="semimonthly", pay_day_1=6)
+    with pytest.raises(ValueError, match="two different"):
+        _income(db_session, frequency="semimonthly", pay_day_1=6, pay_day_2=6)
+
+
+def test_changing_frequency_keeps_only_the_matching_schedule(
+    db_session: Session,
+) -> None:
+    income_id = _income(db_session, frequency="semimonthly", pay_day_1=6, pay_day_2=22)
+    updated = IncomeService.update(
+        db_session,
+        income_id,
+        IncomeSourceUpdate(
+            frequency="biweekly", pay_date=date(2026, 11, 6), weekend_rule="after"
+        ),
+    )
+    assert (updated.pay_day_1, updated.pay_day_2) == (None, None)
+    assert updated.pay_date == date(2026, 11, 6)
+    assert updated.weekend_rule == "after"
+
+
+def test_no_pay_schedule_means_no_next_pay_date(db_session: Session) -> None:
+    _income(db_session)
+    assert IncomeService.get_all(db_session)[0].next_pay_date is None

@@ -1,5 +1,7 @@
 """Business logic for income sources and the monthly cash flow summary."""
 
+from datetime import date
+
 from sqlalchemy.orm import Session
 
 from app.models.income_source import IncomeSource
@@ -12,7 +14,7 @@ from app.schemas.income import (
     IncomeSourceResponse,
     IncomeSourceUpdate,
 )
-from app.services import account_link
+from app.services import account_link, pay_schedule
 from app.services.recurring_expense_service import RecurringExpenseService
 
 # Account types counted as cash on hand; matches LIQUID_TYPES on the Net Worth page.
@@ -25,15 +27,34 @@ class IncomeNotFoundError(ValueError):
     """Raised when an income source ID does not exist."""
 
 
+def _tidy_schedule(income: IncomeSource) -> None:
+    """Keep only the schedule fields the frequency uses, and check them.
+
+    Raises:
+        ValueError: If a twice-a-month schedule has one day, or the same day twice.
+    """
+    if income.frequency != "semimonthly":
+        income.pay_day_1 = income.pay_day_2 = None
+        return
+    income.pay_date = None
+    days = (income.pay_day_1, income.pay_day_2)
+    if days.count(None) == 1:
+        raise ValueError("Twice-a-month income needs both pay days")
+    if days[0] is not None and days[0] == days[1]:
+        raise ValueError("Pick two different pay days")
+    if days[0] is not None and days[1] is not None and days[0] > days[1]:
+        income.pay_day_1, income.pay_day_2 = days[1], days[0]
+
+
 class IncomeService:
     """Service layer for income sources and cash flow."""
 
     @staticmethod
-    def get_all(db: Session) -> list[IncomeSourceResponse]:
+    def get_all(db: Session, today: date | None = None) -> list[IncomeSourceResponse]:
         """Retrieve all income sources."""
         labels = account_link.account_labels(db)
         return [
-            IncomeService._to_response(db, i, labels)
+            IncomeService._to_response(db, i, labels, today)
             for i in IncomeRepository.get_all(db)
         ]
 
@@ -42,7 +63,8 @@ class IncomeService:
         """Create an income source.
 
         Raises:
-            ValueError: If the linked account doesn't exist or isn't a bank account.
+            ValueError: If the linked account doesn't exist or isn't a bank
+                account, or the pay schedule is incomplete.
         """
         account_id, deposited_to = account_link.link_from_create(
             db, data.deposited_to_account_id, data.deposited_to, DEPOSIT_ACCOUNT_TYPES
@@ -54,8 +76,13 @@ class IncomeService:
             frequency=data.frequency,
             deposited_to_account_id=account_id,
             deposited_to=deposited_to,
+            pay_date=data.pay_date,
+            pay_day_1=data.pay_day_1,
+            pay_day_2=data.pay_day_2,
+            weekend_rule=data.weekend_rule,
             notes=account_link.clean_text(data.notes),
         )
+        _tidy_schedule(income)
         return IncomeService._to_response(db, IncomeRepository.create(db, income))
 
     @staticmethod
@@ -66,7 +93,8 @@ class IncomeService:
 
         Raises:
             IncomeNotFoundError: If the income source does not exist.
-            ValueError: If the linked account doesn't exist or isn't a bank account.
+            ValueError: If the linked account doesn't exist or isn't a bank
+                account, or the pay schedule is incomplete.
         """
         income = IncomeRepository.get_by_id(db, income_id)
         if income is None:
@@ -91,8 +119,14 @@ class IncomeService:
                 DEPOSIT_ACCOUNT_TYPES,
             )
         )
+        for key in ("pay_date", "pay_day_1", "pay_day_2"):
+            if key in fields:
+                setattr(income, key, fields[key])
+        if fields.get("weekend_rule") is not None:
+            income.weekend_rule = fields["weekend_rule"]
         if "notes" in fields:
             income.notes = account_link.clean_text(fields["notes"])
+        _tidy_schedule(income)
 
         return IncomeService._to_response(db, IncomeRepository.update(db, income))
 
@@ -142,7 +176,10 @@ class IncomeService:
 
     @staticmethod
     def _to_response(
-        db: Session, income: IncomeSource, labels: dict[int, str] | None = None
+        db: Session,
+        income: IncomeSource,
+        labels: dict[int, str] | None = None,
+        today: date | None = None,
     ) -> IncomeSourceResponse:
         return IncomeSourceResponse(
             id=income.id,
@@ -157,6 +194,11 @@ class IncomeService:
             deposited_to=account_link.display_label(
                 db, income.deposited_to_account_id, income.deposited_to, labels
             ),
+            pay_date=income.pay_date,
+            pay_day_1=income.pay_day_1,
+            pay_day_2=income.pay_day_2,
+            weekend_rule=income.weekend_rule,
+            next_pay_date=pay_schedule.next_pay_date(income, today or date.today()),
             notes=income.notes,
             created_at=income.created_at,
             updated_at=income.updated_at,

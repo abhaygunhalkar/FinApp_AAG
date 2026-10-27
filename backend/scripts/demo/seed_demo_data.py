@@ -584,7 +584,13 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
     )
 
     def income(
-        name: str, cat: str, amount: float, freq: str, to: str, notes: str | None = None
+        name: str,
+        cat: str,
+        amount: float,
+        freq: str,
+        to: str,
+        notes: str | None = None,
+        **schedule: object,
     ) -> None:
         db.add(
             IncomeSource(
@@ -594,8 +600,12 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
                 frequency=freq,
                 deposited_to_account_id=account_ids[to],
                 notes=notes,
+                **schedule,
             )
         )
+
+    # Paydays: the most recent Friday, so every-two-weeks pay lands on Fridays.
+    last_friday = TODAY - timedelta(days=(TODAY.weekday() - 4) % 7)
 
     income(
         "Paycheck - Alex",
@@ -604,8 +614,17 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
         "biweekly",
         "Everyday Checking",
         "Take-home after 401(k)",
+        pay_date=last_friday,
     )
-    income("Paycheck - Sam", "Salary", 2_480.0, "biweekly", "Everyday Checking")
+    income(
+        "Paycheck - Sam",
+        "Salary",
+        2_480.0,
+        "semimonthly",
+        "Everyday Checking",
+        pay_day_1=6,
+        pay_day_2=22,
+    )
     income(
         "Freelance design",
         "Side income",
@@ -613,6 +632,8 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
         "monthly",
         "Everyday Checking",
         "Varies; average",
+        pay_date=date(TODAY.year, TODAY.month, 25),
+        weekend_rule="after",
     )
     income(
         "Annual bonus",
@@ -621,6 +642,7 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
         "annual",
         "High-Yield Savings",
         "Paid in March",
+        pay_date=date(TODAY.year, 3, 13),
     )
     income(
         "Savings interest",
@@ -628,6 +650,8 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
         105.0,
         "monthly",
         "High-Yield Savings",
+        pay_date=date(TODAY.year, 1, 31),  # last day of each month
+        weekend_rule="none",
     )
 
     # Earnings calendar: the page reads today's cache row before calling Finnhub,

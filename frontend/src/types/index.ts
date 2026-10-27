@@ -27,4 +27,5 @@ export type {
   IncomeSource,
   IncomeSourceCreate,
   IncomeSourceUpdate,
+  WeekendRule,
 } from './income';

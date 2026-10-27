@@ -6,6 +6,7 @@ import type {
   IncomeCategory,
   IncomeSource,
   IncomeSourceCreate,
+  WeekendRule,
 } from '../../types';
 import { FREQUENCIES, MONTHLY_FACTOR, fmtUSD } from '../fixedcosts/constants';
 import AccountSelect from '../shared/AccountSelect';
@@ -25,6 +26,12 @@ interface FormData {
   deposited_to_account_id: number | null;
   /** Free text kept from before linking; only used when no account is selected. */
   deposited_to: string;
+  /** Used for every frequency except twice a month. */
+  pay_date: string;
+  /** Twice a month; '' when not picked. */
+  pay_day_1: string;
+  pay_day_2: string;
+  weekend_rule: WeekendRule;
   notes: string;
 }
 
@@ -37,6 +44,10 @@ function initialForm(income?: IncomeSource | null): FormData {
     deposited_to_account_id: income?.deposited_to_account_id ?? null,
     deposited_to:
       income && income.deposited_to_account_id === null ? (income.deposited_to ?? '') : '',
+    pay_date: income?.pay_date ?? '',
+    pay_day_1: income?.pay_day_1 != null ? String(income.pay_day_1) : '',
+    pay_day_2: income?.pay_day_2 != null ? String(income.pay_day_2) : '',
+    weekend_rule: income?.weekend_rule ?? 'before',
     notes: income?.notes ?? '',
   };
 }
@@ -46,6 +57,18 @@ const inputClass =
 
 /** Income lands in a bank account. */
 const DEPOSIT_TYPES: AccountType[] = ['checking', 'savings'];
+
+const WEEKEND_RULES: { value: WeekendRule; label: string }[] = [
+  { value: 'before', label: 'Paid the Friday before' },
+  { value: 'after', label: 'Paid the Monday after' },
+  { value: 'none', label: 'Paid that day' },
+];
+
+/** Days 1–31 for twice-a-month paydays; 31 also covers shorter months' last day. */
+const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+
+const ordinal = (n: number) =>
+  `${n}${n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th'}`;
 
 const labelClass = 'block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5';
 
@@ -79,6 +102,11 @@ export default function IncomeForm({ income, onClose }: IncomeFormProps) {
     const amount = parseFloat(formData.amount);
     if (!name) return setError('Enter a name for this income.');
     if (isNaN(amount) || amount <= 0) return setError('Enter an amount greater than $0.');
+    const twiceAMonth = formData.frequency === 'semimonthly';
+    if (twiceAMonth && !formData.pay_day_1 !== !formData.pay_day_2)
+      return setError('Pick both pay days, or leave both empty.');
+    if (twiceAMonth && formData.pay_day_1 && formData.pay_day_1 === formData.pay_day_2)
+      return setError('Pick two different pay days.');
 
     const payload: IncomeSourceCreate = {
       name,
@@ -88,6 +116,10 @@ export default function IncomeForm({ income, onClose }: IncomeFormProps) {
       deposited_to_account_id: formData.deposited_to_account_id,
       deposited_to:
         formData.deposited_to_account_id === null ? formData.deposited_to.trim() || null : null,
+      pay_date: twiceAMonth ? null : formData.pay_date || null,
+      pay_day_1: twiceAMonth && formData.pay_day_1 ? Number(formData.pay_day_1) : null,
+      pay_day_2: twiceAMonth && formData.pay_day_2 ? Number(formData.pay_day_2) : null,
+      weekend_rule: formData.weekend_rule,
       notes: formData.notes.trim() || null,
     };
 
@@ -246,6 +278,67 @@ export default function IncomeForm({ income, onClose }: IncomeFormProps) {
                 className={inputClass}
                 onNavigate={onClose}
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {formData.frequency === 'semimonthly' ? (
+              <fieldset>
+                <legend className={labelClass}>Paid on</legend>
+                <div className="flex items-center gap-2">
+                  {(['pay_day_1', 'pay_day_2'] as const).map((field, n) => (
+                    <select
+                      key={field}
+                      aria-label={n === 0 ? 'First pay day' : 'Second pay day'}
+                      value={formData[field]}
+                      onChange={(e) => update(field, e.target.value)}
+                      className={inputClass}
+                    >
+                      <option value="">Day…</option>
+                      {DAYS.map((d) => (
+                        <option key={d} value={String(d)}>
+                          {d === 31 ? '31st / last day' : ordinal(d)}
+                        </option>
+                      ))}
+                    </select>
+                  ))}
+                </div>
+                <p className="mt-1 text-xs text-slate-500">Days of the month, e.g. 6th and 22nd</p>
+              </fieldset>
+            ) : (
+              <div>
+                <label htmlFor="income-pay-date" className={labelClass}>
+                  Next pay date
+                </label>
+                <input
+                  id="income-pay-date"
+                  type="date"
+                  value={formData.pay_date}
+                  onChange={(e) => update('pay_date', e.target.value)}
+                  aria-describedby="income-pay-date-hint"
+                  className={inputClass}
+                />
+                <p id="income-pay-date-hint" className="mt-1 text-xs text-slate-500">
+                  A past payday works too; later ones follow the schedule
+                </p>
+              </div>
+            )}
+            <div>
+              <label htmlFor="income-weekend" className={labelClass}>
+                If payday is on a weekend
+              </label>
+              <select
+                id="income-weekend"
+                value={formData.weekend_rule}
+                onChange={(e) => update('weekend_rule', e.target.value as WeekendRule)}
+                className={inputClass}
+              >
+                {WEEKEND_RULES.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

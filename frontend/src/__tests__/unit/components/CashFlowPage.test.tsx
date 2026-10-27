@@ -48,6 +48,11 @@ function income(overrides: Partial<IncomeSource>): IncomeSource {
     monthly_amount: 6500,
     deposited_to_account_id: null,
     deposited_to: 'Checking',
+    pay_date: null,
+    pay_day_1: null,
+    pay_day_2: null,
+    weekend_rule: 'before',
+    next_pay_date: null,
     notes: null,
     created_at: '2026-10-01T00:00:00Z',
     updated_at: '2026-10-01T00:00:00Z',
@@ -195,6 +200,72 @@ describe('CashFlow page', () => {
           amount: 800,
           category: 'Side income',
           frequency: 'monthly',
+        }),
+      ),
+    );
+  });
+
+  it('saves two pay days for twice-a-month income', async () => {
+    mocks.createMutateAsync.mockResolvedValue(undefined);
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Add income' }));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('Name'), { target: { value: 'Paycheck' } });
+    fireEvent.change(within(dialog).getByLabelText('Take-home amount'), {
+      target: { value: '2600' },
+    });
+    fireEvent.change(within(dialog).getByLabelText('How often'), {
+      target: { value: 'semimonthly' },
+    });
+    expect(within(dialog).queryByLabelText('Next pay date')).not.toBeInTheDocument();
+
+    // One day alone isn't a schedule.
+    fireEvent.change(within(dialog).getByLabelText('First pay day'), { target: { value: '6' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add income' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Pick both pay days');
+
+    fireEvent.change(within(dialog).getByLabelText('Second pay day'), { target: { value: '22' } });
+    fireEvent.change(within(dialog).getByLabelText('If payday is on a weekend'), {
+      target: { value: 'after' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add income' }));
+    await waitFor(() =>
+      expect(mocks.createMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          frequency: 'semimonthly',
+          pay_date: null,
+          pay_day_1: 6,
+          pay_day_2: 22,
+          weekend_rule: 'after',
+        }),
+      ),
+    );
+  });
+
+  it('saves a pay date for other frequencies and shows the next payday', async () => {
+    mocks.incomes = [income({ id: 4, name: 'Salary', next_pay_date: '2026-11-20' })];
+    mocks.createMutateAsync.mockResolvedValue(undefined);
+    renderPage();
+    expect(screen.getByText('Next Fri, Nov 20')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add income' }));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('Name'), { target: { value: 'Paycheck' } });
+    fireEvent.change(within(dialog).getByLabelText('Take-home amount'), {
+      target: { value: '3000' },
+    });
+    fireEvent.change(within(dialog).getByLabelText('Next pay date'), {
+      target: { value: '2026-11-06' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add income' }));
+    await waitFor(() =>
+      expect(mocks.createMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          frequency: 'biweekly',
+          pay_date: '2026-11-06',
+          pay_day_1: null,
+          pay_day_2: null,
+          weekend_rule: 'before',
         }),
       ),
     );

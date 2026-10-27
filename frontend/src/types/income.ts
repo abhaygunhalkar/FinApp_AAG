@@ -9,6 +9,9 @@ export type IncomeCategory =
   | 'Benefits & pension'
   | 'Other';
 
+/** When a payday lands on a weekend: the Friday before, the Monday after, or that day. */
+export type WeekendRule = 'before' | 'after' | 'none';
+
 export interface IncomeSource {
   id: number;
   name: string;
@@ -21,6 +24,14 @@ export interface IncomeSource {
   deposited_to_account_id: number | null;
   /** The linked account's current "Name (Bank)", else free text saved before linking. */
   deposited_to: string | null;
+  /** Any one pay date (YYYY-MM-DD); used for every frequency except twice a month. */
+  pay_date: string | null;
+  /** Twice a month: the two days of the month (31 = last day). */
+  pay_day_1: number | null;
+  pay_day_2: number | null;
+  weekend_rule: WeekendRule;
+  /** Next day the money arrives, weekend rule applied; null without a schedule. */
+  next_pay_date: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -34,6 +45,10 @@ export interface IncomeSourceCreate {
   deposited_to_account_id: number | null;
   /** Free text, only used when no account is linked. */
   deposited_to: string | null;
+  pay_date: string | null;
+  pay_day_1: number | null;
+  pay_day_2: number | null;
+  weekend_rule: WeekendRule;
   notes: string | null;
 }
 
