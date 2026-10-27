@@ -414,10 +414,7 @@ export default function FixedCosts() {
                           )}
                         </p>
                       </div>
-                      <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3">
-                        <span className="text-sm font-semibold tabular-nums text-slate-900 dark:text-white">
-                          {money(expense.amount)}
-                        </span>
+                      <div className="flex shrink-0 flex-col-reverse items-end gap-1 sm:flex-row sm:items-center sm:gap-3">
                         {!expense.autopay && (
                           <button
                             type="button"
@@ -434,6 +431,9 @@ export default function FixedCosts() {
                             Mark paid
                           </button>
                         )}
+                        <span className="text-sm font-semibold tabular-nums text-slate-900 dark:text-white">
+                          {money(expense.amount)}
+                        </span>
                       </div>
                     </li>
                   ))}
@@ -454,10 +454,8 @@ export default function FixedCosts() {
 
           <AccountsPanel days={comingUpDays} />
 
-          <hr className="!mt-8 border-slate-200 dark:border-slate-700" />
-
           {/* ── table ── */}
-          <div className="!mt-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
             <div className="flex flex-wrap gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
               {(['All', ...presentCategories.map((c) => c.name)] as Filter[]).map((name) => {
                 const count =
