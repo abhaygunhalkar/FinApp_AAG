@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import {
+  useCashFlowSummary,
   useDeleteRecurringExpense,
   useMarkRecurringExpensePaid,
   useRecurringExpenses,
@@ -15,7 +17,7 @@ import {
   frequencyLabel,
 } from '../components/fixedcosts/constants';
 import { MASK } from '../components/networth/format';
-import { useUIStore } from '../store/uiStore';
+import { useUIStore, type ComingUpDays } from '../store/uiStore';
 import { parseLocalDateString } from '../utils/date';
 import type { ExpenseCategory, RecurringExpense } from '../types';
 
@@ -30,7 +32,7 @@ function StatCard({
 }: {
   label: string;
   value: string;
-  sub: string;
+  sub: ReactNode;
   bgClass: string;
   valueClass: string;
 }) {
@@ -60,6 +62,39 @@ function dueHint(days: number | null): { text: string; className: string } {
   };
 }
 
+/** Fixed costs above these shares of take-home income turn the tile amber, then red. */
+const INCOME_SHARE_OK = 50;
+const INCOME_SHARE_HIGH = 65;
+
+function incomeShareTone(pct: number | null): { bgClass: string; valueClass: string } {
+  if (pct === null)
+    return {
+      bgClass:
+        'bg-slate-100 border-2 border-dashed border-slate-300 dark:bg-slate-800 dark:border-slate-600',
+      valueClass: 'text-slate-500 dark:text-slate-400',
+    };
+  if (pct > INCOME_SHARE_HIGH)
+    return {
+      bgClass: 'bg-red-100 border-2 border-red-300 dark:bg-red-900/50 dark:border-red-600',
+      valueClass: 'text-red-900 dark:text-red-100',
+    };
+  if (pct >= INCOME_SHARE_OK)
+    return {
+      bgClass: 'bg-amber-100 border-2 border-amber-300 dark:bg-amber-900/50 dark:border-amber-600',
+      valueClass: 'text-amber-900 dark:text-amber-100',
+    };
+  return {
+    bgClass:
+      'bg-emerald-100 border-2 border-emerald-300 dark:bg-emerald-900/50 dark:border-emerald-600',
+    valueClass: 'text-emerald-900 dark:text-emerald-100',
+  };
+}
+
+const COMING_UP_WINDOWS: ComingUpDays[] = [7, 14, 30];
+
+/** Bills shown in "Coming up" before "View all". */
+const COMING_UP_PREVIEW = 5;
+
 const fmtDate = (iso: string, opts: Intl.DateTimeFormatOptions) =>
   parseLocalDateString(iso).toLocaleDateString('en-US', opts);
 
@@ -67,13 +102,17 @@ export default function FixedCosts() {
   const { data, isLoading, isError } = useRecurringExpenses();
   const deleteMutation = useDeleteRecurringExpense();
   const markPaidMutation = useMarkRecurringExpensePaid();
+  const { data: cashFlow } = useCashFlowSummary();
   const hidden = useUIStore((s) => s.hideBalances);
   const money = (v: number) => (hidden ? MASK : fmtUSD(v));
+  const comingUpDays = useUIStore((s) => s.comingUpDays);
+  const setComingUpDays = useUIStore((s) => s.setComingUpDays);
 
   const [filter, setFilter] = useState<Filter>('All');
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<RecurringExpense | null>(null);
   const [confirmId, setConfirmId] = useState<number | null>(null);
+  const [showAllSoon, setShowAllSoon] = useState(false);
 
   const expenses = useMemo(() => data ?? [], [data]);
 
@@ -84,7 +123,7 @@ export default function FixedCosts() {
       .map((e) => ({ expense: e, days: daysUntil(e.next_due_date) }))
       .filter(
         (x): x is { expense: RecurringExpense; days: number } =>
-          x.days !== null && x.days <= DUE_SOON_DAYS,
+          x.days !== null && x.days <= comingUpDays,
       )
       .sort((a, b) => a.days - b.days);
     const segments = CATEGORIES.map((c) => ({
@@ -102,9 +141,14 @@ export default function FixedCosts() {
       soon,
       soonTotal: soon.reduce((s, x) => s + x.expense.amount, 0),
       overdue: soon.filter((x) => x.days < 0).length,
+      // Overdue bills are always listed, even when there are more than the preview fits.
+      preview: soon.slice(0, Math.max(COMING_UP_PREVIEW, soon.filter((x) => x.days < 0).length)),
       segments,
     };
-  }, [expenses]);
+  }, [expenses, comingUpDays]);
+
+  const monthlyIncome = cashFlow?.monthly_income ?? 0;
+  const incomeSharePct = monthlyIncome > 0 ? (stats.monthly / monthlyIncome) * 100 : null;
 
   const presentCategories = CATEGORIES.filter((c) => expenses.some((e) => e.category === c.name));
   // Fall back to "All" when the filtered category's last bill was deleted.
@@ -199,16 +243,26 @@ export default function FixedCosts() {
             <StatCard
               label="Per month"
               value={money(stats.monthly)}
-              sub="Yearly and quarterly bills spread evenly"
+              sub={`${money(stats.monthly * 12)} per year`}
               valueClass="text-blue-900 dark:text-blue-100"
               bgClass="bg-blue-100 border-2 border-blue-300 dark:bg-blue-900/50 dark:border-blue-600"
             />
             <StatCard
-              label="Per year"
-              value={money(stats.monthly * 12)}
-              sub="Monthly total × 12"
-              valueClass="text-violet-900 dark:text-violet-100"
-              bgClass="bg-violet-100 border-2 border-violet-300 dark:bg-violet-900/50 dark:border-violet-600"
+              label="Share of income"
+              value={incomeSharePct === null ? '—' : `${incomeSharePct.toFixed(0)}%`}
+              sub={
+                incomeSharePct === null ? (
+                  <>
+                    <Link to="/cash-flow" className="underline">
+                      Add your income
+                    </Link>{' '}
+                    to see this
+                  </>
+                ) : (
+                  `of ${money(monthlyIncome)} take-home per month`
+                )
+              }
+              {...incomeShareTone(incomeSharePct)}
             />
             <StatCard
               label="Bills"
@@ -218,7 +272,7 @@ export default function FixedCosts() {
               bgClass="bg-slate-200 border-2 border-slate-400 dark:bg-slate-700 dark:border-slate-500"
             />
             <StatCard
-              label={`Due in next ${DUE_SOON_DAYS} days`}
+              label={`Due in next ${comingUpDays} days`}
               value={money(stats.soonTotal)}
               sub={`${stats.soon.length} ${stats.soon.length === 1 ? 'bill' : 'bills'}${
                 stats.overdue ? ` · ${stats.overdue} overdue` : ''
@@ -269,25 +323,73 @@ export default function FixedCosts() {
             </div>
 
             <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
-              <div className="flex items-baseline justify-between gap-3 mb-2">
-                <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Coming up</h2>
-                <span className="text-xs text-slate-500 dark:text-slate-400">
-                  Next {DUE_SOON_DAYS} days
-                </span>
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="min-w-0">
+                  <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+                    Coming up
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Next {comingUpDays} days
+                  </p>
+                </div>
+                <div
+                  role="group"
+                  aria-label="Coming up window"
+                  className="inline-flex shrink-0 rounded-lg bg-slate-100 dark:bg-slate-700 p-0.5"
+                >
+                  {COMING_UP_WINDOWS.map((d) => {
+                    const active = comingUpDays === d;
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => {
+                          setComingUpDays(d);
+                          setShowAllSoon(false);
+                        }}
+                        aria-pressed={active}
+                        aria-label={`Next ${d} days`}
+                        className={`h-7 min-w-9 px-2 rounded-md text-xs font-semibold tabular-nums transition-colors ${
+                          active
+                            ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        {d}d
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               {stats.soon.length === 0 ? (
                 <p className="text-sm text-slate-500 dark:text-slate-400 py-2">
-                  Nothing due in the next two weeks.
+                  Nothing due in the next {comingUpDays} days.
                 </p>
               ) : (
                 <ul>
-                  {stats.soon.slice(0, 5).map(({ expense, days }) => (
+                  {(showAllSoon ? stats.soon : stats.preview).map(({ expense, days }) => (
                     <li
                       key={expense.id}
-                      className="flex items-center gap-3 py-2.5 border-t border-slate-100 dark:border-slate-700 first:border-t-0"
+                      className={`flex items-center gap-3 py-2.5 ${
+                        days < 0
+                          ? '-mx-2 px-2 my-1 first:mt-0 rounded-lg bg-red-50 dark:bg-red-900/20 ring-1 ring-red-200 dark:ring-red-800'
+                          : 'border-t border-slate-100 dark:border-slate-700 first:border-t-0'
+                      }`}
                     >
-                      <div className="w-11 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-700 py-1 flex flex-col items-center">
-                        <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      <div
+                        className={`w-11 shrink-0 rounded-lg py-1 flex flex-col items-center ${
+                          days < 0
+                            ? 'bg-red-100 dark:bg-red-900/40'
+                            : 'bg-slate-100 dark:bg-slate-700'
+                        }`}
+                      >
+                        <span
+                          className={`text-[11px] font-semibold uppercase tracking-wide ${
+                            days < 0
+                              ? 'text-red-700 dark:text-red-300'
+                              : 'text-slate-500 dark:text-slate-400'
+                          }`}
+                        >
                           {fmtDate(expense.next_due_date!, { month: 'short' })}
                         </span>
                         <span className="text-base font-bold leading-tight text-slate-900 dark:text-white">
@@ -311,12 +413,40 @@ export default function FixedCosts() {
                           )}
                         </p>
                       </div>
-                      <span className="text-sm font-semibold tabular-nums text-slate-900 dark:text-white">
-                        {money(expense.amount)}
-                      </span>
+                      <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3">
+                        <span className="text-sm font-semibold tabular-nums text-slate-900 dark:text-white">
+                          {money(expense.amount)}
+                        </span>
+                        {!expense.autopay && (
+                          <button
+                            type="button"
+                            onClick={() => markPaidMutation.mutate(expense.id)}
+                            disabled={markPaidMutation.isPending}
+                            aria-label={`Mark ${expense.name} paid`}
+                            title="Moves the due date to the next period"
+                            className={`h-8 px-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors disabled:opacity-50 ${
+                              days < 0
+                                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                : 'border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'
+                            }`}
+                          >
+                            Mark paid
+                          </button>
+                        )}
+                      </div>
                     </li>
                   ))}
                 </ul>
+              )}
+              {stats.soon.length > stats.preview.length && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllSoon((v) => !v)}
+                  aria-expanded={showAllSoon}
+                  className="mt-2 text-sm font-medium text-blue-700 dark:text-blue-400 hover:underline"
+                >
+                  {showAllSoon ? 'Show fewer' : `View all ${stats.soon.length}`}
+                </button>
               )}
             </div>
           </div>
@@ -480,7 +610,7 @@ export default function FixedCosts() {
                                       disabled={markPaidMutation.isPending}
                                       aria-label={`Mark ${e.name} paid`}
                                       title="Mark as paid (moves the due date to the next period)"
-                                      className="h-10 w-10 inline-flex items-center justify-center rounded-lg text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 disabled:opacity-50"
+                                      className="h-8 px-2.5 mr-1 inline-flex items-center gap-1 whitespace-nowrap rounded-lg border border-emerald-300 dark:border-emerald-700 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 disabled:opacity-50"
                                     >
                                       <svg
                                         viewBox="0 0 24 24"
@@ -495,6 +625,7 @@ export default function FixedCosts() {
                                         <circle cx="12" cy="12" r="9" />
                                         <path d="m8 12.5 2.5 2.5L16 9.5" />
                                       </svg>
+                                      Mark paid
                                     </button>
                                   )}
                                   <button

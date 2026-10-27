@@ -4,11 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import FixedCosts from '../../../pages/FixedCosts';
 import { useUIStore } from '../../../store/uiStore';
 import { daysUntil } from '../../../components/fixedcosts/constants';
-import type { FinancialAccount, RecurringExpense } from '../../../types';
+import type { CashFlowSummary, FinancialAccount, RecurringExpense } from '../../../types';
 
 const mocks = vi.hoisted(() => ({
   expenses: [] as RecurringExpense[],
   accounts: [] as FinancialAccount[],
+  cashFlow: undefined as CashFlowSummary | undefined,
   deleteMutate: vi.fn(),
   markPaidMutate: vi.fn(),
   createMutateAsync: vi.fn(),
@@ -25,6 +26,7 @@ vi.stubGlobal('localStorage', {
 
 vi.mock('../../../hooks', () => ({
   useAccounts: () => ({ data: mocks.accounts }),
+  useCashFlowSummary: () => ({ data: mocks.cashFlow }),
   useRecurringExpenses: () => ({ data: mocks.expenses, isLoading: false, isError: false }),
   useDeleteRecurringExpense: () => ({ mutate: mocks.deleteMutate, isPending: false }),
   useMarkRecurringExpensePaid: () => ({ mutate: mocks.markPaidMutate, isPending: false }),
@@ -61,7 +63,8 @@ const renderPage = () =>
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.accounts = [];
-  useUIStore.setState({ hideBalances: false });
+  mocks.cashFlow = undefined;
+  useUIStore.setState({ hideBalances: false, comingUpDays: 7 });
   mocks.expenses = [
     expense({ id: 1, name: 'Mortgage', category: 'Housing', amount: 2000, monthly_amount: 2000 }),
     expense({
@@ -80,8 +83,23 @@ describe('FixedCosts page', () => {
   it('totals bills as monthly and yearly amounts', () => {
     renderPage();
     expect(screen.getAllByText('$2,170.00').length).toBeGreaterThan(0);
-    expect(screen.getByText('$26,040.00')).toBeInTheDocument();
+    expect(screen.getByText('$26,040.00 per year')).toBeInTheDocument();
     expect(screen.getByText('1 on autopay · 2 paid manually')).toBeInTheDocument();
+  });
+
+  it('shows fixed costs as a share of take-home income', () => {
+    mocks.cashFlow = { monthly_income: 4000 } as CashFlowSummary;
+    renderPage();
+    expect(screen.getByText('54%')).toBeInTheDocument(); // $2,170 of $4,000
+    expect(screen.getByText('of $4,000.00 take-home per month')).toBeInTheDocument();
+  });
+
+  it('links to Cash Flow when no income is entered', () => {
+    renderPage();
+    expect(screen.getByRole('link', { name: 'Add your income' })).toHaveAttribute(
+      'href',
+      '/cash-flow',
+    );
   });
 
   it('filters the table by category', () => {
@@ -168,8 +186,62 @@ describe('FixedCosts page', () => {
 
     // Only manual bills get the button; autopay bills advance on their own.
     expect(screen.queryByRole('button', { name: 'Mark Internet paid' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Mark Water paid' }));
+    const table = screen.getByRole('table');
+    fireEvent.click(within(table).getByRole('button', { name: 'Mark Water paid' }));
     expect(mocks.markPaidMutate).toHaveBeenCalledWith(7);
+
+    // The same button sits in the "Coming up" row, so there's no need to scroll to the table.
+    const card = screen
+      .getByRole('heading', { name: 'Coming up' })
+      .closest<HTMLElement>('.rounded-xl')!;
+    fireEvent.click(within(card).getByRole('button', { name: 'Mark Water paid' }));
+    expect(mocks.markPaidMutate).toHaveBeenCalledTimes(2);
+    expect(
+      within(card).queryByRole('button', { name: 'Mark Internet paid' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('previews 5 upcoming bills with the overdue one pinned, and expands to all', () => {
+    const iso = (offset: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() + offset);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+        d.getDate(),
+      ).padStart(2, '0')}`;
+    };
+    mocks.expenses = [
+      ...Array.from({ length: 11 }, (_, i) =>
+        expense({ id: 20 + i, name: `Bill ${i + 1}`, next_due_date: iso(i + 1) }),
+      ),
+      expense({ id: 40, name: 'Late water', next_due_date: iso(-2) }),
+    ];
+    renderPage();
+
+    const card = screen
+      .getByRole('heading', { name: 'Coming up' })
+      .closest<HTMLElement>('.rounded-xl')!;
+    const rows = () => within(card).getAllByRole('listitem');
+    expect(rows()).toHaveLength(5);
+    expect(rows()[0]).toHaveTextContent('Late water');
+    expect(rows()[0].className).toContain('bg-red-50');
+
+    // Default window is 7 days: the overdue bill plus bills due in 1–7 days.
+    expect(within(card).getByText('Next 7 days')).toBeInTheDocument();
+    fireEvent.click(within(card).getByRole('button', { name: 'View all 8' }));
+    expect(rows()).toHaveLength(8);
+    fireEvent.click(within(card).getByRole('button', { name: 'Show fewer' }));
+    expect(rows()).toHaveLength(5);
+
+    // A wider window counts more bills; overdue stays pinned and the choice is saved.
+    fireEvent.click(within(card).getByRole('button', { name: 'Next 14 days' }));
+    expect(within(card).getByRole('button', { name: 'Next 14 days' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(rows()[0]).toHaveTextContent('Late water');
+    expect(within(card).getByRole('button', { name: 'View all 12' })).toBeInTheDocument();
+    expect(screen.getByText('Due in next 14 days')).toBeInTheDocument();
+    expect(localStorage.getItem('comingUpDays')).toBe('14');
   });
 
   it('shows an empty state with no expenses', () => {
