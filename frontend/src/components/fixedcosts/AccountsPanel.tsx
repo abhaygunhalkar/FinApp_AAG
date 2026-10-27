@@ -4,6 +4,8 @@ import { useAccountForecast } from '../../hooks';
 import { useUIStore } from '../../store/uiStore';
 import { parseLocalDateString } from '../../utils/date';
 import { MASK } from '../networth/format';
+import IssuerBadge from '../shared/IssuerBadge';
+import { findIssuer } from '../shared/issuers';
 import type { AccountForecast } from '../../types';
 import { fmtUSD } from './constants';
 
@@ -265,38 +267,48 @@ export default function AccountsPanel({ days }: { days: number }) {
                 </li>
               );
             })}
-            {data.cards.map((c) => (
-              <li
-                key={`card-${c.account_id}`}
-                title="No cash needed until the card is paid."
-                className="flex-1 basis-[130px] min-w-[130px] max-w-[220px] rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-3 flex flex-col"
-              >
-                <div className="flex items-start gap-2">
-                  <span
-                    className="h-8 w-8 shrink-0 rounded-lg flex items-center justify-center bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-200"
-                    aria-hidden="true"
-                  >
-                    <svg viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4">
-                      <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5V5h14v-.5A1.5 1.5 0 0 0 13.5 3h-11ZM15 6.5H1v5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5v-5ZM3 10.25a.75.75 0 0 1 .75-.75h2a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1-.75-.75Z" />
-                    </svg>
-                  </span>
-                  <p className="min-w-0 pt-1.5 text-sm font-semibold leading-tight break-words line-clamp-2 text-slate-900 dark:text-white">
-                    {c.name}
+            {data.cards.map((c) => {
+              const issuer = findIssuer(c.name, c.institution);
+              return (
+                <li
+                  key={`card-${c.account_id}`}
+                  title="No cash needed until the card is paid."
+                  className="flex-1 basis-[130px] min-w-[130px] max-w-[220px] rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-3 flex flex-col"
+                >
+                  <div className="flex items-start gap-2">
+                    {issuer ? (
+                      <IssuerBadge issuer={issuer} />
+                    ) : (
+                      <span
+                        className="h-8 w-8 shrink-0 rounded-lg flex items-center justify-center bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-200"
+                        aria-hidden="true"
+                      >
+                        <svg viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4">
+                          <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5V5h14v-.5A1.5 1.5 0 0 0 13.5 3h-11ZM15 6.5H1v5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5v-5ZM3 10.25a.75.75 0 0 1 .75-.75h2a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1-.75-.75Z" />
+                        </svg>
+                      </span>
+                    )}
+                    <p
+                      className="min-w-0 pt-1.5 text-sm font-semibold leading-tight break-words line-clamp-2 text-slate-900 dark:text-white"
+                      title={c.name}
+                    >
+                      {c.name}
+                    </p>
+                  </div>
+                  {c.institution && c.institution.toLowerCase() !== c.name.toLowerCase() && (
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 truncate">
+                      {c.institution}
+                    </p>
+                  )}
+                  <p className="mt-2.5 text-base font-bold tabular-nums text-slate-900 dark:text-white">
+                    {money(c.total)}
                   </p>
-                </div>
-                {c.institution && c.institution.toLowerCase() !== c.name.toLowerCase() && (
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 truncate">
-                    {c.institution}
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    charged · {plural(c.count, 'bill')}
                   </p>
-                )}
-                <p className="mt-2.5 text-base font-bold tabular-nums text-slate-900 dark:text-white">
-                  {money(c.total)}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  charged · {plural(c.count, 'bill')}
-                </p>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
 
           {/* Timelines open below the row so neighbouring cards keep their size. */}

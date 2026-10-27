@@ -160,6 +160,24 @@ describe('AccountsPanel', () => {
     expect(card).toHaveAttribute('title', 'No cash needed until the card is paid.');
   });
 
+  it('shows the issuer logo for recognised cards', () => {
+    mocks.forecast = forecast({
+      cards: [
+        {
+          account_id: 5,
+          label: 'Amex Credit Card',
+          name: 'Amex Credit Card',
+          institution: null,
+          total: 50,
+          count: 1,
+        },
+      ],
+    });
+    renderPanel(14);
+    const card = screen.getByText('Amex Credit Card').closest('li')!;
+    expect(within(card).getByTitle('American Express')).toBeInTheDocument();
+  });
+
   it('lists unlinked and undated bills', () => {
     renderPanel(14);
     expect(screen.getByText(/Not checked: \$70\.00 \(1 bill\)/)).toBeInTheDocument();

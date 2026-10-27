@@ -1,4 +1,6 @@
 import type { FinancialAccount } from '../../types';
+import IssuerBadge from '../shared/IssuerBadge';
+import { findIssuer } from '../shared/issuers';
 import { ACCOUNT_TYPE_LABELS, isCreditType, isLoanType } from './accountConfig';
 import { fmtMoney, fmtMonthYear, fmtPct, fmtShortDate, initials, timeAgo } from './format';
 import { share } from './netWorthMath';
@@ -38,18 +40,25 @@ export default function AccountRow({
       .filter(Boolean)
       .join(' · ');
 
+  // Credit cards show their issuer's logo when it can be recognised.
+  const issuer = credit ? findIssuer(account.name, account.institution) : null;
+
   const main = (
     <>
-      <span
-        className={`h-11 w-11 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold ${
-          isAsset
-            ? 'bg-blue-50 text-[#1D4ED8] dark:bg-blue-900/30 dark:text-blue-200'
-            : 'bg-orange-50 text-[#C2410C] dark:bg-orange-900/30 dark:text-orange-200'
-        }`}
-        aria-hidden="true"
-      >
-        {initials(account.institution || account.name)}
-      </span>
+      {issuer ? (
+        <IssuerBadge issuer={issuer} className="h-11 w-11 rounded-xl" />
+      ) : (
+        <span
+          className={`h-11 w-11 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold ${
+            isAsset
+              ? 'bg-blue-50 text-[#1D4ED8] dark:bg-blue-900/30 dark:text-blue-200'
+              : 'bg-orange-50 text-[#C2410C] dark:bg-orange-900/30 dark:text-orange-200'
+          }`}
+          aria-hidden="true"
+        >
+          {initials(account.institution || account.name)}
+        </span>
+      )}
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[15px] font-semibold text-slate-900 dark:text-slate-100">
           {account.name}
