@@ -79,15 +79,20 @@ class AccountForecastService:
                         (d, 1, "bill", e.name, -e.amount, overdue)
                     )
 
+        paid_into: set[int] = set()
         for i in IncomeRepository.get_all(db):
             account = accounts.get(i.deposited_to_account_id or -1)
             if account is None or account.account_type not in BANK_TYPES:
                 continue
+            if pay_schedule.has_schedule(i):
+                paid_into.add(account.id)
             for d in pay_schedule.pay_dates(i, today, end):
                 events[account.id].append((d, 0, "income", i.name, i.amount, False))
 
         forecasts = [
-            AccountForecastService._project(accounts[aid], sorted(evts), today)
+            AccountForecastService._project(
+                accounts[aid], sorted(evts), today, aid in paid_into
+            )
             for aid, evts in events.items()
             if any(kind == "bill" for _, _, kind, *_ in evts)
         ]
@@ -119,6 +124,7 @@ class AccountForecastService:
         account: FinancialAccount,
         evts: list[tuple[date, int, str, str, float, bool]],
         today: date,
+        has_paydays: bool,
     ) -> AccountForecast:
         balance = round(account.balance, 2)
         lowest, lowest_date = balance, today
@@ -144,7 +150,10 @@ class AccountForecastService:
         return AccountForecast(
             account_id=account.id,
             label=FinancialAccountService.label(account),
+            name=account.name,
+            institution=account.institution,
             account_type=account.account_type,
+            has_paydays=has_paydays,
             balance=round(account.balance, 2),
             bills_total=round(-sum(a for _, _, k, _, a, _ in evts if k == "bill"), 2),
             income_total=round(sum(a for _, _, k, _, a, _ in evts if k == "income"), 2),

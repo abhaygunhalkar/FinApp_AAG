@@ -24,7 +24,12 @@ class AccountForecast(BaseModel):
 
     account_id: int
     label: str
+    name: str
+    institution: str | None
     account_type: str
+    # Whether any income with a pay schedule is deposited here (not just in
+    # this window), so the page can prompt to set one up.
+    has_paydays: bool
     balance: float
     bills_total: float
     income_total: float

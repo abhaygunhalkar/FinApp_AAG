@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AccountsPanel from '../../../components/fixedcosts/AccountsPanel';
 import { useUIStore } from '../../../store/uiStore';
@@ -20,7 +21,10 @@ function account(overrides: Partial<AccountForecast>): AccountForecast {
   return {
     account_id: 1,
     label: 'Everyday Checking (Harbor Bank)',
+    name: 'Everyday Checking',
+    institution: 'Harbor Bank',
     account_type: 'checking',
+    has_paydays: true,
     balance: 1000,
     bills_total: 1550,
     income_total: 2000,
@@ -68,6 +72,9 @@ function forecast(overrides: Partial<AccountForecastResponse> = {}): AccountFore
       account({
         account_id: 2,
         label: 'Summit Savings',
+        name: 'Summit Savings',
+        institution: 'Summit Savings',
+        has_paydays: false,
         balance: 5000,
         bills_total: 100,
         income_total: 0,
@@ -95,6 +102,13 @@ function forecast(overrides: Partial<AccountForecastResponse> = {}): AccountFore
   };
 }
 
+const renderPanel = (days: number) =>
+  render(
+    <MemoryRouter>
+      <AccountsPanel days={days} />
+    </MemoryRouter>,
+  );
+
 beforeEach(() => {
   mocks.forecast = forecast();
   mocks.days = [];
@@ -103,7 +117,7 @@ beforeEach(() => {
 
 describe('AccountsPanel', () => {
   it('flags an account that goes below $0 and explains why', () => {
-    render(<AccountsPanel days={14} />);
+    renderPanel(14);
     expect(mocks.days).toContain(14);
     expect(screen.getByText('Short $550.00 on Nov 15')).toBeInTheDocument();
     expect(screen.getByText(/Rent on Nov 15 takes this account below \$0/)).toBeInTheDocument();
@@ -120,32 +134,57 @@ describe('AccountsPanel', () => {
   });
 
   it('shows covered accounts collapsed until clicked', () => {
-    render(<AccountsPanel days={14} />);
+    renderPanel(14);
     expect(screen.getByText('Covered')).toBeInTheDocument();
     expect(
       screen.queryByRole('table', { name: 'Summit Savings timeline' }),
     ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Summit Savings/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Summit Savings: covered' }));
     expect(screen.getByRole('table', { name: 'Summit Savings timeline' })).toBeInTheDocument();
   });
 
-  it('lists card charges, unlinked and undated bills', () => {
-    render(<AccountsPanel days={14} />);
-    expect(screen.getByText(/\$412\.00 charged to Rewards Card \(3 bills\)/)).toBeInTheDocument();
+  it('lists card charges as chips, then unlinked and undated bills', () => {
+    renderPanel(14);
+    const chip = screen.getByText('Rewards Card · $412.00 · 3 bills');
+    expect(chip).toHaveAttribute('title', 'No cash needed until the card is paid.');
     expect(screen.getByText(/Not checked: \$70\.00 \(1 bill\)/)).toBeInTheDocument();
     expect(screen.getByText('2 bills with no due date not included.')).toBeInTheDocument();
   });
 
+  it('shows the institution only when it differs from the name', () => {
+    renderPanel(14);
+    expect(screen.getByText('Harbor Bank')).toBeInTheDocument();
+    expect(screen.getAllByText('Summit Savings')).toHaveLength(1);
+  });
+
+  it('marks an account tight when its lowest point is under $500', () => {
+    mocks.forecast = forecast({
+      accounts: [account({ lowest_balance: 320, short_date: null, short_bill: null })],
+    });
+    renderPanel(14);
+    expect(screen.getByText('Tight · under $500.00')).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: '$1,000.00 today, lowest $320.00 · Nov 15' }),
+    ).toBeInTheDocument();
+  });
+
+  it('links to Cash Flow when an account has no paydays set up', () => {
+    renderPanel(14);
+    const links = screen.getAllByRole('link', { name: 'Add payday' });
+    expect(links).toHaveLength(1); // only Summit Savings
+    expect(links[0]).toHaveAttribute('href', '/cash-flow');
+  });
+
   it('masks amounts when numbers are hidden', () => {
     useUIStore.setState({ hideBalances: true });
-    render(<AccountsPanel days={14} />);
+    renderPanel(14);
     expect(screen.queryByText(/\$550\.00/)).not.toBeInTheDocument();
     expect(screen.getByText('Short •••••• on Nov 15')).toBeInTheDocument();
   });
 
   it('says so when nothing is due', () => {
     mocks.forecast = forecast({ accounts: [], cards: [], unlinked_count: 0, undated_count: 0 });
-    render(<AccountsPanel days={7} />);
+    renderPanel(7);
     expect(
       screen.getByText('No bills due from your accounts in the next 7 days.'),
     ).toBeInTheDocument();

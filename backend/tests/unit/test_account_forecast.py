@@ -84,6 +84,7 @@ def test_projects_bills_and_paydays_through_the_window(db_session: Session) -> N
     assert (a.bills_total, a.income_total, a.ending_balance) == (1550, 2000, 1450)
     assert (a.lowest_balance, a.lowest_date) == (-550, date(2026, 11, 15))
     assert (a.short_date, a.short_bill) == (date(2026, 11, 15), "Rent")
+    assert (a.name, a.institution, a.has_paydays) == ("Checking", None, True)
 
     assert [(c.label, c.total, c.count) for c in f.cards] == [("Card", 15, 1)]
     assert (f.unlinked_total, f.unlinked_count, f.undated_count) == (40, 1, 1)
@@ -125,3 +126,12 @@ def test_short_accounts_are_listed_first(db_session: Session) -> None:
 
     f = AccountForecastService.get_forecast(db_session, 7, today=TODAY)
     assert [a.label for a in f.accounts] == ["B short", "A fine"]
+
+
+def test_has_paydays_needs_a_schedule(db_session: Session) -> None:
+    checking = _account(db_session, "Checking", "checking", 1000)
+    _bill(db_session, "Rent", 100, date(2026, 11, 12), checking)
+    _pay(db_session, 2000, checking, frequency="biweekly")  # no pay date set
+
+    a = AccountForecastService.get_forecast(db_session, 7, today=TODAY).accounts[0]
+    assert a.has_paydays is False

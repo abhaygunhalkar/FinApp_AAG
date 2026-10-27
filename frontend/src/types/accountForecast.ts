@@ -14,7 +14,11 @@ export interface ForecastEvent {
 export interface AccountForecast {
   account_id: number;
   label: string;
+  name: string;
+  institution: string | null;
   account_type: string;
+  /** Some income with a pay schedule is deposited here (in any window). */
+  has_paydays: boolean;
   balance: number;
   bills_total: number;
   income_total: number;

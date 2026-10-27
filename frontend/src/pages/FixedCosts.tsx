@@ -454,8 +454,10 @@ export default function FixedCosts() {
 
           <AccountsPanel days={comingUpDays} />
 
+          <hr className="!mt-8 border-slate-200 dark:border-slate-700" />
+
           {/* ── table ── */}
-          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
+          <div className="!mt-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
             <div className="flex flex-wrap gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
               {(['All', ...presentCategories.map((c) => c.name)] as Filter[]).map((name) => {
                 const count =
