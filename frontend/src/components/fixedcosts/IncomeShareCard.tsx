@@ -22,13 +22,15 @@ function tone(pct: number | null): { bgClass: string; valueClass: string } {
     };
   if (pct > COSTS_SHARE_HIGH)
     return {
-      bgClass: 'bg-red-100 border-2 border-red-300 dark:bg-red-900/50 dark:border-red-600',
-      valueClass: 'text-red-900 dark:text-red-100',
+      bgClass: 'bg-red-100 border-2 border-red-400 dark:bg-red-900/50 dark:border-red-500',
+      valueClass: 'text-red-700 dark:text-red-200',
     };
   if (pct >= COSTS_SHARE_OK)
     return {
-      bgClass: 'bg-amber-100 border-2 border-amber-300 dark:bg-amber-900/50 dark:border-amber-600',
-      valueClass: 'text-amber-900 dark:text-amber-100',
+      // Orange, not amber: amber reads as the informational yellow of the "Due" card.
+      bgClass:
+        'bg-orange-100 border-2 border-orange-400 dark:bg-orange-900/50 dark:border-orange-500',
+      valueClass: 'text-orange-700 dark:text-orange-200',
     };
   return {
     bgClass:
@@ -120,7 +122,7 @@ export default function IncomeShareCard({
         Over take-home by {money(-leftOver)}
       </span>
     ) : leftOver < LEFT_OVER_WARN ? (
-      <span className="mt-0.5 inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-amber-600 px-2 py-0.5 font-semibold text-white">
+      <span className="mt-0.5 inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-orange-600 px-2 py-0.5 font-semibold text-white">
         <WarningIcon />
         Only {money(leftOver)}/mo left over
       </span>
