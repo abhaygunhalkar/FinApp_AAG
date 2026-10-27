@@ -382,6 +382,8 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
         )
 
     acct("Everyday Checking", "Harbor Bank", "checking", 8_420.0)
+    # Real bank names (with made-up balances) so issuer logos can be tried out.
+    acct("Total Checking", "Chase", "checking", 1_600.0)
     acct("High-Yield Savings", "Summit Savings", "savings", 32_150.0)
     acct("Primary Residence", None, "real_estate", 545_000.0, notes="Estimated value")
     acct("Family SUV", None, "vehicle", 27_500.0)
@@ -412,6 +414,13 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
         apr=22.9,
         due_date=TODAY + timedelta(days=11),
     )
+    for name, inst, bal, limit, apr in [
+        ("Amex Credit Card", "American Express", 1_240.0, 20_000.0, 24.49),
+        ("Capital One Venture X", "Capital One", 860.0, 30_000.0, 21.99),
+        ("Chase Freedom", "Chase", 315.0, 8_000.0, 20.49),
+        ("Chase Sapphire", "Chase", 1_975.0, 25_000.0, 21.49),
+    ]:
+        acct(name, inst, "credit_card", bal, credit_limit=limit, apr=apr)
 
     # Bills and income link to these accounts by ID, like the app's dropdowns do.
     db.flush()
@@ -478,7 +487,7 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
         1_420.0,
         "annual",
         142,
-        "Rewards Card",
+        "Chase Sapphire",
         False,
         "Renews in March",
     )
@@ -488,19 +497,19 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
         142.0,
         "monthly",
         3,
-        "Rewards Card",
+        "Chase Sapphire",
         True,
         "Average bill",
     )
     bill("Water & sewer", "Utilities", 68.0, "monthly", -2, "Everyday Checking", False)
-    bill("Internet", "Utilities", 70.0, "monthly", 6, "Rewards Card", True)
+    bill("Internet", "Utilities", 70.0, "monthly", 6, "Capital One Venture X", True)
     bill(
         "Mobile phone",
         "Utilities",
         115.0,
         "monthly",
         10,
-        "Rewards Card",
+        "Chase Freedom",
         True,
         "Family plan",
     )
@@ -510,11 +519,19 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
         690.0,
         "monthly",
         11,
-        "Everyday Checking",
+        "Total Checking",
         True,
         "Ends 2028",
     )
-    bill("Car insurance", "Insurance", 960.0, "semiannual", 88, "Rewards Card", False)
+    bill(
+        "Car insurance",
+        "Insurance",
+        960.0,
+        "semiannual",
+        88,
+        "Capital One Venture X",
+        False,
+    )
     bill(
         "Term life insurance",
         "Insurance",
@@ -524,16 +541,32 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
         "Everyday Checking",
         True,
     )
-    bill("Gym membership", "Health & fitness", 45.0, "monthly", 8, "Rewards Card", True)
-    bill("Streaming bundle", "Subscriptions", 24.99, "monthly", 5, "Rewards Card", True)
-    bill("Cloud storage", "Subscriptions", 2.99, "monthly", 21, "Rewards Card", True)
+    bill(
+        "Gym membership",
+        "Health & fitness",
+        45.0,
+        "monthly",
+        8,
+        "Amex Credit Card",
+        True,
+    )
+    bill(
+        "Streaming bundle",
+        "Subscriptions",
+        24.99,
+        "monthly",
+        5,
+        "Amex Credit Card",
+        True,
+    )
+    bill("Cloud storage", "Subscriptions", 2.99, "monthly", 21, "Chase Freedom", True)
     bill(
         "Shopping membership",
         "Subscriptions",
         139.0,
         "annual",
         220,
-        "Rewards Card",
+        "Amex Credit Card",
         True,
     )
     bill(
@@ -561,7 +594,7 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
         1_350.0,
         "monthly",
         7,
-        "Everyday Checking",
+        "Total Checking",
         True,
     )
     bill(
@@ -571,6 +604,15 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
         "monthly",
         22,
         "Everyday Checking",
+        True,
+    )
+    bill(
+        "Venture X annual fee",
+        "Subscriptions",
+        395.0,
+        "annual",
+        26,
+        "Capital One Venture X",
         True,
     )
     bill(
@@ -621,7 +663,7 @@ def seed(db: Session, closes: dict[str, dict[date, float]]) -> None:
         "Salary",
         2_480.0,
         "semimonthly",
-        "Everyday Checking",
+        "Total Checking",
         pay_day_1=6,
         pay_day_2=22,
     )
