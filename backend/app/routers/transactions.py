@@ -62,6 +62,7 @@ def get_sell_history(
 
     # Also build a map of ticker -> avg buy price from current holdings as fallback
     all_holdings = HoldingsRepository.get_all(db)
+    brokers = LotService.broker_by_sell(db, all_holdings)
     holding_avg_prices: dict[str, float] = {
         h.ticker: h.average_buy_price for h in all_holdings
     }
@@ -88,7 +89,7 @@ def get_sell_history(
                 "price": txn.price,
                 "fees": txn.fees,
                 "transaction_date": txn.transaction_date.isoformat(),
-                "broker": txn.broker,
+                "broker": brokers.get(txn.id),
                 "notes": txn.notes,
                 "created_at": txn.created_at.isoformat(),
                 "cost_basis": round(avg_cost, 2),

@@ -173,3 +173,51 @@ class LotService:
                 shares[t.id] = shares.get(t.id, 0.0) + take
 
         return {sid: cost[sid] / shares[sid] for sid in cost if shares[sid] > 0}
+
+    @staticmethod
+    def broker_by_sell(db: Session, holdings: list[Holding]) -> dict[int, str]:
+        """The brokerage account each sell came from.
+
+        Sells recorded before trades carried a broker have none of their own.
+        For those, use the broker of their holding, else of the lots they
+        sold, else of the ticker's buys when they were all at one broker.
+        """
+        transactions = TransactionRepository.get_all_ordered(db)
+        holding_broker = {h.id: h.broker for h in holdings if h.broker}
+
+        def broker_of(t: Transaction) -> str | None:
+            if t.broker:
+                return t.broker
+            if t.holding_id is not None:
+                return holding_broker.get(t.holding_id)
+            return None
+
+        by_id = {t.id: t for t in transactions}
+        lot_brokers: dict[int, set[str]] = {}
+        for a in LotAllocationRepository.get_all(db):
+            buy = by_id.get(a.buy_transaction_id)
+            broker = broker_of(buy) if buy is not None else None
+            if broker:
+                lot_brokers.setdefault(a.sell_transaction_id, set()).add(broker)
+        ticker_brokers: dict[str, set[str]] = {}
+        for t in transactions:
+            broker = broker_of(t)
+            if t.transaction_type == "buy" and broker:
+                ticker_brokers.setdefault(t.ticker, set()).add(broker)
+
+        result: dict[int, str] = {}
+        for t in transactions:
+            if t.transaction_type != "sell":
+                continue
+            broker = broker_of(t)
+            if broker is None:
+                for candidates in (
+                    lot_brokers.get(t.id, set()),
+                    ticker_brokers.get(t.ticker, set()),
+                ):
+                    if len(candidates) == 1:
+                        broker = next(iter(candidates))
+                        break
+            if broker:
+                result[t.id] = broker
+        return result

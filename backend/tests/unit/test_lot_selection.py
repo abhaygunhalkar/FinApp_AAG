@@ -11,6 +11,7 @@ from app.models.holding import Holding
 from app.models.transaction import Transaction
 from app.schemas.transaction import LotSelection, TransactionCreate
 from app.services.dashboard_service import DashboardService
+from app.services.lot_service import LotService
 from app.services.transaction_service import TransactionService
 
 
@@ -321,3 +322,46 @@ class TestDeleteWithLots:
         db_session.refresh(schwab)
         assert schwab.quantity == 20
         assert schwab.average_buy_price == pytest.approx(115)
+
+
+class TestSellBroker:
+    def test_sells_without_a_broker_get_one_from_their_account(
+        self, db_session: Session, two_brokers: dict[str, object]
+    ) -> None:
+        schwab = two_brokers["schwab"]
+        merrill = two_brokers["merrill"]
+        assert isinstance(schwab, Holding) and isinstance(merrill, Holding)
+
+        def old_sell(ticker: str, holding_id: int | None) -> int:
+            txn = Transaction(
+                holding_id=holding_id,
+                ticker=ticker,
+                transaction_type="sell",
+                quantity=1,
+                price=1,
+                fees=0.0,
+                transaction_date=date(2025, 2, 1),
+            )
+            db_session.add(txn)
+            db_session.commit()
+            return txn.id
+
+        in_holding = old_sell("NVDA", merrill.id)
+        db_session.add(
+            Transaction(
+                ticker="AMD",
+                transaction_type="buy",
+                quantity=1,
+                price=1,
+                fees=0.0,
+                transaction_date=date(2025, 1, 1),
+                broker="Schwab",
+            )
+        )
+        closed = old_sell("AMD", None)
+        ambiguous = old_sell("NVDA", None)
+
+        brokers = LotService.broker_by_sell(db_session, [schwab, merrill])
+        assert brokers[in_holding] == "Merrill"
+        assert brokers[closed] == "Schwab"
+        assert ambiguous not in brokers
