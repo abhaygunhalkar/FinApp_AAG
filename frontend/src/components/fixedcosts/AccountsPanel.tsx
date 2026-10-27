@@ -164,151 +164,104 @@ export default function AccountsPanel({ days }: { days: number }) {
           No bills due from your accounts in the next {days} days.
         </p>
       ) : (
-        <ul
-          className="grid gap-4 items-start"
-          // Cards stay card-sized (max 420px) even when there's only one,
-          // and shrink to fit on phones.
-          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 360px), 420px))' }}
-        >
-          {data.accounts.map((a) => {
-            const tier = tierOf(a);
-            const style = TIER[tier];
-            const open = isOpen(a);
-            const showInstitution =
-              a.institution && a.institution.toLowerCase() !== a.name.toLowerCase();
-            const lowest = `lowest ${money(a.lowest_balance)} · ${fmtDay(a.lowest_date)}`;
-            return (
-              <li key={a.account_id} className={`rounded-xl border ${style.card}`}>
-                <button
-                  type="button"
-                  onClick={() => setToggled((t) => ({ ...t, [a.account_id]: !open }))}
-                  aria-expanded={open}
-                  aria-label={`${a.label}: ${
-                    tier === 'short'
-                      ? `short on ${fmtDay(a.short_date!)}`
-                      : tier === 'tight'
-                        ? 'tight'
-                        : 'covered'
-                  }`}
-                  className="w-full px-4 pt-3 text-left"
+        <>
+          <ul
+            className="flex flex-wrap items-stretch gap-4"
+            // Bank cards keep room for the coverage bar; card tiles are narrower so
+            // one bank account and four cards share a row on a laptop screen.
+          >
+            {data.accounts.map((a) => {
+              const tier = tierOf(a);
+              const style = TIER[tier];
+              const open = isOpen(a);
+              const showInstitution =
+                a.institution && a.institution.toLowerCase() !== a.name.toLowerCase();
+              const lowest = `lowest ${money(a.lowest_balance)} · ${fmtDay(a.lowest_date)}`;
+              return (
+                <li
+                  key={a.account_id}
+                  className={`w-full sm:w-[320px] shrink-0 rounded-xl border ${style.card}`}
                 >
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <span
-                      className={`h-9 w-9 shrink-0 rounded-lg flex items-center justify-center text-xs font-bold ${badgeTint(a.name)}`}
-                      aria-hidden="true"
-                    >
-                      {initials(a.name)}
-                    </span>
-                    <div className="flex-1 min-w-[9rem]">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                        {a.name}
-                      </p>
-                      {showInstitution && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                          {a.institution}
-                        </p>
-                      )}
-                    </div>
-                    <span
-                      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${style.pill}`}
-                    >
-                      {tier === 'short'
-                        ? `Short ${money(-a.lowest_balance)} on ${fmtDay(a.short_date!)}`
+                  <button
+                    type="button"
+                    onClick={() => setToggled((t) => ({ ...t, [a.account_id]: !open }))}
+                    aria-expanded={open}
+                    aria-label={`${a.label}: ${
+                      tier === 'short'
+                        ? `short on ${fmtDay(a.short_date!)}`
                         : tier === 'tight'
-                          ? `Tight · under ${money(BALANCE_BUFFER)}`
-                          : 'Covered'}
-                    </span>
-                  </div>
-
-                  <div className="mt-3 flex items-baseline justify-between gap-3 text-xs">
-                    <span className="font-semibold tabular-nums text-slate-900 dark:text-white">
-                      {money(a.balance)} today
-                    </span>
-                    <span className={`font-semibold tabular-nums ${style.text}`}>{lowest}</span>
-                  </div>
-                  <div className="mt-1.5">
-                    <CoverageBar a={a} tier={tier} label={`${money(a.balance)} today, ${lowest}`} />
-                  </div>
-                </button>
-
-                <p className="px-4 pt-1.5 pb-3 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                  bills -{money(a.bills_total)} · paydays{' '}
-                  {a.income_total ? `+${money(a.income_total)}` : '—'}
-                  {!a.has_paydays && (
-                    <>
-                      {' · '}
-                      <Link
-                        to="/cash-flow"
-                        className="font-medium text-blue-700 dark:text-blue-400 hover:underline"
+                          ? 'tight'
+                          : 'covered'
+                    }`}
+                    className="w-full px-4 pt-3 text-left"
+                  >
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <span
+                        className={`h-9 w-9 shrink-0 rounded-lg flex items-center justify-center text-xs font-bold ${badgeTint(a.name)}`}
+                        aria-hidden="true"
                       >
-                        Add payday
-                      </Link>
-                    </>
-                  )}
-                </p>
+                        {initials(a.name)}
+                      </span>
+                      <div className="flex-1 min-w-[9rem]">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                          {a.name}
+                        </p>
+                        {showInstitution && (
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                            {a.institution}
+                          </p>
+                        )}
+                      </div>
+                      <span
+                        className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${style.pill}`}
+                      >
+                        {tier === 'short'
+                          ? `Short ${money(-a.lowest_balance)} on ${fmtDay(a.short_date!)}`
+                          : tier === 'tight'
+                            ? `Tight · under ${money(BALANCE_BUFFER)}`
+                            : 'Covered'}
+                      </span>
+                    </div>
 
-                {open && (
-                  <div className="px-4 pb-3">
-                    {tier === 'short' && (
-                      <p className="mb-2 text-sm text-red-700 dark:text-red-300">
-                        {a.short_bill} on {fmtDay(a.short_date!)} takes this account below $0. Move
-                        money in before then.
-                      </p>
+                    <div className="mt-3 flex items-baseline justify-between gap-3 text-xs">
+                      <span className="font-semibold tabular-nums text-slate-900 dark:text-white">
+                        {money(a.balance)} today
+                      </span>
+                      <span className={`font-semibold tabular-nums ${style.text}`}>{lowest}</span>
+                    </div>
+                    <div className="mt-1.5">
+                      <CoverageBar
+                        a={a}
+                        tier={tier}
+                        label={`${money(a.balance)} today, ${lowest}`}
+                      />
+                    </div>
+                  </button>
+
+                  <p className="px-4 pt-1.5 pb-3 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                    bills -{money(a.bills_total)} · paydays{' '}
+                    {a.income_total ? `+${money(a.income_total)}` : '—'}
+                    {!a.has_paydays && (
+                      <>
+                        {' · '}
+                        <Link
+                          to="/cash-flow"
+                          className="font-medium text-blue-700 dark:text-blue-400 hover:underline"
+                        >
+                          Add payday
+                        </Link>
+                      </>
                     )}
-                    <table className="w-full text-sm">
-                      <caption className="sr-only">{a.label} timeline</caption>
-                      <thead>
-                        <tr className="text-xs text-slate-500 dark:text-slate-400">
-                          <th className="text-left font-medium py-1 w-20">Date</th>
-                          <th className="text-left font-medium py-1">Bill or payday</th>
-                          <th className="text-right font-medium py-1 pl-3">Amount</th>
-                          <th className="text-right font-medium py-1 pl-3">Balance after</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {a.events.map((e, idx) => (
-                          <tr
-                            key={idx}
-                            className={`border-t border-slate-100 dark:border-slate-700 ${
-                              e.balance_after < 0 ? 'text-red-700 dark:text-red-300' : ''
-                            }`}
-                          >
-                            <td className="py-1.5 tabular-nums whitespace-nowrap">
-                              {fmtDay(e.date)}
-                            </td>
-                            <td className="py-1.5">
-                              {e.name}
-                              {e.overdue && (
-                                <span className="ml-2 text-xs font-semibold text-red-600 dark:text-red-400">
-                                  overdue
-                                </span>
-                              )}
-                            </td>
-                            <td
-                              className={`py-1.5 pl-3 text-right tabular-nums whitespace-nowrap ${
-                                e.kind === 'income' ? 'text-emerald-700 dark:text-emerald-400' : ''
-                              }`}
-                            >
-                              {e.amount > 0 ? `+${money(e.amount)}` : `-${money(-e.amount)}`}
-                            </td>
-                            <td className="py-1.5 pl-3 text-right font-semibold tabular-nums whitespace-nowrap">
-                              {money(e.balance_after)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-          {data.cards.map((c) => (
-            <li
-              key={`card-${c.account_id}`}
-              className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3"
-            >
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  </p>
+                </li>
+              );
+            })}
+            {data.cards.map((c) => (
+              <li
+                key={`card-${c.account_id}`}
+                title="No cash needed until the card is paid."
+                className="flex-1 basis-[130px] min-w-[130px] max-w-[220px] rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 flex flex-col"
+              >
                 <span
                   className="h-9 w-9 shrink-0 rounded-lg flex items-center justify-center bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-200"
                   aria-hidden="true"
@@ -317,32 +270,84 @@ export default function AccountsPanel({ days }: { days: number }) {
                     <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5V5h14v-.5A1.5 1.5 0 0 0 13.5 3h-11ZM15 6.5H1v5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5v-5ZM3 10.25a.75.75 0 0 1 .75-.75h2a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1-.75-.75Z" />
                   </svg>
                 </span>
-                <div className="flex-1 min-w-[9rem]">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                    {c.name}
+                <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white truncate">
+                  {c.name}
+                </p>
+                {c.institution && c.institution.toLowerCase() !== c.name.toLowerCase() && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                    {c.institution}
                   </p>
-                  {c.institution && c.institution.toLowerCase() !== c.name.toLowerCase() && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                      {c.institution}
-                    </p>
-                  )}
-                </div>
-                <span className="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200">
-                  Card
-                </span>
-              </div>
-              <p className="mt-3 text-sm tabular-nums text-slate-700 dark:text-slate-300">
-                <span className="text-base font-bold text-slate-900 dark:text-white">
+                )}
+                <p className="mt-auto pt-2 text-base font-bold tabular-nums text-slate-900 dark:text-white">
                   {money(c.total)}
-                </span>{' '}
-                charged · {plural(c.count, 'bill')}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  charged · {plural(c.count, 'bill')}
+                </p>
+              </li>
+            ))}
+          </ul>
+
+          {/* Timelines open below the row so neighbouring cards keep their size. */}
+          {data.accounts.filter(isOpen).map((a) => (
+            <div
+              key={a.account_id}
+              className={`mt-4 rounded-xl border px-4 py-3 ${TIER[tierOf(a)].card}`}
+            >
+              <p className="mb-1 text-sm font-semibold text-slate-900 dark:text-white">
+                {a.name} · next {days} days
               </p>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                No cash needed until the card is paid.
-              </p>
-            </li>
+
+              {a.short_date !== null && (
+                <p className="mb-2 text-sm text-red-700 dark:text-red-300">
+                  {a.short_bill} on {fmtDay(a.short_date!)} takes this account below $0. Move money
+                  in before then.
+                </p>
+              )}
+              <table className="w-full text-sm">
+                <caption className="sr-only">{a.label} timeline</caption>
+                <thead>
+                  <tr className="text-xs text-slate-500 dark:text-slate-400">
+                    <th className="text-left font-medium py-1 w-20">Date</th>
+                    <th className="text-left font-medium py-1">Bill or payday</th>
+                    <th className="text-right font-medium py-1 pl-3">Amount</th>
+                    <th className="text-right font-medium py-1 pl-3">Balance after</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {a.events.map((e, idx) => (
+                    <tr
+                      key={idx}
+                      className={`border-t border-slate-100 dark:border-slate-700 ${
+                        e.balance_after < 0 ? 'text-red-700 dark:text-red-300' : ''
+                      }`}
+                    >
+                      <td className="py-1.5 tabular-nums whitespace-nowrap">{fmtDay(e.date)}</td>
+                      <td className="py-1.5">
+                        {e.name}
+                        {e.overdue && (
+                          <span className="ml-2 text-xs font-semibold text-red-600 dark:text-red-400">
+                            overdue
+                          </span>
+                        )}
+                      </td>
+                      <td
+                        className={`py-1.5 pl-3 text-right tabular-nums whitespace-nowrap ${
+                          e.kind === 'income' ? 'text-emerald-700 dark:text-emerald-400' : ''
+                        }`}
+                      >
+                        {e.amount > 0 ? `+${money(e.amount)}` : `-${money(-e.amount)}`}
+                      </td>
+                      <td className="py-1.5 pl-3 text-right font-semibold tabular-nums whitespace-nowrap">
+                        {money(e.balance_after)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ))}
-        </ul>
+        </>
       )}
 
       {(data.unlinked_count > 0 || data.undated_count > 0) && (

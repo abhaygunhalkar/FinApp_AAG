@@ -156,9 +156,8 @@ describe('AccountsPanel', () => {
     renderPanel(14);
     const card = screen.getByText('Rewards Card').closest('li')!;
     expect(within(card).getAllByText('Harbor Bank')).toHaveLength(1);
-    expect(within(card).getByText('Card')).toBeInTheDocument();
-    expect(card).toHaveTextContent('$412.00 charged · 3 bills');
-    expect(card).toHaveTextContent('No cash needed until the card is paid.');
+    expect(card).toHaveTextContent('$412.00charged · 3 bills');
+    expect(card).toHaveAttribute('title', 'No cash needed until the card is paid.');
   });
 
   it('lists unlinked and undated bills', () => {
