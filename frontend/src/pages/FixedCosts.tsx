@@ -16,6 +16,7 @@ import {
   daysUntil,
   fmtUSD,
   frequencyLabel,
+  isSavingsCategory,
 } from '../components/fixedcosts/constants';
 import { MASK } from '../components/networth/format';
 import { useUIStore, type ComingUpDays } from '../store/uiStore';
@@ -91,6 +92,13 @@ function incomeShareTone(pct: number | null): { bgClass: string; valueClass: str
   };
 }
 
+/** Savings gets diagonal stripes in its colour so it reads as kept, not spent. */
+function segmentFill(category: string, color: string): string {
+  return isSavingsCategory(category)
+    ? `repeating-linear-gradient(135deg, ${color} 0 3px, ${color}59 3px 6px)`
+    : color;
+}
+
 const COMING_UP_WINDOWS: ComingUpDays[] = [7, 14, 30];
 
 /** Bills shown in "Coming up" before "View all". */
@@ -134,10 +142,19 @@ export default function FixedCosts() {
         .reduce((s, e) => s + e.monthly_amount, 0),
     }))
       .filter((c) => c.monthly > 0)
-      .sort((a, b) => b.monthly - a.monthly)
+      // Biggest spending first; savings always last, since it's kept rather than spent.
+      .sort(
+        (a, b) =>
+          Number(isSavingsCategory(a.name)) - Number(isSavingsCategory(b.name)) ||
+          b.monthly - a.monthly,
+      )
       .map((c) => ({ ...c, pct: monthly > 0 ? (c.monthly / monthly) * 100 : 0 }));
+    const savings = expenses
+      .filter((e) => isSavingsCategory(e.category))
+      .reduce((s, e) => s + e.monthly_amount, 0);
     return {
       monthly,
+      savings,
       autopay,
       soon,
       soonTotal: soon.reduce((s, x) => s + x.expense.amount, 0),
@@ -150,6 +167,10 @@ export default function FixedCosts() {
 
   const monthlyIncome = cashFlow?.monthly_income ?? 0;
   const incomeSharePct = monthlyIncome > 0 ? (stats.monthly / monthlyIncome) * 100 : null;
+  // The tile's colour judges spending only; money moved to savings shouldn't push it to red.
+  const costsSharePct =
+    monthlyIncome > 0 ? ((stats.monthly - stats.savings) / monthlyIncome) * 100 : null;
+  const savingsSharePct = monthlyIncome > 0 ? (stats.savings / monthlyIncome) * 100 : null;
 
   const presentCategories = CATEGORIES.filter((c) => expenses.some((e) => e.category === c.name));
   // Fall back to "All" when the filtered category's last bill was deleted.
@@ -244,7 +265,9 @@ export default function FixedCosts() {
             <StatCard
               label="Per month"
               value={money(stats.monthly)}
-              sub={`${money(stats.monthly * 12)} per year`}
+              sub={`${money(stats.monthly * 12)} per year${
+                stats.savings > 0 ? ` · includes ${money(stats.savings)} to savings` : ''
+              }`}
               valueClass="text-blue-900 dark:text-blue-100"
               bgClass="bg-blue-100 border-2 border-blue-300 dark:bg-blue-900/50 dark:border-blue-600"
             />
@@ -259,11 +282,13 @@ export default function FixedCosts() {
                     </Link>{' '}
                     to see this
                   </>
+                ) : stats.savings > 0 && costsSharePct !== null && savingsSharePct !== null ? (
+                  `${costsSharePct.toFixed(0)}% costs + ${savingsSharePct.toFixed(0)}% savings of ${money(monthlyIncome)} take-home`
                 ) : (
                   `of ${money(monthlyIncome)} take-home per month`
                 )
               }
-              {...incomeShareTone(incomeSharePct)}
+              {...incomeShareTone(costsSharePct)}
             />
             <StatCard
               label="Bills"
@@ -300,7 +325,10 @@ export default function FixedCosts() {
                 aria-label={stats.segments.map((s) => `${s.name} ${s.pct.toFixed(0)}%`).join(', ')}
               >
                 {stats.segments.map((s) => (
-                  <div key={s.name} style={{ width: `${s.pct}%`, background: s.color }} />
+                  <div
+                    key={s.name}
+                    style={{ width: `${s.pct}%`, background: segmentFill(s.name, s.color) }}
+                  />
                 ))}
               </div>
               <ul className="space-y-2">
@@ -308,10 +336,17 @@ export default function FixedCosts() {
                   <li key={s.name} className="flex items-center gap-2.5 text-sm">
                     <span
                       className="h-2.5 w-2.5 rounded-sm shrink-0"
-                      style={{ background: s.color }}
+                      style={{ background: segmentFill(s.name, s.color) }}
                       aria-hidden="true"
                     />
-                    <span className="flex-1 text-slate-700 dark:text-slate-300">{s.name}</span>
+                    <span className="flex-1 min-w-0 text-slate-700 dark:text-slate-300">
+                      {s.name}
+                      {isSavingsCategory(s.name) && (
+                        <span className="ml-2 rounded px-1.5 py-0.5 text-[11px] font-medium bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+                          you keep this
+                        </span>
+                      )}
+                    </span>
                     <span className="tabular-nums text-slate-700 dark:text-slate-300">
                       {money(s.monthly)} / mo
                     </span>

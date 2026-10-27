@@ -43,6 +43,13 @@ export const MONTHLY_FACTOR: Record<ExpenseFrequency, number> = {
 /** Bills due within this many days count as "coming up". */
 export const DUE_SOON_DAYS = 14;
 
+/** Category whose bills are money set aside (kept), not spent. */
+const SAVINGS_CATEGORY: ExpenseCategory = 'Savings & investing';
+
+export function isSavingsCategory(category: string): boolean {
+  return category === SAVINGS_CATEGORY;
+}
+
 export function categoryColor(name: string): string {
   return CATEGORIES.find((c) => c.name === name)?.color ?? '#64748b';
 }

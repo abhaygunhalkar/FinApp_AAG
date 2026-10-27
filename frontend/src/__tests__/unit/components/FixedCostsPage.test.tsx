@@ -103,6 +103,29 @@ describe('FixedCosts page', () => {
     );
   });
 
+  it('shows savings as money kept, split out of the share of income', () => {
+    mocks.cashFlow = { monthly_income: 4000 } as CashFlowSummary;
+    mocks.expenses.push(
+      expense({
+        id: 4,
+        name: '401k top-up',
+        category: 'Savings & investing',
+        amount: 400,
+        monthly_amount: 400,
+      }),
+    );
+    renderPage();
+    expect(
+      screen.getByText('$30,840.00 per year · includes $400.00 to savings'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('64%')).toBeInTheDocument(); // $2,570 of $4,000
+    expect(screen.getByText('54% costs + 10% savings of $4,000.00 take-home')).toBeInTheDocument();
+    expect(screen.getByText('you keep this')).toBeInTheDocument();
+    // Savings is listed after every spending category.
+    const rows = screen.getByText('you keep this').closest('ul')!.querySelectorAll('li');
+    expect(rows[rows.length - 1]).toHaveTextContent('Savings & investing');
+  });
+
   it('filters the table by category', () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: 'Utilities (1)' }));
