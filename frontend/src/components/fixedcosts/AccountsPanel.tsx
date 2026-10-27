@@ -166,7 +166,7 @@ export default function AccountsPanel({ days }: { days: number }) {
       ) : (
         <>
           <ul
-            className="flex flex-wrap items-stretch gap-4"
+            className="flex flex-wrap items-stretch gap-3"
             // Bank cards keep room for the coverage bar; card tiles are narrower so
             // one bank account and four cards share a row on a laptop screen.
           >
@@ -180,7 +180,7 @@ export default function AccountsPanel({ days }: { days: number }) {
               return (
                 <li
                   key={a.account_id}
-                  className={`w-full sm:w-[320px] shrink-0 rounded-xl border ${style.card}`}
+                  className={`w-full sm:w-[344px] shrink-0 rounded-xl border ${style.card}`}
                 >
                   <button
                     type="button"
@@ -260,21 +260,23 @@ export default function AccountsPanel({ days }: { days: number }) {
               <li
                 key={`card-${c.account_id}`}
                 title="No cash needed until the card is paid."
-                className="flex-1 basis-[130px] min-w-[130px] max-w-[220px] rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 flex flex-col"
+                className="flex-1 basis-[130px] min-w-[130px] max-w-[220px] rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-3 flex flex-col"
               >
-                <span
-                  className="h-9 w-9 shrink-0 rounded-lg flex items-center justify-center bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-200"
-                  aria-hidden="true"
-                >
-                  <svg viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4">
-                    <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5V5h14v-.5A1.5 1.5 0 0 0 13.5 3h-11ZM15 6.5H1v5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5v-5ZM3 10.25a.75.75 0 0 1 .75-.75h2a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1-.75-.75Z" />
-                  </svg>
-                </span>
-                <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white truncate">
-                  {c.name}
-                </p>
+                <div className="flex items-start gap-2">
+                  <span
+                    className="h-8 w-8 shrink-0 rounded-lg flex items-center justify-center bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-200"
+                    aria-hidden="true"
+                  >
+                    <svg viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4">
+                      <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5V5h14v-.5A1.5 1.5 0 0 0 13.5 3h-11ZM15 6.5H1v5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5v-5ZM3 10.25a.75.75 0 0 1 .75-.75h2a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1-.75-.75Z" />
+                    </svg>
+                  </span>
+                  <p className="min-w-0 pt-1.5 text-sm font-semibold leading-tight break-words line-clamp-2 text-slate-900 dark:text-white">
+                    {c.name}
+                  </p>
+                </div>
                 {c.institution && c.institution.toLowerCase() !== c.name.toLowerCase() && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 truncate">
                     {c.institution}
                   </p>
                 )}
