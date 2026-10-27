@@ -35,6 +35,8 @@ export interface AccountForecast {
 export interface CardCharges {
   account_id: number;
   label: string;
+  name: string;
+  institution: string | null;
   total: number;
   count: number;
 }

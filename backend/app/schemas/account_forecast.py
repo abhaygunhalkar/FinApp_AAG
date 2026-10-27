@@ -47,6 +47,8 @@ class CardCharges(BaseModel):
 
     account_id: int
     label: str
+    name: str
+    institution: str | None
     total: float
     count: int
 

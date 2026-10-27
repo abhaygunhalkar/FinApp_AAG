@@ -94,7 +94,16 @@ function forecast(overrides: Partial<AccountForecastResponse> = {}): AccountFore
         ],
       }),
     ],
-    cards: [{ account_id: 3, label: 'Rewards Card', total: 412, count: 3 }],
+    cards: [
+      {
+        account_id: 3,
+        label: 'Rewards Card (Harbor Bank)',
+        name: 'Rewards Card',
+        institution: 'Harbor Bank',
+        total: 412,
+        count: 3,
+      },
+    ],
     unlinked_total: 70,
     unlinked_count: 1,
     undated_count: 2,
@@ -143,17 +152,24 @@ describe('AccountsPanel', () => {
     expect(screen.getByRole('table', { name: 'Summit Savings timeline' })).toBeInTheDocument();
   });
 
-  it('lists card charges as chips, then unlinked and undated bills', () => {
+  it('shows credit cards as their own cards in the grid', () => {
     renderPanel(14);
-    const chip = screen.getByText('Rewards Card · $412.00 · 3 bills');
-    expect(chip).toHaveAttribute('title', 'No cash needed until the card is paid.');
+    const card = screen.getByText('Rewards Card').closest('li')!;
+    expect(within(card).getAllByText('Harbor Bank')).toHaveLength(1);
+    expect(within(card).getByText('Card')).toBeInTheDocument();
+    expect(card).toHaveTextContent('$412.00 charged · 3 bills');
+    expect(card).toHaveTextContent('No cash needed until the card is paid.');
+  });
+
+  it('lists unlinked and undated bills', () => {
+    renderPanel(14);
     expect(screen.getByText(/Not checked: \$70\.00 \(1 bill\)/)).toBeInTheDocument();
     expect(screen.getByText('2 bills with no due date not included.')).toBeInTheDocument();
   });
 
   it('shows the institution only when it differs from the name', () => {
     renderPanel(14);
-    expect(screen.getByText('Harbor Bank')).toBeInTheDocument();
+    expect(screen.getAllByText('Harbor Bank')).toHaveLength(2); // checking + the card
     expect(screen.getAllByText('Summit Savings')).toHaveLength(1);
   });
 

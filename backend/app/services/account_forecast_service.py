@@ -107,6 +107,8 @@ class AccountForecastService:
                     CardCharges(
                         account_id=aid,
                         label=FinancialAccountService.label(accounts[aid]),
+                        name=accounts[aid].name,
+                        institution=accounts[aid].institution,
                         total=round(sum(amounts), 2),
                         count=len(amounts),
                     )

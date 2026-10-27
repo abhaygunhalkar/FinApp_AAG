@@ -86,7 +86,9 @@ def test_projects_bills_and_paydays_through_the_window(db_session: Session) -> N
     assert (a.short_date, a.short_bill) == (date(2026, 11, 15), "Rent")
     assert (a.name, a.institution, a.has_paydays) == ("Checking", None, True)
 
-    assert [(c.label, c.total, c.count) for c in f.cards] == [("Card", 15, 1)]
+    assert [(c.label, c.name, c.institution, c.total, c.count) for c in f.cards] == [
+        ("Card", "Card", None, 15, 1)
+    ]
     assert (f.unlinked_total, f.unlinked_count, f.undated_count) == (40, 1, 1)
 
 
