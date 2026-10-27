@@ -18,6 +18,7 @@ from app.repositories.holdings_repository import HoldingsRepository
 from app.repositories.options_repository import OptionsRepository
 from app.repositories.transaction_repository import TransactionRepository
 from app.schemas.portfolio_analysis import PortfolioInsight
+from app.services.lot_service import LotService
 
 
 def _i(rule_id: str, category: str, severity: str, title: str, message: str) -> PortfolioInsight:
@@ -188,28 +189,12 @@ class PortfolioAnalysisService:
                 elif o.status == "expired_worthless":
                     closed_options_pnl += o.premium * mult if is_credit else -o.premium * mult
 
-        sorted_txns = sorted(all_txns, key=lambda t: t.transaction_date)
-        buy_history: dict[str, list] = defaultdict(list)
+        # Cost basis is the average price of the lots each sell took shares from
+        cost_basis = LotService.cost_basis_by_sell(db)
         stock_realized = 0.0
-        for t in sorted_txns:
-            if t.transaction_type == "buy":
-                buy_history[t.ticker].append([t.quantity, t.price])
-            elif t.transaction_type == "sell":
-                buys = buy_history.get(t.ticker, [])
-                remaining = t.quantity
-                cost = 0.0
-                consumed = 0.0
-                while remaining > 0 and buys:
-                    lot_qty, lot_price = buys[0]
-                    take = min(lot_qty, remaining)
-                    cost += take * lot_price
-                    consumed += take
-                    remaining -= take
-                    if take >= lot_qty:
-                        buys.pop(0)
-                    else:
-                        buys[0][0] -= take
-                avg_cost = cost / consumed if consumed > 0 else 0.0
+        for t in all_txns:
+            if t.transaction_type == "sell":
+                avg_cost = cost_basis.get(t.id, 0.0)
                 stock_realized += (t.price - avg_cost) * t.quantity
 
         total_realized = stock_realized + closed_options_pnl

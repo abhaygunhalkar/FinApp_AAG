@@ -10,6 +10,7 @@ from app.models.options_trade import OptionsTrade
 from app.models.plaid_item import PlaidItem
 from app.models.price_history import PriceHistory
 from app.models.recurring_expense import RecurringExpense
+from app.models.sell_lot_allocation import SellLotAllocation
 from app.models.transaction import Transaction
 from app.models.watchlist_item import WatchlistItem
 
@@ -24,6 +25,7 @@ __all__ = [
     "PlaidItem",
     "PriceHistory",
     "RecurringExpense",
+    "SellLotAllocation",
     "Transaction",
     "WatchlistItem",
 ]

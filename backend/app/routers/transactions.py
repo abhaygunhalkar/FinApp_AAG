@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.common import ApiResponse
 from app.schemas.transaction import TransactionCreate, TransactionResponse
-from app.services.dashboard_service import DashboardService
+from app.services.lot_service import LotService
 from app.services.transaction_service import TransactionService
 
 router = APIRouter(prefix="/api/transactions", tags=["transactions"])
@@ -56,9 +56,9 @@ def get_sell_history(
 
     all_transactions = TransactionRepository.get_all_ordered(db)
 
-    # Build buy history by ticker (chronological order)
     sorted_txns = sorted(all_transactions, key=lambda t: t.transaction_date)
-    buy_history: dict[str, list[tuple[float, float]]] = {}
+    # Average cost of the buy lots each sell took its shares from
+    cost_basis = LotService.cost_basis_by_sell(db)
 
     # Also build a map of ticker -> avg buy price from current holdings as fallback
     all_holdings = HoldingsRepository.get_all(db)
@@ -68,17 +68,9 @@ def get_sell_history(
 
     sell_details = []
     for txn in sorted_txns:
-        if txn.transaction_type == "buy":
-            if txn.ticker not in buy_history:
-                buy_history[txn.ticker] = []
-            buy_history[txn.ticker].append((txn.quantity, txn.price))
-        elif txn.transaction_type == "sell":
-            # Try to compute cost basis using FIFO matching of prior buys
-            buys = buy_history.get(txn.ticker, [])
-            if buys:
-                avg_cost = DashboardService._consume_fifo_cost_basis(
-                    buys, txn.quantity
-                )
+        if txn.transaction_type == "sell":
+            if txn.id in cost_basis:
+                avg_cost = cost_basis[txn.id]
             elif txn.ticker in holding_avg_prices:
                 # Fallback: use current holding's average buy price
                 avg_cost = holding_avg_prices[txn.ticker]

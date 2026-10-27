@@ -3,7 +3,14 @@
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+
+class LotSelection(BaseModel):
+    """Shares to sell from one buy lot."""
+
+    buy_transaction_id: int
+    quantity: float = Field(..., gt=0)
 
 
 class TransactionCreate(BaseModel):
@@ -17,6 +24,34 @@ class TransactionCreate(BaseModel):
     transaction_date: date
     broker: str | None = None
     notes: str | None = None
+    # The holding (ticker + broker account) this trade belongs to. When left
+    # out, the holding is found from ticker and broker.
+    holding_id: int | None = None
+    # Sells only: which lots to sell from. Left out, the oldest lots go first.
+    lots: list[LotSelection] | None = None
+
+    @model_validator(mode="after")
+    def check_lots(self) -> "TransactionCreate":
+        """Lots apply to sells, once each, and must add up to the quantity."""
+        if self.lots is None:
+            return self
+        if self.transaction_type != "sell":
+            raise ValueError("lots can only be chosen for a sell")
+        ids = [lot.buy_transaction_id for lot in self.lots]
+        if len(ids) != len(set(ids)):
+            raise ValueError("each lot can only be listed once")
+        if abs(sum(lot.quantity for lot in self.lots) - self.quantity) > 1e-6:
+            raise ValueError("lot quantities must add up to the sell quantity")
+        return self
+
+
+class LotAllocationResponse(BaseModel):
+    """Shares a sell took from one buy lot, with that lot's cost."""
+
+    buy_transaction_id: int
+    quantity: float
+    price: float
+    transaction_date: date
 
 
 class TransactionResponse(BaseModel):
@@ -31,6 +66,11 @@ class TransactionResponse(BaseModel):
     fees: float
     transaction_date: date
     notes: str | None
+    broker: str | None = None
     created_at: datetime
+    # Buys: shares of this lot not yet sold.
+    remaining_quantity: float | None = None
+    # Sells: the lots the shares came from.
+    lots: list[LotAllocationResponse] = []
 
     model_config = {"from_attributes": True}

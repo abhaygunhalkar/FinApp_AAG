@@ -24,6 +24,7 @@ from app.schemas.dashboard import (
     IntradaySeries,
     PortfolioSnapshot,
 )
+from app.services.lot_service import LotService
 from app.services.market_data_service import MarketDataService
 
 
@@ -345,63 +346,28 @@ class DashboardService:
         )
 
     @staticmethod
-    def _consume_fifo_cost_basis(
-        buys: list[tuple[float, float]], quantity: float
-    ) -> float:
-        """Consume buy lots in FIFO order and return the sell cost basis."""
-        remaining = quantity
-        total_cost = 0.0
-        consumed = 0.0
-
-        while remaining > 0 and buys:
-            lot_qty, lot_price = buys[0]
-            if lot_qty <= remaining:
-                total_cost += lot_qty * lot_price
-                consumed += lot_qty
-                remaining -= lot_qty
-                buys.pop(0)
-            else:
-                total_cost += remaining * lot_price
-                consumed += remaining
-                buys[0] = (lot_qty - remaining, lot_price)
-                remaining = 0.0
-
-        return total_cost / consumed if consumed > 0 else 0.0
-
-    @staticmethod
     def _calculate_realized_gain(db: Session) -> float:
         """Calculate total realized gain from all sell transactions.
 
         For each sell transaction, realized_gain = (sell_price - cost_basis) * qty.
-        Cost basis is computed using FIFO matching of prior buy lots.
+        Cost basis is the average price of the buy lots the sell took its
+        shares from.
         """
         all_transactions = TransactionRepository.get_all_ordered(db)
+        cost_basis = LotService.cost_basis_by_sell(db)
         total_realized = 0.0
 
-        # Group buy transactions by ticker to compute cost basis
-        buy_history: dict[str, list[tuple[float, float]]] = {}  # ticker -> [(qty, price)]
+        for txn in all_transactions:
+            if txn.transaction_type != "sell":
+                continue
+            avg_cost = cost_basis.get(txn.id)
+            if avg_cost is None:
+                # No recorded lots: fall back to the holding if it still exists
+                holding = HoldingsRepository.get_by_ticker(db, txn.ticker)
+                avg_cost = holding.average_buy_price if holding else 0.0
 
-        # Process in chronological order (oldest first)
-        sorted_txns = sorted(all_transactions, key=lambda t: t.transaction_date)
-
-        for txn in sorted_txns:
-            if txn.transaction_type == "buy":
-                if txn.ticker not in buy_history:
-                    buy_history[txn.ticker] = []
-                buy_history[txn.ticker].append((txn.quantity, txn.price))
-            elif txn.transaction_type == "sell":
-                buys = buy_history.get(txn.ticker, [])
-                if buys:
-                    avg_cost = DashboardService._consume_fifo_cost_basis(
-                        buys, txn.quantity
-                    )
-                else:
-                    # Fallback: try to get from holding if it still exists
-                    holding = HoldingsRepository.get_by_ticker(db, txn.ticker)
-                    avg_cost = holding.average_buy_price if holding else 0.0
-
-                realized = (txn.price - avg_cost) * txn.quantity
-                total_realized += realized
+            realized = (txn.price - avg_cost) * txn.quantity
+            total_realized += realized
 
         return round(total_realized, 2)
 

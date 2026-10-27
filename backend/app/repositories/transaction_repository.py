@@ -58,3 +58,12 @@ class TransactionRepository:
         return list(
             db.query(Transaction).order_by(Transaction.transaction_date.desc()).all()
         )
+
+    @staticmethod
+    def get_by_ids(db: Session, transaction_ids: list[int]) -> list[Transaction]:
+        """Retrieve transactions by ID, in no particular order."""
+        if not transaction_ids:
+            return []
+        return list(
+            db.query(Transaction).filter(Transaction.id.in_(transaction_ids)).all()
+        )

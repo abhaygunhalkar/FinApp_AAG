@@ -142,7 +142,11 @@ export default function HoldingRow({ holding, hasOpenOption = false }: HoldingRo
       {expanded && (
         <tr className="bg-slate-50 dark:bg-slate-800/50">
           <td colSpan={15} className="px-5 py-4">
-            <TransactionHistory holdingId={holding.id} ticker={holding.ticker} />
+            <TransactionHistory
+              holdingId={holding.id}
+              ticker={holding.ticker}
+              broker={holding.broker}
+            />
           </td>
         </tr>
       )}

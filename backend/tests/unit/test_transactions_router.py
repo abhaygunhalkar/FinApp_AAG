@@ -259,3 +259,66 @@ class TestDeleteTransaction:
         response = await async_client.delete("/api/transactions/999")
 
         assert response.status_code == 404
+
+
+class TestSellChosenLot:
+    """Tests for POST /api/transactions with lots, then GET."""
+
+    @pytest.mark.asyncio
+    async def test_sell_from_a_chosen_lot_shows_what_is_left(
+        self, db_session: Session, async_client: AsyncClient
+    ) -> None:
+        holding = Holding(
+            ticker="NVDA",
+            quantity=15.0,
+            average_buy_price=110.0,
+            current_price=200.0,
+            broker="Schwab",
+        )
+        db_session.add(holding)
+        db_session.commit()
+        old = Transaction(
+            holding_id=holding.id,
+            ticker="NVDA",
+            transaction_type="buy",
+            quantity=10.0,
+            price=100.0,
+            fees=0.0,
+            transaction_date=date(2025, 1, 2),
+        )
+        new = Transaction(
+            holding_id=holding.id,
+            ticker="NVDA",
+            transaction_type="buy",
+            quantity=5.0,
+            price=130.0,
+            fees=0.0,
+            transaction_date=date(2025, 3, 2),
+        )
+        db_session.add_all([old, new])
+        db_session.commit()
+
+        response = await async_client.post(
+            "/api/transactions",
+            json={
+                "ticker": "NVDA",
+                "transaction_type": "sell",
+                "quantity": 2,
+                "price": 200,
+                "transaction_date": "2025-04-01",
+                "holding_id": holding.id,
+                "lots": [{"buy_transaction_id": new.id, "quantity": 2}],
+            },
+        )
+        assert response.status_code == 201
+        assert response.json()["data"]["lots"][0]["price"] == 130.0
+
+        listed = await async_client.get(
+            "/api/transactions", params={"holding_id": holding.id}
+        )
+        left = {
+            t["id"]: t["remaining_quantity"]
+            for t in listed.json()["data"]
+            if t["transaction_type"] == "buy"
+        }
+        assert left == {old.id: 10.0, new.id: 3.0}

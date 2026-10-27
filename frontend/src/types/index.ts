@@ -1,5 +1,5 @@
 export type { Holding, HoldingCreate } from './holding';
-export type { Transaction, TransactionCreate } from './transaction';
+export type { LotAllocation, LotSelection, Transaction, TransactionCreate } from './transaction';
 export type { WatchlistItem, WatchlistCreate, WatchlistUpdate } from './watchlist';
 export type {
   DashboardSummary,
