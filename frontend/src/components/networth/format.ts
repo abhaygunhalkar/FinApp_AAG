@@ -65,6 +65,13 @@ export function timeAgo(iso: string, now = Date.now()): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+/** Whole days since `iso` when it is more than `afterDays` old, else null. */
+export function staleDays(iso: string | null, afterDays = 3, now = Date.now()): number | null {
+  if (!iso) return null;
+  const days = Math.floor((now - new Date(iso).getTime()) / 86_400_000);
+  return days > afterDays ? days : null;
+}
+
 export function initials(text: string): string {
   const words = text.trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) return '?';

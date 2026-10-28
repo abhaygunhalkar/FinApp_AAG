@@ -167,10 +167,64 @@ describe('NetWorth page', () => {
     expect(screen.getByRole('button', { name: 'Add original amount' })).toBeInTheDocument();
   });
 
-  it('shows utilization when a credit limit is known', () => {
-    mocks.accounts[2] = { ...mocks.accounts[2], credit_limit: 6_000, due_date: '2026-11-05' };
+  it('shows each card on one line under a combined utilization summary', () => {
+    mocks.accounts[2] = {
+      ...mocks.accounts[2],
+      credit_limit: 6_000,
+      apr: 24.99,
+      due_date: '2026-11-05',
+    };
+    mocks.accounts.push(
+      account({
+        id: 4,
+        name: 'Amex',
+        account_type: 'credit_card',
+        balance: 500,
+        is_asset: false,
+        credit_limit: 4_000,
+        apr: 19.5,
+      }),
+    );
     render(<NetWorth />);
-    expect(screen.getByText('25% of $6,000 used · due Nov 5')).toBeInTheDocument();
+    expect(screen.getByText(/\$2,000 of \$10,000 limit · 20%\s+utilization/)).toBeInTheDocument();
+    const visa = screen.getByRole('button', { name: 'Edit Visa' });
+    expect(visa).toHaveTextContent('24.99% APR · due Nov 5');
+    expect(visa).toHaveTextContent('highest APR');
+    expect(within(visa).getByRole('progressbar', { name: 'Credit utilization' })).toHaveAttribute(
+      'aria-valuenow',
+      '25',
+    );
+    expect(within(visa).getByText('25%')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit Amex' })).not.toHaveTextContent('highest APR');
+  });
+
+  it('does not tag a paid-off card as highest APR', () => {
+    mocks.accounts[2] = { ...mocks.accounts[2], balance: 0, apr: 29 };
+    mocks.accounts.push(
+      account({
+        id: 4,
+        name: 'Amex',
+        account_type: 'credit_card',
+        balance: 500,
+        is_asset: false,
+        apr: 19,
+      }),
+    );
+    render(<NetWorth />);
+    expect(screen.queryByText('highest APR')).not.toBeInTheDocument();
+  });
+
+  it('says when a row is stale, and only then', () => {
+    const ago = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
+    mocks.accounts[0] = { ...mocks.accounts[0], last_synced: ago(1) };
+    mocks.accounts[1] = { ...mocks.accounts[1], last_synced: ago(5) };
+    render(<NetWorth />);
+    expect(screen.getByRole('button', { name: 'Edit Chase Checking' })).not.toHaveTextContent(
+      /updated|synced/,
+    );
+    expect(screen.getByRole('button', { name: 'Edit Home Loan' })).toHaveTextContent(
+      'updated 5 days ago',
+    );
   });
 
   it('offers home equity only while no property is tracked', () => {
