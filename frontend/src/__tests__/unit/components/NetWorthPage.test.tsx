@@ -60,6 +60,15 @@ function account(overrides: Partial<FinancialAccount>): FinancialAccount {
   };
 }
 
+/** Local date `ago` days before today, as YYYY-MM-DD. */
+function day(ago: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - ago);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate(),
+  ).padStart(2, '0')}`;
+}
+
 beforeEach(() => {
   useUIStore.setState({ hideBalances: false });
   mocks.accounts = [
@@ -102,7 +111,7 @@ describe('NetWorth page', () => {
     mocks.snapshots = [
       {
         id: 1,
-        date: '2026-10-19',
+        date: day(1),
         total_assets: 0,
         total_liabilities: 0,
         net_worth: 1,
@@ -111,6 +120,26 @@ describe('NetWorth page', () => {
     ];
     render(<NetWorth />);
     expect(screen.getByText(/check back in a week/i)).toBeInTheDocument();
+  });
+
+  it('notes when the change includes an account added in the range', () => {
+    const snap = (id: number, date: string, net_worth: number) => ({
+      id,
+      date,
+      total_assets: 0,
+      total_liabilities: 0,
+      net_worth,
+      created_at: '',
+    });
+    mocks.snapshots = [snap(1, day(30), 40_000), snap(2, day(10), 50_000)];
+    mocks.accounts = mocks.accounts.map((a, i) => ({
+      ...a,
+      created_at: i === 0 ? `${day(10)}T12:00:00Z` : `${day(200)}T12:00:00Z`,
+    }));
+    render(<NetWorth />);
+    const hero = screen.getByRole('region', { name: 'Net worth summary' });
+    const pill = within(hero).getByTitle('Includes accounts added this period: Chase Checking');
+    expect(pill).toHaveTextContent('+$11,510');
   });
 
   it('masks every balance when hidden and persists the choice', () => {

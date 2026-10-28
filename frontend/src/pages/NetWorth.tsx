@@ -163,6 +163,7 @@ export default function NetWorth() {
           totalLiabilities={totalLiabilities}
           liquidCash={liquidCash}
           snapshots={snapshots ?? []}
+          accounts={accountList}
           hidden={hidden}
           ready={!!summary}
         />

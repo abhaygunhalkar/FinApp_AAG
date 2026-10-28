@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import type { NetWorthSnapshot } from '../../types';
+import type { FinancialAccount, NetWorthSnapshot } from '../../types';
 import { useCountUp } from '../../hooks/useCountUp';
 import NetWorthChart, { NetWorthChartEmpty } from './NetWorthChart';
 import { fmtDay, fmtMoney, fmtPct } from './format';
 import {
   MIN_HISTORY_DAYS,
   RANGES,
+  accountsAddedBetween,
   buildSeries,
   changeOver,
   historySpanDays,
@@ -18,6 +19,8 @@ interface NetWorthHeroProps {
   totalLiabilities: number;
   liquidCash: number;
   snapshots: NetWorthSnapshot[];
+  /** Accounts, to flag a change that includes an account added in the range. */
+  accounts: FinancialAccount[];
   hidden: boolean;
   ready: boolean;
 }
@@ -28,6 +31,7 @@ export default function NetWorthHero({
   totalLiabilities,
   liquidCash,
   snapshots,
+  accounts,
   hidden,
   ready,
 }: NetWorthHeroProps) {
@@ -46,28 +50,36 @@ export default function NetWorthHero({
   const scrubbed = hasTrend && scrubIndex !== null ? series[scrubIndex] : null;
   const shownValue = scrubbed ? scrubbed.value : animated;
   const change = hasTrend ? changeOver(series, scrubbed ? scrubbed.value : netWorth) : null;
+  // Snapshots hold totals only, so an added account's opening balance can't be
+  // taken out of the change yet; say when it is in there.
+  const added =
+    change && series.length > 0
+      ? accountsAddedBetween(accounts, series[0].date, scrubbed?.date ?? null)
+      : [];
   const caption = RANGES.find((r) => r.key === range)!.caption;
   const debtRatio = totalAssets > 0 ? (totalLiabilities / totalAssets) * 100 : null;
 
   return (
     <section
       aria-label="Net worth summary"
-      className="rounded-[24px] bg-[#0C1322] p-5 sm:p-8 text-white shadow-[0_12px_40px_-12px_rgba(12,19,34,0.45)]"
+      className="rounded-2xl bg-[#0C1322] px-4 py-5 sm:px-6 text-white shadow-[0_12px_40px_-12px_rgba(12,19,34,0.45)]"
     >
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#A3AEC2]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#A3AEC2]">
             Net worth
           </p>
-          <p
-            className="mt-2 text-[44px] sm:text-[64px] font-bold leading-none tracking-[-0.035em] break-words"
-            aria-live="polite"
-          >
-            {fmtMoney(shownValue, hidden)}
-          </p>
-          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 min-h-7">
-            {change && <ChangeBadge change={change} hidden={hidden} />}
-            <span className="text-sm text-[#A3AEC2]">
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <p
+              className="text-[40px] font-bold leading-none tracking-[-0.03em] break-words"
+              aria-live="polite"
+            >
+              {fmtMoney(shownValue, hidden)}
+            </p>
+            {change && (
+              <ChangeBadge change={change} hidden={hidden} added={added.map((a) => a.name)} />
+            )}
+            <span className="text-xs text-[#A3AEC2]">
               {scrubbed ? fmtDay(scrubbed.date) : change ? caption : 'Today'}
             </span>
           </div>
@@ -76,7 +88,7 @@ export default function NetWorthHero({
         <div
           role="group"
           aria-label="Time range"
-          className="flex w-full sm:w-auto shrink-0 rounded-full bg-white/[0.06] p-1"
+          className="flex w-full sm:w-auto shrink-0 rounded-full bg-white/[0.06] p-0.5"
         >
           {RANGES.map((r) => (
             <button
@@ -88,7 +100,7 @@ export default function NetWorthHero({
                 setRangeChanged(true);
                 setScrubIndex(null);
               }}
-              className={`flex-1 sm:flex-none h-11 min-w-11 px-3 rounded-full text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7AB0FF] ${
+              className={`flex-1 sm:flex-none h-7 min-w-9 px-2.5 rounded-full text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7AB0FF] ${
                 range === r.key
                   ? 'bg-white text-[#0C1322]'
                   : 'text-[#C3CDDD] hover:bg-white/10 hover:text-white'
@@ -100,7 +112,7 @@ export default function NetWorthHero({
         </div>
       </div>
 
-      <div className="mt-6 -mx-1">
+      <div className="mt-3 -mx-1">
         {hasTrend ? (
           <NetWorthChart
             series={series}
@@ -113,7 +125,7 @@ export default function NetWorthHero({
         )}
       </div>
 
-      <dl className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-px overflow-hidden rounded-2xl bg-white/10">
+      <dl className="mt-3 grid grid-cols-2 lg:grid-cols-4 gap-px overflow-hidden rounded-xl bg-white/10">
         <Stat label="Assets" value={fmtMoney(totalAssets, hidden)} valueClass="text-[#8FC1FF]" />
         <Stat
           label="Liabilities"
@@ -133,17 +145,22 @@ export default function NetWorthHero({
 function ChangeBadge({
   change,
   hidden,
+  added,
 }: {
   change: { amount: number; pct: number | null };
   hidden: boolean;
+  /** Names of accounts added in the range, whose balances are in the change. */
+  added: string[];
 }) {
   const up = change.amount >= 0;
   const sign = up ? '+' : '−';
   const amount = fmtMoney(Math.abs(change.amount), hidden);
   const pct = change.pct === null ? '' : ` (${fmtPct(Math.abs(change.pct), 1)})`;
+  const note = added.length ? `Includes accounts added this period: ${added.join(', ')}` : null;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${
+      title={note ?? undefined}
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
         up ? 'bg-[#13294B] text-[#9CC7FF]' : 'bg-[#3B1F0F] text-[#FDBA74]'
       }`}
     >
@@ -159,6 +176,12 @@ function ChangeBadge({
       {sign}
       {amount}
       {pct}
+      {note && (
+        <>
+          <span aria-hidden="true">*</span>
+          <span className="sr-only">. {note}</span>
+        </>
+      )}
     </span>
   );
 }
@@ -173,9 +196,11 @@ function Stat({
   valueClass?: string;
 }) {
   return (
-    <div className="bg-[#0C1322] px-4 py-4 sm:px-5">
-      <dt className="text-xs font-medium uppercase tracking-[0.12em] text-[#A3AEC2]">{label}</dt>
-      <dd className={`mt-1.5 text-lg sm:text-xl font-semibold ${valueClass}`}>{value}</dd>
+    <div className="bg-[#0C1322] px-4 py-3 sm:px-5">
+      <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-[#A3AEC2]">
+        {label}
+      </dt>
+      <dd className={`mt-0.5 text-xl font-bold ${valueClass}`}>{value}</dd>
     </div>
   );
 }

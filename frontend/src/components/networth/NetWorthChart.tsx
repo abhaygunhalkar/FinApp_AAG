@@ -3,7 +3,7 @@ import { fmtCompact } from './format';
 import type { SeriesPoint } from './netWorthMath';
 
 const LINE = '#7AB0FF';
-const CHART_HEIGHT = 220;
+const CHART_HEIGHT = 160;
 
 interface NetWorthChartProps {
   series: SeriesPoint[];
@@ -32,7 +32,7 @@ export default function NetWorthChart({ series, hidden, animate, onScrub }: NetW
 
   return (
     <div
-      className="h-[220px] select-none touch-pan-y"
+      className="h-[160px] select-none touch-pan-y"
       role="img"
       aria-label={`Net worth trend from ${fmtCompact(series[0].value, hidden)} to ${fmtCompact(
         series[series.length - 1].value,
@@ -93,7 +93,7 @@ export default function NetWorthChart({ series, hidden, animate, onScrub }: NetW
 /** Placeholder while there is less than a week of history. */
 export function NetWorthChartEmpty() {
   return (
-    <div className="relative h-[220px] flex items-center justify-center">
+    <div className="relative h-[160px] flex items-center justify-center">
       <div
         className="absolute inset-x-0 top-1/2 border-t border-dashed border-white/10"
         aria-hidden="true"

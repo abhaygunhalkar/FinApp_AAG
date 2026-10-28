@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ASSET_CATEGORIES,
   ASSET_PALETTE,
+  accountsAddedBetween,
   breakdown,
   buildSeries,
   changeOver,
@@ -76,6 +77,19 @@ describe('changeOver', () => {
       { date: '2026-10-20', value: 100 },
     ];
     expect(changeOver(series, 100)?.pct).toBeNull();
+  });
+});
+
+describe('accountsAddedBetween', () => {
+  it('lists accounts created after the range start, up to the end', () => {
+    const at = (created_at: string) => ({ ...acct('checking', 1), created_at });
+    const before = at('2026-09-01T12:00:00Z');
+    const onStart = at('2026-10-01T12:00:00Z');
+    const inside = at('2026-10-10T12:00:00Z');
+    const later = at('2026-10-18T12:00:00Z');
+    const accounts = [before, onStart, inside, later];
+    expect(accountsAddedBetween(accounts, '2026-10-01', null)).toEqual([inside, later]);
+    expect(accountsAddedBetween(accounts, '2026-10-01', '2026-10-15')).toEqual([inside]);
   });
 });
 

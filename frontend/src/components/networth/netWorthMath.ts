@@ -67,6 +67,21 @@ export function changeOver(series: SeriesPoint[], toValue: number): Change | nul
   return { amount, pct: base !== 0 ? (amount / Math.abs(base)) * 100 : null };
 }
 
+/**
+ * Accounts created after `startDate` (the range's first snapshot) and on or
+ * before `endDate` (null for today), so their balances are in the change.
+ */
+export function accountsAddedBetween(
+  accounts: FinancialAccount[],
+  startDate: string,
+  endDate: string | null,
+): FinancialAccount[] {
+  return accounts.filter((a) => {
+    const day = a.created_at.slice(0, 10);
+    return day > startDate && (endDate === null || day <= endDate);
+  });
+}
+
 export interface BreakdownSegment {
   key: string;
   label: string;
