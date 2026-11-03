@@ -22,9 +22,15 @@ class Settings(BaseSettings):
     CHAT_ENGINE: str = "rules"
 
     # Auth: nginx basic auth signs the user in and passes their name in this
-    # header. It is trusted only from these hosts (nginx on the same VM).
+    # header. Without AUTH_PROXY_SECRET it is trusted only from these client
+    # addresses, which works only where nothing rewrites the address.
     AUTH_USER_HEADER: str = "X-Remote-User"
     AUTH_TRUSTED_PROXIES: str = "127.0.0.1,::1"
+    # On the VM nginx also sends this secret, proving the request came through
+    # it; when set, it replaces the address check (which uvicorn's proxy
+    # handling defeats). Generate with: openssl rand -hex 32
+    AUTH_PROXY_SECRET: str | None = None
+    AUTH_PROXY_SECRET_HEADER: str = "X-Proxy-Secret"
     # Local development only (no nginx): act as this user. Never set on the VM.
     AUTH_DEV_USER: str | None = None
 

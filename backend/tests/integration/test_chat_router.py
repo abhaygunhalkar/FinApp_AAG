@@ -153,6 +153,29 @@ class TestAuth:
         r = post(client, {"sessionId": "s", "message": "help"})
         assert r.status_code == 401
 
+    def test_proxy_secret_proves_the_request_came_through_nginx(
+        self, client: TestClient, env: Env
+    ) -> None:
+        # Behind nginx, uvicorn reports the browser's address, not nginx's,
+        # so the address check fails; the shared secret is what counts.
+        env.settings.AUTH_TRUSTED_PROXIES = "127.0.0.1"
+        env.settings.AUTH_PROXY_SECRET = "s3cret"
+        body = {"sessionId": "s", "message": "help"}
+        ok = post(client, body, {**SIGNED_IN, "X-Proxy-Secret": "s3cret"})
+        assert ok.status_code == 200
+
+    @pytest.mark.parametrize("secret", [None, "", "wrong", "s3cret "])
+    def test_wrong_or_missing_proxy_secret_is_401(
+        self, client: TestClient, env: Env, secret: str | None
+    ) -> None:
+        env.settings.AUTH_PROXY_SECRET = "s3cret"
+        headers = dict(SIGNED_IN)
+        if secret is not None:
+            headers["X-Proxy-Secret"] = secret
+        # Even from a trusted address, the secret is now required.
+        r = post(client, {"sessionId": "s", "message": "help"}, headers)
+        assert r.status_code == 401
+
     def test_another_signed_in_user_is_403(self, client: TestClient) -> None:
         r = post(
             client, {"sessionId": "s", "message": "help"}, {"X-Remote-User": "eve"}

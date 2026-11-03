@@ -105,7 +105,7 @@ All backend config is env vars / `backend/.env` (see `backend/.env.example`), lo
 
 There is no login or user model in the app; every request acts on the one owner's data, and most services take no user argument. On the VM, nginx HTTP basic auth covers the whole site, including `/api/` (`docs/GCP-VM-Frontend.md`). The nginx config on the VM is edited by hand, not by the deploy workflow. CORS allows only `http://localhost:3000`.
 
-Endpoints that need to know who is asking (so far only `POST /api/chat`) use `user_from_request()` in `app/auth.py`. It reads the username nginx forwards in `X-Remote-User`, trusts it only from `AUTH_TRUSTED_PROXIES` (nginx on the same VM), and falls back to `AUTH_DEV_USER` for local development, which must never be set on the VM. Never take a user from a request body. See `docs/chat-api.md` for the one-time nginx and `OWNER_USER_ID` setup.
+Endpoints that need to know who is asking (so far only `POST /api/chat`) use `user_from_request()` in `app/auth.py`. It reads the username nginx forwards in `X-Remote-User`, and trusts it only when nginx's shared secret (`AUTH_PROXY_SECRET`, sent as `X-Proxy-Secret`) matches. Don't rely on the client address: uvicorn replaces it with the browser's IP from `X-Forwarded-For`. It falls back to `AUTH_DEV_USER` for local development, which must never be set on the VM. New settings must be deployed before they're added to the VM's `backend/.env`; `pydantic-settings` rejects unknown keys and the service won't start. Never take a user from a request body. See `docs/chat-api.md` for the one-time nginx and `OWNER_USER_ID` setup.
 
 ### Error handling and logging
 

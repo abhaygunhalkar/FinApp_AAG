@@ -42,32 +42,39 @@ Content-Type: application/json
 
 ## Auth
 
-The app has no login of its own. nginx basic auth on the VM signs the user in for the whole site, including `/api/`, and forwards the username in the `X-Remote-User` header (`AUTH_USER_HEADER`).
-- **Trusted source only.** The backend believes that header only from `AUTH_TRUSTED_PROXIES` (default `127.0.0.1,::1`, which is nginx on the same VM). Uvicorn listens on 127.0.0.1, so nothing else can reach it.
+The app has no login of its own. nginx basic auth on the VM signs the user in for the whole site, including `/api/`, and forwards the username in `X-Remote-User` (`AUTH_USER_HEADER`). The backend believes that header only when it can tell the request came through nginx:
+
+- **On the VM: a shared secret.** nginx also sends `X-Proxy-Secret` (`AUTH_PROXY_SECRET_HEADER`), and it must equal `AUTH_PROXY_SECRET`. `proxy_set_header` replaces whatever a browser sends in either header, so a browser can't fake them.
+- **Without a secret: the client address,** which must be in `AUTH_TRUSTED_PROXIES`. **This does not work behind nginx with uvicorn's defaults.** Uvicorn trusts `X-Forwarded-For` from 127.0.0.1 and replaces the client address with the browser's IP, so every request looks like an outsider (that was the first production bug: every chat got 401). Keep the secret set on the VM.
 - **Owner only.** The username must equal `OWNER_USER_ID`.
-- **Never from the body.** The user can't be set in the request body; a `userId` key fails validation.
+- **Never from the body.** The user can't be set in the request body.
 
 **Local development** (no nginx): set `AUTH_DEV_USER` in `backend/.env` to the same value as `OWNER_USER_ID`. **Never set it on the VM**: it signs in every request.
 
 ### One-time VM setup
 
+Do this after the code that knows `AUTH_PROXY_SECRET` is deployed. `pydantic-settings` rejects unknown keys in `.env`, so adding the key earlier stops the service from starting.
+
 On the VM, in `~/FinApp_AAG`:
 
 ```bash
-# 1. Your basic-auth username (the part before the colon)
-sudo cut -d: -f1 /etc/nginx/.htpasswd
-
-# 2. Make nginx forward it to the API (skips if already done)
 F=/etc/nginx/sites-available/finapp
+U=$(sudo head -1 /etc/nginx/.htpasswd | cut -d: -f1)   # your basic-auth username
+S=$(openssl rand -hex 32)                              # the shared secret
+
+# nginx: forward the username and the secret to the API
 grep -q X-Remote-User $F || sudo sed -i 's|proxy_pass http://127.0.0.1:8000;|proxy_pass http://127.0.0.1:8000;\n        proxy_set_header X-Remote-User $remote_user;|' $F
+sudo sed -i '/X-Proxy-Secret/d' $F
+sudo sed -i "s|proxy_set_header X-Remote-User \$remote_user;|proxy_set_header X-Remote-User \$remote_user;\n        proxy_set_header X-Proxy-Secret $S;|" $F
 sudo nginx -t && sudo systemctl reload nginx
 
-# 3. Tell the backend that username is the owner (replace YOUR_USERNAME)
-echo 'OWNER_USER_ID=YOUR_USERNAME' >> backend/.env
+# backend: the owner and the same secret
+sed -i '/^OWNER_USER_ID=/d; /^AUTH_PROXY_SECRET=/d' backend/.env
+printf 'OWNER_USER_ID=%s\nAUTH_PROXY_SECRET=%s\n' "$U" "$S" >> backend/.env
 sudo systemctl restart finapp
 ```
 
-`proxy_set_header` replaces any `X-Remote-User` a client sends, so a browser can't claim to be someone else. Until this is done, `/api/chat` answers 401. Nothing else in the app changes.
+The secret lives in the nginx config (readable only by root) and `backend/.env`; it is never logged or sent to the browser. To rotate it, run the same commands again.
 
 ## Limits
 

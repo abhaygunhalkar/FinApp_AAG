@@ -51,8 +51,10 @@ server {
     # Proxy API requests to FastAPI
     location /api/ {
         proxy_pass http://127.0.0.1:8000;
-        # Who signed in; replaces any value a client sends (used by /api/chat)
+        # Who signed in, plus a secret proving it came from nginx; both
+        # replace any value a client sends (used by /api/chat, see docs/chat-api.md)
         proxy_set_header X-Remote-User $remote_user;
+        proxy_set_header X-Proxy-Secret YOUR_SECRET;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
