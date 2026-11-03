@@ -165,6 +165,12 @@ def parse_chat_request(data: Any) -> ChatRequest:
     return ChatRequest.model_validate(data, by_name=False)
 
 
+def dump_chat_response(response: ChatResponse) -> dict[str, Any]:
+    """A response as wire JSON. Unset optional fields are left out, not sent
+    as null, which the frontend's schema would reject; null table cells stay."""
+    return response.model_dump(mode="json", by_alias=True, exclude_none=True)
+
+
 def parse_chat_response(data: Any) -> ChatResponse:
     """Validate a response from the wire (camelCase keys only)."""
     return ChatResponse.model_validate(data, by_name=False)

@@ -1,6 +1,7 @@
 import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useUIStore } from '../../store/uiStore';
 
@@ -79,9 +80,11 @@ describe('AppLayout responsive structure', () => {
     );
 
     render(
-      <MemoryRouter>
-        <AppLayout />
-      </MemoryRouter>
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <AppLayout />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
 
     // The root div should have overflow-hidden class
@@ -98,9 +101,11 @@ describe('AppLayout responsive structure', () => {
     useUIStore.setState({ sidebarCollapsed: true });
 
     render(
-      <MemoryRouter>
-        <AppLayout />
-      </MemoryRouter>
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <AppLayout />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
 
     const toggleButton = screen.getByLabelText('Open sidebar');
@@ -113,9 +118,11 @@ describe('AppLayout responsive structure', () => {
     );
 
     render(
-      <MemoryRouter>
-        <AppLayout />
-      </MemoryRouter>
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <AppLayout />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
 
     const sidebar = document.querySelector('aside');

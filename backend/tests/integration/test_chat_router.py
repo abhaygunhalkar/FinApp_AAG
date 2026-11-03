@@ -222,12 +222,28 @@ class TestValidation:
 # --- happy paths -------------------------------------------------------------
 
 
+def nulls(value: Any, path: str = "") -> list[str]:
+    """Where JSON has null, other than table cells (the only place allowed)."""
+    if value is None:
+        return [path]
+    if isinstance(value, dict):
+        if value.get("type") == "table":
+            return []
+        return [p for k, v in value.items() for p in nulls(v, f"{path}.{k}")]
+    if isinstance(value, list):
+        return [p for i, v in enumerate(value) for p in nulls(v, f"{path}[{i}]")]
+    return []
+
+
 def answer(client: TestClient, body: dict[str, Any]) -> dict[str, Any]:
     r = post(client, body)
     assert r.status_code == 200, r.text
     payload = r.json()
     assert payload["success"] is True and payload["error"] is None
     parse_chat_response(payload["data"])
+    # Optional fields are left out, never null: the frontend's Zod schema
+    # (and the contract) don't allow null there.
+    assert nulls(payload["data"]) == []
     assert payload["data"]["sessionId"] == body["sessionId"]
     assert r.headers["X-Request-ID"]
     return dict(payload["data"])

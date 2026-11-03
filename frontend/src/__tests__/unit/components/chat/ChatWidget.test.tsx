@@ -1,18 +1,32 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChatLauncher, ChatWidget } from '../../../../components/chat';
 import { useUIStore } from '../../../../store/uiStore';
+import { chatServer, failOnceWith, received, replyWith } from '../../../mocks/chatServer';
+
+beforeAll(() => chatServer.listen({ onUnhandledRequest: 'error' }));
+afterEach(() => {
+  chatServer.resetHandlers();
+  received.length = 0;
+});
+afterAll(() => chatServer.close());
+beforeEach(() => useUIStore.setState({ hideBalances: false }));
 
 const renderWidget = () =>
   render(
-    <MemoryRouter>
-      <ChatWidget />
-    </MemoryRouter>,
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter>
+        <ChatWidget />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 
-beforeEach(() => useUIStore.setState({ hideBalances: false }));
-afterEach(() => vi.useRealTimers());
+async function openPanel() {
+  fireEvent.click(screen.getByRole('button', { name: 'Open assistant' }));
+  return screen.findByRole('dialog', { name: 'Assistant' });
+}
 
 describe('ChatLauncher', () => {
   it('is labelled, and shows unread messages', () => {
@@ -33,52 +47,71 @@ describe('ChatWidget', () => {
   it('loads the panel only when opened', async () => {
     renderWidget();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Open assistant' }));
-    expect(await screen.findByRole('dialog', { name: 'Assistant' })).toBeInTheDocument();
+    await openPanel();
     expect(screen.queryByRole('button', { name: 'Open assistant' })).not.toBeInTheDocument();
   });
 
-  it('shows what was sent, then a mock reply with starter chips', async () => {
+  it('asks the API and shows the answer; a chip sends its action', async () => {
+    replyWith([
+      { type: 'stat', label: 'Net worth', value: 1234.5, currency: 'USD' },
+      {
+        type: 'quickReplies',
+        options: [{ label: 'Account balances', action: { type: 'balances' } }],
+      },
+    ]);
     renderWidget();
-    fireEvent.click(screen.getByRole('button', { name: 'Open assistant' }));
-    await screen.findByRole('dialog');
-    vi.useFakeTimers();
+    await openPanel();
     fireEvent.click(screen.getByRole('button', { name: "What's my net worth?" }));
     expect(screen.getByRole('log')).toHaveTextContent("You: What's my net worth?");
-    expect(screen.getByRole('status')).toHaveTextContent('Assistant is typing');
-    act(() => void vi.advanceTimersByTime(500));
-    expect(screen.getByRole('log')).toHaveTextContent("I'm not connected yet");
-    // Clicking a chip shows its label as the user's turn.
+    expect(await screen.findByText('$1,234.50')).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole('button', { name: 'Account balances' }));
     expect(screen.getByRole('log')).toHaveTextContent('You: Account balances');
+    await screen.findAllByText('$1,234.50');
+    expect(received[1]).toMatchObject({ action: { type: 'balances' } });
+  });
+
+  it('shows a failure with Try again, which resends', async () => {
+    replyWith([{ type: 'text', text: 'Back now.' }]);
+    failOnceWith(504, 'That took too long. Please try again.', 'timeout');
+    renderWidget();
+    await openPanel();
+    fireEvent.click(screen.getByRole('button', { name: 'Show my account balances' }));
+    expect(await screen.findByText('That took too long. Please try again.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText('Back now.')).toBeInTheDocument();
+    expect(screen.queryByText('That took too long. Please try again.')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Message')).toHaveFocus();
   });
 
   it('keeps focus in the panel after an example is clicked, and Escape still closes', async () => {
+    replyWith([{ type: 'text', text: 'ok' }]);
     renderWidget();
-    fireEvent.click(screen.getByRole('button', { name: 'Open assistant' }));
-    await screen.findByRole('dialog');
+    await openPanel();
     fireEvent.click(screen.getByRole('button', { name: 'Show my account balances' }));
     expect(screen.getByLabelText('Message')).toHaveFocus();
-    // Even with focus on the page itself, Escape closes the panel.
     (document.activeElement as HTMLElement).blur();
     fireEvent.keyDown(document.body, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await screen.findByRole('button', { name: /Open assistant, 1 unread/ });
   });
 
   it('counts replies that arrive while minimized, and clears them on open', async () => {
+    replyWith([
+      { type: 'text', text: 'one' },
+      { type: 'text', text: 'two' },
+    ]);
     renderWidget();
-    fireEvent.click(screen.getByRole('button', { name: 'Open assistant' }));
-    await screen.findByRole('dialog');
-    vi.useFakeTimers();
+    await openPanel();
     fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'hi' } });
     fireEvent.submit(screen.getByLabelText('Message').closest('form')!);
     fireEvent.click(screen.getByRole('button', { name: 'Minimize assistant' }));
-    act(() => void vi.advanceTimersByTime(500));
+    await screen.findByRole('button', { name: 'Expand assistant' });
     fireEvent.click(screen.getByRole('button', { name: 'Close assistant' }));
-    act(() => void vi.advanceTimersByTime(10));
-    const launcher = screen.getByRole('button', { name: 'Open assistant, 2 unread' });
-    expect(launcher).toHaveFocus();
+    const launcher = await screen.findByRole('button', { name: 'Open assistant, 2 unread' });
+    await vi.waitFor(() => expect(launcher).toHaveFocus());
     fireEvent.click(launcher);
+    expect(await screen.findByText('two')).toBeInTheDocument();
     fireEvent.keyDown(screen.getByLabelText('Message'), { key: 'Escape' });
     expect(screen.getByRole('button', { name: 'Open assistant' })).toBeInTheDocument();
   });

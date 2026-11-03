@@ -55,3 +55,4 @@ export {
   getCashFlowSummary,
   getAccountForecast,
 } from './income';
+export { ChatApiError, sendChat } from './chat';

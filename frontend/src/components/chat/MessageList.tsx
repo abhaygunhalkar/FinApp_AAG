@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
-import BotMessageView from './BotMessageView';
+import type { ChatFailure } from '../../hooks/useChat';
+import ErrorNote from './messages/ErrorNote';
+import MessageRenderer from './messages/MessageRenderer';
 import type { ChatEntry, ChatHandlers } from './types';
 
 interface Props {
@@ -8,10 +10,20 @@ interface Props {
   pending: boolean;
   hidden: boolean;
   handlers: ChatHandlers;
+  /** The last turn failed; shown at the end with a Retry button if useful. */
+  failure?: ChatFailure | null;
+  onRetry?: () => void;
 }
 
 /** The conversation, newest at the bottom; new messages are announced. */
-export default function MessageList({ entries, pending, hidden, handlers }: Props) {
+export default function MessageList({
+  entries,
+  pending,
+  hidden,
+  handlers,
+  failure = null,
+  onRetry,
+}: Props) {
   const ref = useRef<HTMLDivElement>(null);
   // Buttons only act in the bot's latest reply (after the last user message).
   const lastUser = entries.findLastIndex((e) => e.role === 'user');
@@ -19,7 +31,7 @@ export default function MessageList({ entries, pending, hidden, handlers }: Prop
   useEffect(() => {
     const el = ref.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [entries.length, pending]);
+  }, [entries.length, pending, failure]);
 
   return (
     <div
@@ -39,7 +51,7 @@ export default function MessageList({ entries, pending, hidden, handlers }: Prop
           </div>
         ) : (
           <div key={entry.id} className="flex">
-            <BotMessageView
+            <MessageRenderer
               message={entry.message}
               hidden={hidden}
               interactive={i > lastUser}
@@ -47,6 +59,20 @@ export default function MessageList({ entries, pending, hidden, handlers }: Prop
             />
           </div>
         ),
+      )}
+      {failure && (
+        <div className="flex flex-col items-start gap-2">
+          <ErrorNote>{failure.message}</ErrorNote>
+          {failure.canRetry && onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="min-h-9 rounded-full border border-[#BFD3F5] bg-white px-3.5 text-sm font-medium text-[#1D4ED8] hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8] dark:border-blue-800 dark:bg-slate-800 dark:text-blue-300"
+            >
+              Try again
+            </button>
+          )}
+        </div>
       )}
       {pending && (
         <div className="flex" role="status">

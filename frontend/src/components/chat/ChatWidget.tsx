@@ -1,54 +1,30 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { useChat } from '../../hooks/useChat';
 import { useUIStore } from '../../store/uiStore';
-import type { ChatAction } from '../../types';
 import ChatLauncher from './ChatLauncher';
-import { mockReply } from './mockReplies';
-import type { ChatEntry, PanelState } from './types';
+import type { PanelState } from './types';
 
 const loadPanel = () => import('./ChatPanel');
 const ChatPanel = lazy(loadPanel);
 
-const REPLY_DELAY_MS = 450;
-
-/**
- * The assistant on every page: the launcher, and the panel once opened.
- * Replies are mocked until it calls POST /api/chat.
- */
+/** The assistant on every page: the launcher, and the panel once opened. */
 export default function ChatWidget() {
   const hidden = useUIStore((s) => s.hideBalances);
   const [state, setState] = useState<PanelState>('closed');
-  const [entries, setEntries] = useState<ChatEntry[]>([]);
-  const [pending, setPending] = useState(false);
   const [unread, setUnread] = useState(0);
   const launcherRef = useRef<HTMLButtonElement>(null);
-  const nextId = useRef(0);
   // The panel state as of the latest render, read when a reply lands.
   const stateRef = useRef(state);
-  const timers = useRef<number[]>([]);
 
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
 
-  useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
-
-  const id = () => `m${nextId.current++}`;
-
-  const respond = useCallback((userText: string) => {
-    setEntries((prev) => [...prev, { id: id(), role: 'user', text: userText }]);
-    setPending(true);
-    timers.current.push(
-      window.setTimeout(() => {
-        const replies = mockReply();
-        setEntries((prev) => [
-          ...prev,
-          ...replies.map((message) => ({ id: id(), role: 'bot' as const, message })),
-        ]);
-        setPending(false);
-        if (stateRef.current !== 'open') setUnread((n) => n + replies.length);
-      }, REPLY_DELAY_MS),
-    );
-  }, []);
+  const chat = useChat({
+    onReply: (count) => {
+      if (stateRef.current !== 'open') setUnread((n) => n + count);
+    },
+  });
 
   const open = useCallback(() => {
     setState('open');
@@ -75,14 +51,16 @@ export default function ChatWidget() {
         <Suspense fallback={null}>
           <ChatPanel
             state={state}
-            entries={entries}
-            pending={pending}
+            entries={chat.entries}
+            pending={chat.pending}
             hidden={hidden}
+            failure={chat.failure}
+            onRetry={chat.retry}
             onClose={close}
             onMinimize={() => setState('minimized')}
             onExpand={open}
-            onSend={respond}
-            onAction={(_action: ChatAction, label: string) => respond(label)}
+            onSend={chat.send}
+            onAction={chat.sendAction}
             onNavigate={() => {
               // On phones the panel covers the page; get out of the way.
               if (window.matchMedia?.('(max-width: 639px)').matches) setState('minimized');

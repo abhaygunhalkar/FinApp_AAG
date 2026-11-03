@@ -11,13 +11,13 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { ChartMessage } from '../../types';
-import { fmtAmount } from './format';
+import type { ChartMessage } from '../../../types';
+import { fmtAmount } from '../format';
 
 const COLORS = ['#1D4ED8', '#F97316', '#0EA5E9', '#A855F7', '#14B8A6', '#E11D48'];
 
 /** A small chart inside a bot message. Values are USD amounts. */
-export default function ChatChart({ message, hidden }: { message: ChartMessage; hidden: boolean }) {
+export default function MiniChart({ message, hidden }: { message: ChartMessage; hidden: boolean }) {
   const money = (v: number) => fmtAmount(v, 'USD', hidden);
   // Describe the data for screen readers, since the drawing can't be read.
   const summary = message.series

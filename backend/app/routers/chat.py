@@ -24,7 +24,7 @@ from sqlalchemy.orm import Session
 from app.auth import user_from_request
 from app.config import Settings, get_settings
 from app.database import get_db
-from app.schemas.chat import ChatResponse, parse_chat_request
+from app.schemas.chat import ChatResponse, dump_chat_response, parse_chat_request
 from app.schemas.common import ApiResponse
 from app.services.chat_engine import create_engine
 from app.services.chat_service import ChatService
@@ -187,7 +187,7 @@ async def chat(
             headers={"X-Request-ID": request_id},
             content={
                 "success": True,
-                "data": response.model_dump(mode="json", by_alias=True),
+                "data": dump_chat_response(response),
                 "error": None,
             },
         )

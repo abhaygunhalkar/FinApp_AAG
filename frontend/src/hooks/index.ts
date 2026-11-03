@@ -59,3 +59,5 @@ export {
   useUpdateIncomeSource,
   useDeleteIncomeSource,
 } from './useIncome';
+export { useChat } from './useChat';
+export type { ChatFailure, UseChatOptions } from './useChat';

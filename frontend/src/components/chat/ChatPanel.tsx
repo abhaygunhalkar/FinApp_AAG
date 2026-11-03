@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import type { ChatFailure } from '../../hooks/useChat';
 import { EXAMPLE_QUESTIONS } from './examples';
 import InputBox from './InputBox';
 import MessageList from './MessageList';
@@ -10,6 +11,8 @@ export interface ChatPanelProps extends ChatHandlers {
   entries: ChatEntry[];
   pending: boolean;
   hidden: boolean;
+  failure?: ChatFailure | null;
+  onRetry?: () => void;
   onClose: () => void;
   onMinimize: () => void;
   onExpand: () => void;
@@ -27,6 +30,8 @@ export default function ChatPanel({
   entries,
   pending,
   hidden,
+  failure = null,
+  onRetry,
   onClose,
   onMinimize,
   onExpand,
@@ -157,7 +162,20 @@ export default function ChatPanel({
           </ul>
         </div>
       ) : (
-        <MessageList entries={entries} pending={pending} hidden={hidden} handlers={handlers} />
+        <MessageList
+          entries={entries}
+          pending={pending}
+          hidden={hidden}
+          handlers={handlers}
+          failure={failure}
+          onRetry={
+            onRetry &&
+            (() => {
+              onRetry();
+              refocus();
+            })
+          }
+        />
       )}
 
       <InputBox onSend={onSend} disabled={pending} inputRef={inputRef} />
