@@ -99,11 +99,13 @@ Every API response, success or error, is wrapped in the same envelope: `{"succes
 
 ### Configuration
 
-All backend config is env vars / `backend/.env` (see `backend/.env.example`), loaded via `app/config.py` (`pydantic-settings`, cached with `lru_cache`): `DATABASE_URL`, `MARKET_API_PROVIDER`, `REFRESH_INTERVAL_MINUTES`, `BROKERS` (comma-separated, drives the broker dropdown), `FINNHUB_API_KEY`, `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV`, `OWNER_USER_ID` (chat tools act only for this id), `CHAT_ENGINE` (`rules`). Frontend: `VITE_API_BASE_URL` (defaults to `http://localhost:8000`).
+All backend config is env vars / `backend/.env` (see `backend/.env.example`), loaded via `app/config.py` (`pydantic-settings`, cached with `lru_cache`): `DATABASE_URL`, `MARKET_API_PROVIDER`, `REFRESH_INTERVAL_MINUTES`, `BROKERS` (comma-separated, drives the broker dropdown), `FINNHUB_API_KEY`, `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV`, `OWNER_USER_ID` (chat tools act only for this id), `CHAT_ENGINE` (`rules`), `AUTH_USER_HEADER` / `AUTH_TRUSTED_PROXIES` / `AUTH_DEV_USER` and the `CHAT_*` limits (see `docs/chat-api.md`). Frontend: `VITE_API_BASE_URL` (defaults to `http://localhost:8000`).
 
 ### Auth
 
-There is no authentication or user model in the app; every request acts on the one owner's data, and services take no user argument. Access control is at the edge: on the VM, nginx puts HTTP basic auth in front of the site (`docs/GCP-VM-Frontend.md`). The nginx config on the VM is edited by hand, not by the deploy workflow. CORS allows only `http://localhost:3000`.
+There is no login or user model in the app; every request acts on the one owner's data, and most services take no user argument. On the VM, nginx HTTP basic auth covers the whole site, including `/api/` (`docs/GCP-VM-Frontend.md`). The nginx config on the VM is edited by hand, not by the deploy workflow. CORS allows only `http://localhost:3000`.
+
+Endpoints that need to know who is asking (so far only `POST /api/chat`) use `user_from_request()` in `app/auth.py`. It reads the username nginx forwards in `X-Remote-User`, trusts it only from `AUTH_TRUSTED_PROXIES` (nginx on the same VM), and falls back to `AUTH_DEV_USER` for local development, which must never be set on the VM. Never take a user from a request body. See `docs/chat-api.md` for the one-time nginx and `OWNER_USER_ID` setup.
 
 ### Error handling and logging
 

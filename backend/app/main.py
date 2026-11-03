@@ -12,11 +12,23 @@ from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.database import SessionLocal, verify_database
-from app.routers import dashboard, earnings, etf_holdings, holdings, market, net_worth, plaid, transactions, watchlist, options, portfolio_analysis, recurring_expenses, income
+from app.routers import dashboard, earnings, etf_holdings, holdings, market, net_worth, plaid, transactions, watchlist, options, portfolio_analysis, recurring_expenses, income, chat
+from app.routers.chat import ChatRequestError, chat_error_response
 from app.services.financial_account_service import FinancialAccountService
 from app.services.market_data_service import MarketDataService
 
 logger = logging.getLogger(__name__)
+
+# Chat logs at INFO, one line per record: request logs are JSON lines
+# (app/routers/chat.py) and unmatched questions are redacted
+# (app/services/chat_engine/rules.py). Other loggers keep Python's defaults.
+for _name in ("app.chat", "app.services.chat_engine"):
+    _chat_logger = logging.getLogger(_name)
+    _chat_logger.setLevel(logging.INFO)
+    if not _chat_logger.handlers:
+        _handler = logging.StreamHandler()
+        _handler.setFormatter(logging.Formatter("%(name)s %(message)s"))
+        _chat_logger.addHandler(_handler)
 
 scheduler: BackgroundScheduler | None = None
 
@@ -104,6 +116,14 @@ app.add_middleware(
 # --- Exception Handlers ---
 
 
+@app.exception_handler(ChatRequestError)
+async def chat_exception_handler(
+    request: Request, exc: ChatRequestError
+) -> JSONResponse:
+    """Chat failures come back as a ChatResponse holding one error message."""
+    return chat_error_response(exc)
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(
     request: Request, exc: RequestValidationError
@@ -184,6 +204,7 @@ app.include_router(plaid.router)
 app.include_router(net_worth.router)
 app.include_router(recurring_expenses.router)
 app.include_router(income.router)
+app.include_router(chat.router)
 
 
 # --- Health Check ---

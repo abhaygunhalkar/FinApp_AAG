@@ -19,7 +19,7 @@ The frontend and backend are separate builds with no shared package, so the cont
 
 - **camelCase on the wire.** Unlike the rest of the API (snake_case), chat fields are camelCase: `sessionId`, `confirmAction`, `quickReplies`. Python code uses snake_case names (`session_id`), with camelCase aliases. Parse incoming JSON with `parse_chat_request()`, which rejects snake_case keys so both sides agree.
 - **Strict.** Unknown fields are rejected on both sides, so a typo fails validation instead of being silently dropped.
-- **Envelope.** The chat endpoint will return `ChatResponse` inside the usual envelope: `{ "success": true, "data": ChatResponse, "error": null }`. A failed request (bad input, server error) uses the envelope's `error`. A bot answer that explains a problem ("I couldn't reach Plaid") is a successful response containing an `error` message.
+- **Envelope.** `POST /api/chat` returns `ChatResponse` inside the usual envelope: `{ "success": true, "data": ChatResponse, "error": null }`. A failed request (auth, bad input, rate limit, server error) returns `success: false`; its `data` is still a `ChatResponse` with one `error` message (with a `code`), and `error` repeats the message. A bot answer that explains a problem ("I couldn't reach Plaid") is a successful response containing an `error` message. See `docs/chat-api.md`.
 - **Numbers are numbers.** Amounts in `stat`, `table` and `chart` are raw numbers, not formatted strings, so the widget formats them and can apply the "hide numbers" toggle.
 
 ## Request

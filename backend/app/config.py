@@ -21,12 +21,30 @@ class Settings(BaseSettings):
     # Which chat engine answers: "rules" (the only one so far).
     CHAT_ENGINE: str = "rules"
 
+    # Auth: nginx basic auth signs the user in and passes their name in this
+    # header. It is trusted only from these hosts (nginx on the same VM).
+    AUTH_USER_HEADER: str = "X-Remote-User"
+    AUTH_TRUSTED_PROXIES: str = "127.0.0.1,::1"
+    # Local development only (no nginx): act as this user. Never set on the VM.
+    AUTH_DEV_USER: str | None = None
+
+    # POST /api/chat limits.
+    CHAT_RATE_LIMIT_PER_MINUTE: int = 30
+    CHAT_MAX_BODY_BYTES: int = 8192
+    CHAT_TIMEOUT_SECONDS: float = 10.0
+    CHAT_SESSION_TTL_MINUTES: int = 30
+    CHAT_HISTORY_LIMIT: int = 20
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
     @property
     def broker_list(self) -> list[str]:
         """Return the list of configured brokers."""
         return [b.strip() for b in self.BROKERS.split(",") if b.strip()]
+
+    @property
+    def trusted_proxies(self) -> set[str]:
+        return {h.strip() for h in self.AUTH_TRUSTED_PROXIES.split(",") if h.strip()}
 
 
 @lru_cache

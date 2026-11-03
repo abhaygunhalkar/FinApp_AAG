@@ -63,7 +63,7 @@ None. There is no budget model, endpoint or page.
 
 ## How the user is identified
 
-It isn't. The app has no users, logins, tokens or sessions; every request acts on the one owner's data and no service takes a user argument. Access is controlled at the edge by nginx basic auth on the VM (`docs/GCP-VM-Frontend.md`). In that documented config, basic auth is on the site (`location /`) but not on `location /api/`. Check the live config on the VM before exposing a chat endpoint that can read every balance.
+It isn't. The app has no users, logins, tokens or sessions; every request acts on the one owner's data and no service takes a user argument. Access is controlled at the edge by nginx basic auth on the VM (`docs/GCP-VM-Frontend.md`). The setup doc originally put basic auth on `location /` only; on the VM it has covered the whole server, including `/api/`, since 2026-10-23. `POST /api/chat` identifies the user from the username nginx forwards (see `docs/chat-api.md`).
 
 ## Frontend
 
@@ -79,7 +79,7 @@ It isn't. The app has no users, logins, tokens or sessions; every request acts o
 1. **No LLM client.** No Anthropic SDK in `pyproject.toml` and no API key setting in `app/config.py`. Adding the `anthropic` package and an `ANTHROPIC_API_KEY` setting needs the owner's OK (new dependency).
 2. **No streaming.** Every endpoint returns the JSON envelope, and axios with a 10s timeout won't suit long or streamed answers. A chat endpoint needs either server-sent events (read with `fetch`, not axios) or a longer timeout and a non-streaming reply. It is the one place that would bypass the envelope, so document it as an exception.
 3. **No conversation storage.** Add a table plus an Alembic migration if history should survive a reload; otherwise keep it client-side only.
-4. **No auth on the API.** See above. A chat endpoint can return any balance, so confirm `/api/` is behind basic auth before deploying.
+4. **No app-level auth.** Done for chat: nginx forwards the basic-auth user, and `app/auth.py` reads it (`docs/chat-api.md`). Other endpoints still rely on nginx alone.
 5. **No bank transactions or spending history.** Plaid sync imports balances only, and `transactions` holds stock buys and sells only. Questions like "what did I spend on groceries last month" can't be answered from data; the chat can only use bill amounts and categories.
 6. **No budgets.** "Am I over budget?" needs a new model, service and UI, or must be out of scope.
 7. **Net worth history is totals only.** The chat can't say which account moved, or separate a newly added account from real gains.

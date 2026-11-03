@@ -44,9 +44,15 @@ server {
     root /home/YOUR_USERNAME/FinApp_AAG/frontend/dist;
     index index.html;
 
+    # Basic auth for the whole site, including the API
+    auth_basic "FinApp";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+
     # Proxy API requests to FastAPI
     location /api/ {
         proxy_pass http://127.0.0.1:8000;
+        # Who signed in; replaces any value a client sends (used by /api/chat)
+        proxy_set_header X-Remote-User $remote_user;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -54,8 +60,6 @@ server {
 
     # Serve React app for all other routes (SPA support)
     location / {
-        auth_basic "FinApp";
-        auth_basic_user_file /etc/nginx/.htpasswd;
         try_files $uri $uri/ /index.html;
     }
 }

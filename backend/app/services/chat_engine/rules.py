@@ -52,6 +52,9 @@ class RuleBasedEngine:
             raise ValueError(f"Intents use tools that don't exist: {missing}")
 
     def handle(self, request: ChatRequest, ctx: EngineContext) -> ChatResponse:
+        # What this turn was understood as, for logs: an intent name, or
+        # "unsupported", "fallback", "unknown_action", "forbidden".
+        ctx.session.state["intent"] = "forbidden"
         if not self.tools.allows(ctx.user_id):
             messages: list[BotMessage] = [
                 ErrorMessage(type="error", message="Not allowed", code="forbidden")
@@ -79,12 +82,14 @@ class RuleBasedEngine:
             # A clicked quick reply: run its intent directly, no parsing.
             intent = self.intents.get(request.action.type)
             if intent is None:
+                ctx.session.state["intent"] = "unknown_action"
                 return self._error("That option isn't available any more.", ctx)
             entities = intent.from_payload(request.action.payload or {})
             return self._run(intent, entities, ctx)
 
         text = request.message or ""
         if UNSUPPORTED.search(text.lower()):
+            ctx.session.state["intent"] = "unsupported"
             self._log_unmatched(text, accounts, "unsupported")
             return [
                 TextMessage(
@@ -98,6 +103,7 @@ class RuleBasedEngine:
             ]
         intent = self.intents.match(text)
         if intent is None:
+            ctx.session.state["intent"] = "fallback"
             self._log_unmatched(text, accounts, "no_intent")
             return [
                 TextMessage(
@@ -118,6 +124,7 @@ class RuleBasedEngine:
     def _run(
         self, intent: Intent, entities: Entities, ctx: EngineContext
     ) -> list[BotMessage]:
+        ctx.session.state["intent"] = intent.name
         question = intent.clarify(entities)
         if question:
             return question
