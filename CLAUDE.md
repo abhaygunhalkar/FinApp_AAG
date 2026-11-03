@@ -4,7 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A locally-hosted personal stock portfolio tracker: React/TypeScript frontend + FastAPI backend, with a local SQLite file as the only datastore. Market data (prices, history, fundamentals, dividend yield, RSI inputs) comes from Yahoo Finance via `yfinance`, called only from the backend — the frontend never talks to yfinance directly. Earnings calendar data comes from the Finnhub API (`FINNHUB_API_KEY`).
+A single-user personal finance app: stock/ETF/options portfolio tracking plus net worth (bank, card, loan and property accounts), fixed costs (recurring bills) and cash flow (income and forecasts). React/TypeScript frontend + FastAPI backend, with a SQLite file as the only datastore. It runs locally for development and is deployed to one GCP VM (see Deployment).
+
+External data is fetched only by the backend; the frontend never calls these services directly:
+- Market data (prices, history, fundamentals, dividend yield, RSI inputs): Yahoo Finance via `yfinance`.
+- Earnings calendar: Finnhub (`FINNHUB_API_KEY`).
+- Bank/card balances: Plaid (`PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV`). Balances only; Plaid transactions are not imported.
+
+There are no user accounts in the app. See "Auth" below.
 
 ## Commands
 
@@ -12,7 +19,7 @@ A locally-hosted personal stock portfolio tracker: React/TypeScript frontend + F
 
 ```bash
 cd backend
-python -m venv .venv && source .venv/bin/activate
+python -m venv venv && source venv/bin/activate   # the existing env is backend/venv
 pip install -e ".[dev]"
 alembic upgrade head
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
@@ -23,6 +30,8 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 - Auto-format: `task format` (= `black . && ruff check --fix .`)
 - New migration: `alembic revision --autogenerate -m "description"`, then `alembic upgrade head`
 - Reset local DB: `python scripts/reset_database.py`
+- Demo data: `backend/finance_demo.db` holds made-up data. Run the backend with `DATABASE_URL=sqlite:///./finance_demo.db` for local testing and screenshots; never use or show the real `finance_tracker.db`.
+- Migrations must tolerate tables that already exist, because `verify_database()` runs `create_all` at startup before Alembic.
 
 Coverage gate is enforced via pytest config: `--cov-fail-under=70`. `mypy` runs in `strict` mode.
 
@@ -81,16 +90,44 @@ Every API response, success or error, is wrapped in the same envelope: `{"succes
 | `cash_balance` | Single-row table tracking available cash, updated on every buy/sell |
 | `options_trades` | Options trades (calls/puts) tracked separately from equity holdings |
 | `earnings_cache` | Cached Finnhub earnings calendar lookups |
+| `sell_lot_allocations` | Which buy lots each sell took shares from (lots are scoped to one holding, i.e. one ticker at one broker) |
+| `financial_accounts` | Net Worth accounts: checking, savings, credit cards, loans, mortgage, property, vehicle, crypto; manual or Plaid-linked |
+| `plaid_items` | Plaid connections (one per institution login) |
+| `net_worth_snapshots` | One row per day of total assets, liabilities and net worth (totals only, not per account) |
+| `recurring_expenses` | Fixed costs / bills with category, frequency, next due date, paying account, autopay |
+| `income_sources` | Paychecks and other income with pay schedule and deposit account |
 
 ### Configuration
 
-All backend config is env vars / `backend/.env` (see `backend/.env.example`), loaded via `app/config.py` (`pydantic-settings`, cached with `lru_cache`): `DATABASE_URL`, `MARKET_API_PROVIDER`, `REFRESH_INTERVAL_MINUTES`, `BROKERS` (comma-separated, drives the broker dropdown), `FINNHUB_API_KEY`.
+All backend config is env vars / `backend/.env` (see `backend/.env.example`), loaded via `app/config.py` (`pydantic-settings`, cached with `lru_cache`): `DATABASE_URL`, `MARKET_API_PROVIDER`, `REFRESH_INTERVAL_MINUTES`, `BROKERS` (comma-separated, drives the broker dropdown), `FINNHUB_API_KEY`, `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV`. Frontend: `VITE_API_BASE_URL` (defaults to `http://localhost:8000`).
+
+### Auth
+
+There is no authentication or user model in the app; every request acts on the one owner's data, and services take no user argument. Access control is at the edge: on the VM, nginx puts HTTP basic auth in front of the site (`docs/GCP-VM-Frontend.md`). The nginx config on the VM is edited by hand, not by the deploy workflow. CORS allows only `http://localhost:3000`.
+
+### Error handling and logging
+
+- Services raise `HTTPException` (404, 422, ...) with a plain-English `detail`; the global handlers in `app/main.py` turn it into the error envelope. Unhandled exceptions are logged and returned as a generic 500 "Internal server error".
+- Logging is the standard library: `logger = logging.getLogger(__name__)` at module level, used in `main.py`, `database.py`, and the services that call external APIs (market data, Plaid, earnings). No structured logging or request IDs.
+- Frontend: `unwrapResponse()` throws on `success: false`; components show errors inline (for example a `role="alert"` line) or with `ErrorNotification`. Axios timeout is 10s.
 
 ### Deployment
 
-`.github/workflows/deploy.yml` deploys on push to `main`: backend changes are deployed via SSH (`git pull` + `pip install .` + restart a `systemd` service named `finapp`) to a GCP VM; frontend changes are built and `scp`'d to the same VM behind nginx. Backend and frontend deploy independently based on which paths changed in the last commit.
+`.github/workflows/deploy.yml` deploys on push to `main`: backend changes are deployed via SSH (`git pull` + `pip install .` + `alembic upgrade head` + restart a `systemd` service named `finapp`) to a GCP VM; frontend changes are built and `scp`'d to the same VM behind nginx. Backend and frontend deploy independently based on which paths changed in the last commit. The production database is `backend/finance_tracker.db` on the VM.
 
 ### Testing conventions
 
 - Backend tests use an in-memory SQLite DB (`tests/conftest.py`) with the `get_db` dependency overridden; `setup_database` autouse fixture creates/drops all tables per test for isolation. Tests are split into `tests/unit/`, `tests/integration/` (router-level via `httpx.AsyncClient`), and `tests/property/` (Hypothesis-based).
-- Frontend tests live in `src/__tests__/unit/` and `src/__tests__/property/` (fast-check), using `msw` for API mocking and `@testing-library/react`.
+- Frontend tests live in `src/__tests__/unit/` and `src/__tests__/property/` (fast-check), plus some co-located `*.test.tsx` next to components (e.g. `components/holdings/`). Page tests usually `vi.mock` the hooks module rather than mocking HTTP; `msw` is available for API mocking. Use dates relative to today in tests, not hard-coded ones that go stale.
+- Some tests already fail on `main` (backend: a handful in watchlist/ETF tests; frontend: `FrontendComponents`, `MetricsCards` and others with out-of-date fixtures), and `tsc -b` reports errors in old test files. Compare against `main` before assuming a failure is new.
+
+## Conventions
+
+- **Python:** black + ruff (line length 88), mypy strict, full type hints. Services are classes of `@staticmethod`s named `<Thing>Service`; repositories are `<Thing>Repository`. Module names are `snake_case`; one model per file in `app/models/`, registered in `app/models/__init__.py`. Pydantic schemas are `<Thing>Create` / `<Thing>Update` / `<Thing>Response`; enums are `Literal[...]` aliases. Docstrings and comments are short and plain-English.
+- **Routers:** `APIRouter(prefix="/api/<resource-kebab-case>")`; return `{"success": True, "data": ..., "error": None}` with `response_model=ApiResponse[...]`. Some older routers (`transactions.py /sells`, `income.py`) still contain logic or build dicts by hand; don't copy that pattern.
+- **TypeScript/React:** function components, default export per component file, `PascalCase.tsx` for components and `camelCase.ts` for helpers. Pure helpers live in separate `.ts` files (ESLint `react-refresh/only-export-components`). Feature folders under `src/components/<feature>/` with an `index.ts` barrel. Types in `src/types/<resource>.ts` mirror backend schemas.
+- **Styling:** Tailwind v4 utility classes only (no component library). Dark mode via the `dark` class on `<html>` (toggled from `uiStore.theme`); newer pages (Net Worth, Dashboard 2) use explicit hex colours plus `dark:` variants. Use `tabular-nums` for money. Layouts must work at 390px wide with no horizontal scroll.
+- **Money formatting:** per-feature helpers, not one shared util: `components/networth/format.ts` (`fmtMoney`, `fmtCompact`, `fmtPct`, `timeAgo`, `staleDays`) and `components/dashboard2/format.ts` (`fmtMoney`, `fmtSigned`). Both respect the "hide numbers" toggle (`uiStore.hideBalances`, mask `••••••`) and use `−` (U+2212) for negatives.
+- **Charts:** Recharts.
+- **Dependencies:** ask before adding a new package to either side.
+- **Git:** commit and push only when the owner says so; no Co-Authored-By line.
