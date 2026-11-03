@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { useUIStore } from '../../store/uiStore';
 import Sidebar from './Sidebar';
+import { ChatWidget } from '../chat';
 
 export default function AppLayout() {
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
@@ -43,6 +44,8 @@ export default function AppLayout() {
           <Outlet />
         </main>
       </div>
+
+      <ChatWidget />
     </div>
   );
 }

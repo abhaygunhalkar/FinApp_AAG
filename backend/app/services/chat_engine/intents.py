@@ -125,11 +125,13 @@ def starter_chips(today: date) -> list[QuickReply]:
     ]
 
 
-# Shown in the widget before the first message.
+# Shown in the widget before the first message; mirrored in
+# frontend/src/components/chat/examples.ts.
 EXAMPLE_QUESTIONS = [
     "What's my net worth?",
     "Show my account balances",
     "What bills are due this week?",
+    "How much is in savings?",
 ]
 
 TYPE_LABELS = {
