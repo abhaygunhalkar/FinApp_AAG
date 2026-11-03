@@ -115,9 +115,9 @@ TYPE_WORDS = {
 THRESHOLD = 0.8
 
 
-def _tokens(text: str) -> list[str]:
+def _tokens(text: str, stop: frozenset[str] = STOP_WORDS) -> list[str]:
     words = re.findall(r"[a-z0-9]+", text.lower().replace("'", ""))
-    return [w for w in words if w not in STOP_WORDS]
+    return [w for w in words if w not in stop]
 
 
 def _best(tokens: list[str], phrase: str) -> float:
@@ -167,3 +167,63 @@ def extract_range(text: str) -> str | None:
     if re.search(r"\bmonth\b|\b30 days\b", t):
         return "1M"
     return None
+
+
+@dataclass(frozen=True)
+class BillRef:
+    id: int
+    name: str
+
+
+# Words around a bill's name in "I paid the rent" or "mark water as paid".
+BILL_STOP_WORDS = STOP_WORDS | frozenset(
+    {
+        "already",
+        "as",
+        "bill",
+        "bills",
+        "for",
+        "just",
+        "mark",
+        "marked",
+        "paid",
+        "pay",
+        "payment",
+        "please",
+        "this",
+        "today",
+        "we",
+        "yesterday",
+    }
+)
+
+
+def bill_words(text: str) -> str:
+    """What's left of the message once the "mark … paid" words are gone."""
+    return " ".join(_tokens(text, BILL_STOP_WORDS))
+
+
+def match_bills(text: str, bills: list[BillRef]) -> list[BillRef]:
+    """The bills the message names, best first (typos tolerated); several
+    means ambiguous, none means no bill named.
+
+    A match counts for as much of the message as it covers, so "car
+    insurance" picks Car insurance over Home insurance, while "insurance"
+    alone is ambiguous between them.
+    """
+    tokens = _tokens(text, BILL_STOP_WORDS)
+    if not tokens or not bills:
+        return []
+    scores: dict[int, float] = {}
+    for b in bills:
+        phrases = [b.name, *(w for w in b.name.split() if len(w) >= 3)]
+        scores[b.id] = max(
+            _best(tokens, p) * min(1.0, len(p.split()) / len(tokens)) for p in phrases
+        )
+    top = max(scores.values())
+    if top < THRESHOLD:
+        return []
+    return sorted(
+        (b for b in bills if scores[b.id] >= top - 0.05),
+        key=lambda b: -scores[b.id],
+    )

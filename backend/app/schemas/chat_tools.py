@@ -232,3 +232,42 @@ class GetPortfolioResult(ChatModel):
     losers: list[Mover]
     # Prices may be out of date when the last market data fetch failed.
     stale: bool
+
+
+# --- getBills / markBillPaid -------------------------------------------------------
+
+
+class BillItem(ChatModel):
+    id: int
+    name: str
+    category: str
+    amount: Decimal
+    frequency: str
+    # Autopay bills past their date show their next occurrence.
+    next_due_date: date | None
+    # A manually paid bill whose due date has passed.
+    overdue: bool
+    autopay: bool
+    paid_from: str | None
+
+
+class GetBillsResult(ChatModel):
+    bills: list[BillItem]
+
+
+class MarkBillPaidInput(ChatModel):
+    bill_id: int = Field(..., ge=1, strict=True)
+    idempotency_key: str = Field(
+        ...,
+        pattern=r"^[A-Za-z0-9_-]{8,64}$",
+        description="Unique per confirmation; a repeat returns the first result.",
+    )
+
+
+class MarkBillPaidResult(ChatModel):
+    bill_id: int
+    name: str
+    amount: Decimal
+    # The due date that was paid, and the one it moved to.
+    paid_due_date: date
+    next_due_date: date

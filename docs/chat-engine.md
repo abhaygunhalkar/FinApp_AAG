@@ -44,6 +44,8 @@ It only offers what the tools can answer.
 | `debts` | "credit card utilization", "which card has the highest APR", "how much is left on my mortgage", "total debt" | none | `getDebts` |
 | `income` | "when's my next paycheck", "when do I get paid", "what's left over each month", "cash flow" | none | `getIncome` |
 | `portfolio` | "how is my portfolio doing today", "how are my stocks doing", "top movers" | none | `getPortfolio` |
+| `markBillPaid` (flow) | "I paid rent", "mark the water bill as paid", "mark a bill paid" | `billId`, fuzzy-matched against your bills | `getBills`, then `markBillPaid` |
+| `cancelFlow` | "cancel", "never mind", "stop" | none | none |
 | `balances` | "show my balances", "how much is in savings", "what do I owe on amex", "chase balance" | `accountId`, matched against the user's own accounts | `getBalance` |
 | `upcomingBills` | "bills due this week", "payments due in the next 10 days", "what do I have to pay tomorrow" | `withinDays` (1–60) | `getUpcomingBills` |
 | `help` | "help", "hi", "what can you do" | none | none |
@@ -63,6 +65,26 @@ It only offers what the tools can answer.
 
 **Unsupported topics.** Questions about spending, transactions, budgets or purchases get a plain "I can't see spending, transactions or budgets yet" answer instead of a wrong one.
 
+## Flows that change data
+
+**Marking a bill paid** is a multi-step flow (`backend/app/services/chat_engine/flows.py`), the one place the chat changes data. It mirrors Mark paid on the Fixed Costs page.
+
+1. **Which bill.** "I paid rent" names it; a typo ("rnt") still finds it.
+   - **Ambiguous** ("I paid the insurance"): "Which one?" with a chip per match.
+   - **Missing** ("mark a bill paid") or **unknown** ("I paid unicorn"): chips for up to five bills you pay yourself, soonest due first (overdue first), plus Cancel. At this step you can also type the bill's name.
+   - **Refused:** an autopay bill ("it moves on by itself") or one with no due date.
+2. **Confirm.** A confirm card says "Mark Rent ($2,400.00, due Nov 5) as paid? It will next be due Dec 5." with Yes and No.
+3. **Yes** marks it paid, says when it's next due, and offers "Mark another bill paid".
+
+Safety rules:
+- **Only the Yes button confirms.** Typing "yes" shows the card again with "Tap Yes on the card to confirm."
+- **One-time key.** Each confirm card carries a random key. The bill to change is kept in the server-side session, not on the button, so a replayed or edited action can't change a different bill. A key that isn't the session's current one (after No, a cancel, a new conversation, or asking something else) gets "That confirmation is no longer valid, so nothing was changed."
+- **Double clicks are safe.** The key is the tool's idempotency key, and recent keys are remembered in the session, so repeating Yes answers "Done" again without moving the date twice.
+- **Cancel at any step:** the No or Cancel buttons, or typing "cancel", "never mind" or "stop" (and "no" at the confirm step). Asking something else or clicking another chip also drops the flow. "cancel" with nothing waiting answers "There's nothing to cancel."
+- **The page refreshes.** After a confirmed action, the widget refreshes the app's cached data, so Fixed Costs shows the new date.
+
+Session state for flows: `state["flow"] = {"name", "step": "choose" | "confirm", "billId", "key"}` and `state["completed"]` (the last 20 keys). An intent with a `run` function writes its own reply instead of calling one tool; flows import `FlowContext` (date, session state, tool caller).
+
 ## Replies
 
 - **Answers** combine `stat`, `table`, `text`, `chart`, `error` and `link` messages:
@@ -77,7 +99,7 @@ It only offers what the tools can answer.
   - **Portfolio:** a value stat with today's change as its delta, the overall gain, today's movers table and a by-broker table.
 - **No repeated numbers.** When a stat card shows the change, the sentence under it gives something else (the %, the overall gain) rather than the same amount again.
 - **Chat-panel-sized tables.** Tables keep to three or four columns so they fit the panel. Percentages are text (`"+2.2%"`) because number cells are drawn as money.
-- **Follow-up chips:** every reply ends with a `quickReplies` message, except the forbidden error. The chips only ever point at the intents above.
+- **Follow-up chips:** every reply ends with a `quickReplies` message, except the forbidden error and a flow's confirm card (whose Yes/No buttons are the next step). The chips only ever point at the intents above. The bills answer adds "Mark a bill paid" when there's a bill you pay yourself.
   - Bills replies offer the other windows (this week / 30 / 60 days), never the one just shown.
   - A test clicks every chip reachable from the example questions, two levels deep, and checks none of them errors.
 - **Quick replies skip parsing.** A chip's action `{type: <intent>, payload: {...}}` runs that intent directly. Only that intent's known keys are taken from the payload (`accountId`, `withinDays`), and the tool validates them again. An unknown action type gets an error and the starter chips.

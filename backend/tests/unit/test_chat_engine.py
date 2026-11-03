@@ -285,7 +285,12 @@ class TestAnswers:
         assert overdue["text"].startswith("1 is overdue")
         assert undated["text"] == "1 bill has no due date, so I can't place it."
         # The chips offer other windows, not the one just shown.
-        assert [c[0] for c in chips(r)] == ["Next 30 days", "Next 60 days", "Net worth"]
+        assert [c[0] for c in chips(r)] == [
+            "Next 30 days",
+            "Next 60 days",
+            "Mark a bill paid",
+            "Net worth",
+        ]
 
     def test_no_bills_in_window(
         self, engine: RuleBasedEngine, db_session: Session

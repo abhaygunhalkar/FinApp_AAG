@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChatApiError, sendChat } from '../api/chat';
 import type { ChatEntry } from '../components/chat/types';
 import type { ChatAction, ChatRequest } from '../types';
@@ -53,6 +53,7 @@ export interface UseChatOptions {
  * the user's message straight away, and keeps the bot's replies.
  */
 export function useChat({ onReply }: UseChatOptions = {}) {
+  const queryClient = useQueryClient();
   const [sessionId, setSessionId] = useState(loadSessionId);
   const [entries, setEntries] = useState<ChatEntry[]>([]);
   const [failure, setFailure] = useState<ChatFailure | null>(null);
@@ -80,6 +81,11 @@ export function useChat({ onReply }: UseChatOptions = {}) {
       if (turn.conversation === conversation.current) inFlight.current = false;
     },
     onSuccess: (response, turn) => {
+      // A confirmed action may have changed data (e.g. a bill marked paid):
+      // refresh what the pages show.
+      if (turn.request.action?.payload && 'confirm' in turn.request.action.payload) {
+        void queryClient.invalidateQueries();
+      }
       if (turn.conversation !== conversation.current) return;
       setEntries((prev) => [
         ...prev,

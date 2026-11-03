@@ -1,6 +1,6 @@
 # Chat tools
 
-Read-only functions the chat assistant can call to answer questions. They sit in a `ToolRegistry` so a model can use them through function calling. They reuse the existing services and repositories and run no queries of their own.
+Functions the chat assistant can call: read-only ones to answer questions, and one that changes data (`markBillPaid`) behind a confirmation. They sit in a `ToolRegistry` so a model can use them through function calling. They reuse the existing services and repositories and run no queries of their own.
 
 | | File |
 |---|---|
@@ -16,6 +16,8 @@ The rule-based chat engine (`docs/chat-engine.md`) calls them through `POST /api
 |---|---|---|
 | `getBalance` | Account balances, net worth totals | `FinancialAccountService.get_all`, `get_summary` |
 | `getUpcomingBills` | Bills due in the next N days | `RecurringExpenseRepository`, `bill_dates()` |
+| `getBills` | Every bill with next due date, overdue, autopay | `RecurringExpenseRepository`, `roll_forward()` |
+| `markBillPaid` **(writes)** | Marks a manual bill's current due date paid | `RecurringExpenseService.mark_paid` |
 | `getCashFlowForecast` | Will each bank account cover its bills before payday | `AccountForecastService.get_forecast` |
 | `getIncome` | Paychecks, next pay date, what's left over each month | `IncomeService.get_all`, `get_cash_flow_summary` |
 | `getDebts` | Credit cards (utilization, APR, due) and loans (paid off, payoff) | `FinancialAccountService.get_all` |
@@ -139,6 +141,20 @@ Input: none. Returns:
 
 **Read-only by design.** The watchlist and earnings data aren't tools. Reading the watchlist through its service fetches live quotes and writes them, and the earnings calendar calls Finnhub from its router.
 
+### markBillPaid (changes data)
+
+Input: `{ billId: int, idempotencyKey: string (8–64 of A–Z a–z 0–9 _ -) }`
+
+This is the same action as Mark paid on the Fixed Costs page: it moves the bill to its next due date. It returns the bill, its amount, the due date that was paid and the next one. It refuses autopay bills (they move on by themselves; the page doesn't offer it for them either) and bills with no due date.
+
+**Only after an explicit confirmation.** The chat engine calls this only when the owner presses Yes on a confirm card; see `docs/chat-engine.md`.
+
+**Idempotency.** Tools declared `writes=True` must take an `idempotencyKey`; the registry refuses to register one that doesn't.
+- Each `(user, tool, key)` runs at most once (`IdempotencyStore`).
+- A repeat returns the first result without running again. A repeat that arrives while the first run is still going waits for it.
+- A failed run releases its key, so it can be retried.
+- Keys are kept in memory, the most recent 1000, which suits the single backend process.
+
 ## Planned enhancements
 
 These were specified but need data the app doesn't have yet:
@@ -158,3 +174,4 @@ Other tools could be built from existing data but were left out as rarely asked,
 2. Write the handler `(ctx: ToolContext, data: Input) -> Result` in `app/services/chat_tools/`. Call services or repositories with `ctx.db`, never raw queries. Convert amounts with `money()`. Raise `ToolError` for problems the model should hear about.
 3. Define a `Tool(...)` with a camelCase name and a description that states units and limits, and register it in `build_registry()`.
 4. Test the result shape, no data, invalid input, and access by another user.
+5. A tool that changes data also sets `writes=True`, takes an `idempotency_key`, is only called after an explicit confirmation, and has tests for repeats.

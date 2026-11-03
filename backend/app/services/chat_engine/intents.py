@@ -40,6 +40,7 @@ from app.schemas.chat_tools import (
 from app.services.chat_engine.entities import (
     MAX_DAYS,
     AccountRef,
+    BillRef,
     extract_range,
     extract_window,
     match_accounts,
@@ -53,6 +54,18 @@ class ExtractContext:
     today: date
     # The user's accounts, loaded through the getBalance tool only when needed.
     accounts: Callable[[], list[AccountRef]]
+    # The user's bills, loaded through the getBills tool only when needed.
+    bills: Callable[[], list[BillRef]] = field(default=lambda: [])
+
+
+@dataclass(frozen=True)
+class FlowContext:
+    """What a multi-step flow (Intent.run) can use: the date, the session's
+    state (kept between turns), and the tools."""
+
+    today: date
+    state: dict[str, Any]
+    call: Callable[[str, dict[str, Any]], Any]
 
 
 @dataclass(frozen=True)
@@ -73,6 +86,9 @@ class Intent:
     clarify: Callable[[Entities], list[BotMessage] | None] = field(
         default=lambda _e: None
     )
+    # A multi-step flow that writes its own reply (and any follow-ups) instead
+    # of calling `tool` once; used for actions that change data.
+    run: Callable[[Entities, FlowContext], list[BotMessage]] | None = None
 
     def score(self, text: str) -> int:
         return sum(1 for p in self.patterns if p.search(text))
@@ -184,7 +200,8 @@ def _help_format(_r: Any, _e: Entities, _today: date) -> list[BotMessage]:
                 "I can tell you your net worth and how it's changed, any account's "
                 "balance, which bills are coming up and whether your accounts "
                 "cover them, your income, your credit cards and loans, and how "
-                "your portfolio is doing. Try one of these:"
+                "your portfolio is doing. You can also mark a bill paid "
+                '("I paid rent"). Try one of these:'
             ),
         )
     ]
@@ -413,6 +430,12 @@ def _bills_format(
 def _bills_follow_ups(
     result: GetUpcomingBillsResult, _e: Entities, today: date
 ) -> list[QuickReply]:
+    # Offered only when there's a bill you pay yourself to mark.
+    manual = (
+        [chip("Mark a bill paid", "markBillPaid")]
+        if any(not b.autopay for b in result.bills)
+        else []
+    )
     shown = (result.end - result.start).days
     windows = [
         ("Due this week", days_to_sunday(today)),
@@ -424,7 +447,7 @@ def _bills_follow_ups(
         for label, days in windows
         if days != shown
     ]
-    return [*chips[:2], chip("Net worth", "netWorth")]
+    return [*chips[:2], *manual, chip("Net worth", "netWorth")]
 
 
 UPCOMING_BILLS = Intent(
@@ -932,8 +955,12 @@ UNSUPPORTED = re.compile(
 def default_intents() -> IntentRegistry:
     registry = IntentRegistry()
     # Order breaks ties: the more specific intent goes first.
+    from app.services.chat_engine.flows import CANCEL_FLOW, MARK_BILL_PAID
+
     for intent in (
         HELP,
+        CANCEL_FLOW,
+        MARK_BILL_PAID,
         NET_WORTH_TREND,
         NET_WORTH,
         CASH_FLOW_FORECAST,

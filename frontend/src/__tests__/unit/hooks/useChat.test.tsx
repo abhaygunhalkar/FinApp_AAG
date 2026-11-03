@@ -134,6 +134,20 @@ describe('useChat', () => {
     expect(result.current.entries).toHaveLength(1);
   });
 
+  it('refreshes cached data after a confirmed action, and only then', async () => {
+    replyWith(TEXT);
+    const invalidate = vi.spyOn(client, 'invalidateQueries');
+    const { result } = renderHook(() => useChat(), { wrapper });
+    act(() => result.current.sendAction({ type: 'netWorth' }, 'Net worth'));
+    await waitFor(() => expect(result.current.entries).toHaveLength(2));
+    expect(invalidate).not.toHaveBeenCalled();
+    act(() =>
+      result.current.sendAction({ type: 'markBillPaid', payload: { confirm: 'abc12345' } }, 'Yes'),
+    );
+    await waitFor(() => expect(result.current.entries).toHaveLength(4));
+    expect(invalidate).toHaveBeenCalledTimes(1);
+  });
+
   it('reset clears the conversation and starts a new session', async () => {
     replyWith(TEXT);
     const { result } = renderHook(() => useChat(), { wrapper });

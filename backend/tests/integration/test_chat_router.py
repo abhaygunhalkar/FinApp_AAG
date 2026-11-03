@@ -492,3 +492,27 @@ class TestLogging:
             "unauthorized",
             None,
         )
+
+
+class TestMarkBillPaidOverHttp:
+    def test_confirm_then_repeat(
+        self, client: TestClient, env: Env, data: Session
+    ) -> None:
+        rent = data.query(RecurringExpense).filter_by(name="Rent").one()
+        due = rent.next_due_date
+        assert due is not None
+
+        ask_reply = answer(client, {"sessionId": "s-pay", "message": "I paid rent"})
+        card = ask_reply["messages"][-1]
+        assert card["type"] == "confirm"
+
+        body = {"sessionId": "s-pay", "action": card["confirmAction"]}
+        first = answer(client, body)
+        second = answer(client, body)  # a double click
+        assert first["messages"][0]["text"].startswith("Done. Rent is marked paid")
+        assert second["messages"][0]["text"] == first["messages"][0]["text"]
+
+        data.expire_all()
+        moved = data.get(RecurringExpense, rent.id)
+        assert moved is not None and moved.next_due_date is not None
+        assert (moved.next_due_date.month - due.month) % 12 == 1  # moved once

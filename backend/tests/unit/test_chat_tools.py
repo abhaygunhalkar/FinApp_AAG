@@ -64,6 +64,8 @@ class TestRegistry:
         assert registry.names() == [
             "getBalance",
             "getUpcomingBills",
+            "getBills",
+            "markBillPaid",
             "getCashFlowForecast",
             "getIncome",
             "getDebts",

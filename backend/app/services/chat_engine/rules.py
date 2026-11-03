@@ -13,11 +13,13 @@ from app.schemas.chat import (
     TextMessage,
 )
 from app.services.chat_engine.base import EngineContext
-from app.services.chat_engine.entities import AccountRef
+from app.services.chat_engine.entities import AccountRef, BillRef
+from app.services.chat_engine.flows import continue_flow
 from app.services.chat_engine.intents import (
     UNSUPPORTED,
     Entities,
     ExtractContext,
+    FlowContext,
     Intent,
     IntentRegistry,
     default_intents,
@@ -78,16 +80,38 @@ class RuleBasedEngine:
                 ]
             return accounts_cache
 
+        bills_cache: list[BillRef] | None = None
+
+        def bills() -> list[BillRef]:
+            nonlocal bills_cache
+            if bills_cache is None:
+                result = self._call("getBills", {}, ctx)
+                bills_cache = [BillRef(b.id, b.name) for b in result.bills]
+            return bills_cache
+
         if request.action is not None:
             # A clicked quick reply: run its intent directly, no parsing.
             intent = self.intents.get(request.action.type)
             if intent is None:
                 ctx.session.state["intent"] = "unknown_action"
                 return self._error("That option isn't available any more.", ctx)
+            if intent.run is None:
+                # Moving on to something else drops a flow left waiting.
+                ctx.session.state.pop("flow", None)
             entities = intent.from_payload(request.action.payload or {})
             return self._run(intent, entities, ctx)
 
         text = request.message or ""
+        if ctx.session.state.get("flow"):
+            # A flow is waiting for a reply: let it take the message first.
+            try:
+                reply = continue_flow(text, self._flow_context(ctx), bills())
+            except ToolError as exc:
+                ctx.session.state.pop("flow", None)
+                return self._error(str(exc), ctx)
+            if reply is not None:
+                ctx.session.state["intent"] = "markBillPaid"
+                return reply
         if UNSUPPORTED.search(text.lower()):
             ctx.session.state["intent"] = "unsupported"
             self._log_unmatched(text, accounts, "unsupported")
@@ -116,7 +140,7 @@ class RuleBasedEngine:
                 ),
             ]
         try:
-            entities = intent.extract(text, ExtractContext(ctx.today, accounts))
+            entities = intent.extract(text, ExtractContext(ctx.today, accounts, bills))
         except ToolError as exc:
             return self._error(str(exc), ctx)
         return self._run(intent, entities, ctx)
@@ -125,6 +149,12 @@ class RuleBasedEngine:
         self, intent: Intent, entities: Entities, ctx: EngineContext
     ) -> list[BotMessage]:
         ctx.session.state["intent"] = intent.name
+        if intent.run is not None:
+            try:
+                return intent.run(entities, self._flow_context(ctx))
+            except ToolError as exc:
+                ctx.session.state.pop("flow", None)
+                return self._error(str(exc), ctx)
         question = intent.clarify(entities)
         if question:
             return question
@@ -144,6 +174,11 @@ class RuleBasedEngine:
                 options=intent.follow_ups(result, entities, ctx.today),
             ),
         ]
+
+    def _flow_context(self, ctx: EngineContext) -> FlowContext:
+        return FlowContext(
+            ctx.today, ctx.session.state, lambda tool, data: self._call(tool, data, ctx)
+        )
 
     def _call(self, tool: str, data: dict[str, Any], ctx: EngineContext) -> Any:
         return self.tools.call(tool, data, ToolContext(ctx.db, ctx.user_id, ctx.today))

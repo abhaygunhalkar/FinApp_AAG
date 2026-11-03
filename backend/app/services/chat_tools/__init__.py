@@ -1,19 +1,21 @@
 """Chat assistant tools: read-only functions over the existing services.
 
-Available: getBalance, getUpcomingBills, getCashFlowForecast, getIncome,
-getDebts, getNetWorthTrend, getPortfolio. Spending, recent transactions,
-budgets and spending comparisons need data the app doesn't have yet (see
-docs/chat-tools.md).
+Available: getBalance, getUpcomingBills, getBills, getCashFlowForecast,
+getIncome, getDebts, getNetWorthTrend, getPortfolio, and one that changes data,
+markBillPaid (only after the owner confirms). Spending, recent transactions,
+budgets and spending comparisons need data the app doesn't have yet. See
+docs/chat-tools.md.
 """
 
 from app.config import get_settings
 from app.services.chat_tools.accounts import GET_BALANCE
-from app.services.chat_tools.bills import GET_UPCOMING_BILLS
+from app.services.chat_tools.bills import GET_BILLS, GET_UPCOMING_BILLS, MARK_BILL_PAID
 from app.services.chat_tools.cashflow import GET_CASH_FLOW_FORECAST, GET_INCOME
 from app.services.chat_tools.debts import GET_DEBTS
 from app.services.chat_tools.networth import GET_NET_WORTH_TREND
 from app.services.chat_tools.portfolio import GET_PORTFOLIO
 from app.services.chat_tools.registry import (
+    IdempotencyStore,
     Tool,
     ToolAccessError,
     ToolContext,
@@ -23,6 +25,7 @@ from app.services.chat_tools.registry import (
 )
 
 __all__ = [
+    "IdempotencyStore",
     "Tool",
     "ToolAccessError",
     "ToolContext",
@@ -39,6 +42,8 @@ def build_registry(owner_id: str | None = None) -> ToolRegistry:
     for tool in (
         GET_BALANCE,
         GET_UPCOMING_BILLS,
+        GET_BILLS,
+        MARK_BILL_PAID,
         GET_CASH_FLOW_FORECAST,
         GET_INCOME,
         GET_DEBTS,
