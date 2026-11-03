@@ -1,0 +1,216 @@
+{
+  "valid": {
+    "requests": [
+      { "sessionId": "s-1", "message": "What's my net worth?" },
+      { "sessionId": "s-1", "action": { "type": "show_bills_due" } },
+      {
+        "sessionId": "s-1",
+        "action": { "type": "mark_bill_paid", "payload": { "billId": 12 } }
+      }
+    ],
+    "responses": [
+      {
+        "sessionId": "s-1",
+        "messages": [
+          { "type": "text", "text": "Here's where you stand today." },
+          {
+            "type": "stat",
+            "label": "Net worth",
+            "value": 330827.12,
+            "currency": "USD",
+            "delta": 1200.5
+          },
+          {
+            "type": "table",
+            "columns": ["Bill", "Due", "Amount"],
+            "rows": [
+              ["Rent", "Nov 5", 2400],
+              ["Internet", "Nov 9", 79.99],
+              ["Gym", null, 45]
+            ]
+          },
+          {
+            "type": "chart",
+            "kind": "bar",
+            "series": [
+              {
+                "name": "Spending",
+                "points": [
+                  { "label": "Sep", "value": 4100 },
+                  { "label": "Oct", "value": 3900 }
+                ]
+              },
+              {
+                "name": "Income",
+                "points": [
+                  { "label": "Sep", "value": 8000 },
+                  { "label": "Oct", "value": 8000 }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "chart",
+            "kind": "pie",
+            "series": [
+              {
+                "name": "Assets",
+                "points": [
+                  { "label": "Real estate", "value": 545000 },
+                  { "label": "Investments", "value": 124101 }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "quickReplies",
+            "options": [
+              { "label": "Bills due this week", "action": { "type": "show_bills_due" } },
+              {
+                "label": "Credit card usage",
+                "action": { "type": "show_credit_utilization", "payload": { "range": "1M" } }
+              }
+            ]
+          },
+          { "type": "link", "label": "Open Net Worth", "route": "/net-worth" },
+          {
+            "type": "confirm",
+            "prompt": "Mark Rent ($2,400) as paid?",
+            "confirmAction": { "type": "mark_bill_paid", "payload": { "billId": 12 } },
+            "cancelAction": { "type": "cancel" }
+          },
+          { "type": "error", "message": "Couldn't reach Plaid. Balances may be out of date.", "code": "plaid_unavailable" }
+        ]
+      },
+      { "sessionId": "s-2", "messages": [] },
+      {
+        "sessionId": "s-3",
+        "messages": [
+          { "type": "chart", "kind": "line", "series": [{ "name": "Net worth", "points": [] }] },
+          { "type": "error", "message": "Something went wrong." }
+        ]
+      }
+    ]
+  },
+  "invalid": {
+    "requests": [
+      { "why": "neither message nor action", "value": { "sessionId": "s-1" } },
+      {
+        "why": "both message and action",
+        "value": { "sessionId": "s-1", "message": "hi", "action": { "type": "x" } }
+      },
+      { "why": "blank message", "value": { "sessionId": "s-1", "message": "   " } },
+      { "why": "missing sessionId", "value": { "message": "hi" } },
+      { "why": "snake_case field", "value": { "session_id": "s-1", "message": "hi" } },
+      { "why": "action without type", "value": { "sessionId": "s-1", "action": {} } }
+    ],
+    "responses": [
+      {
+        "why": "unknown message type",
+        "value": { "sessionId": "s-1", "messages": [{ "type": "video", "url": "/x" }] }
+      },
+      {
+        "why": "extra field on a message",
+        "value": { "sessionId": "s-1", "messages": [{ "type": "text", "text": "hi", "bold": true }] }
+      },
+      {
+        "why": "stat value is a string",
+        "value": {
+          "sessionId": "s-1",
+          "messages": [{ "type": "stat", "label": "Net worth", "value": "$330,827", "currency": "USD" }]
+        }
+      },
+      {
+        "why": "lowercase currency",
+        "value": {
+          "sessionId": "s-1",
+          "messages": [{ "type": "stat", "label": "Cash", "value": 1, "currency": "usd" }]
+        }
+      },
+      {
+        "why": "table row shorter than columns",
+        "value": {
+          "sessionId": "s-1",
+          "messages": [{ "type": "table", "columns": ["A", "B"], "rows": [["only one"]] }]
+        }
+      },
+      {
+        "why": "table with no columns",
+        "value": { "sessionId": "s-1", "messages": [{ "type": "table", "columns": [], "rows": [] }] }
+      },
+      {
+        "why": "pie with two series",
+        "value": {
+          "sessionId": "s-1",
+          "messages": [
+            {
+              "type": "chart",
+              "kind": "pie",
+              "series": [
+                { "name": "A", "points": [] },
+                { "name": "B", "points": [] }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "why": "unknown chart kind",
+        "value": {
+          "sessionId": "s-1",
+          "messages": [{ "type": "chart", "kind": "donut", "series": [{ "name": "A", "points": [] }] }]
+        }
+      },
+      {
+        "why": "no quick reply options",
+        "value": { "sessionId": "s-1", "messages": [{ "type": "quickReplies", "options": [] }] }
+      },
+      {
+        "why": "seven quick reply options",
+        "value": {
+          "sessionId": "s-1",
+          "messages": [
+            {
+              "type": "quickReplies",
+              "options": [
+                { "label": "1", "action": { "type": "a" } },
+                { "label": "2", "action": { "type": "a" } },
+                { "label": "3", "action": { "type": "a" } },
+                { "label": "4", "action": { "type": "a" } },
+                { "label": "5", "action": { "type": "a" } },
+                { "label": "6", "action": { "type": "a" } },
+                { "label": "7", "action": { "type": "a" } }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "why": "external link",
+        "value": {
+          "sessionId": "s-1",
+          "messages": [{ "type": "link", "label": "Bank", "route": "https://example.com" }]
+        }
+      },
+      {
+        "why": "protocol-relative link",
+        "value": {
+          "sessionId": "s-1",
+          "messages": [{ "type": "link", "label": "Bank", "route": "//example.com" }]
+        }
+      },
+      {
+        "why": "confirm without cancelAction",
+        "value": {
+          "sessionId": "s-1",
+          "messages": [{ "type": "confirm", "prompt": "Sure?", "confirmAction": { "type": "go" } }]
+        }
+      },
+      {
+        "why": "error without message",
+        "value": { "sessionId": "s-1", "messages": [{ "type": "error", "code": "x" }] }
+      },
+      { "why": "messages missing", "value": { "sessionId": "s-1" } }
+    ]
+  }
+}

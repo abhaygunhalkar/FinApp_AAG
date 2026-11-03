@@ -129,5 +129,6 @@ There is no authentication or user model in the app; every request acts on the o
 - **Styling:** Tailwind v4 utility classes only (no component library). Dark mode via the `dark` class on `<html>` (toggled from `uiStore.theme`); newer pages (Net Worth, Dashboard 2) use explicit hex colours plus `dark:` variants. Use `tabular-nums` for money. Layouts must work at 390px wide with no horizontal scroll.
 - **Money formatting:** per-feature helpers, not one shared util: `components/networth/format.ts` (`fmtMoney`, `fmtCompact`, `fmtPct`, `timeAgo`, `staleDays`) and `components/dashboard2/format.ts` (`fmtMoney`, `fmtSigned`). Both respect the "hide numbers" toggle (`uiStore.hideBalances`, mask `••••••`) and use `−` (U+2212) for negatives.
 - **Charts:** Recharts.
-- **Dependencies:** ask before adding a new package to either side.
+- **Chat contract:** the chat assistant's request/response shapes are mirrored in `backend/app/schemas/chat.py` (Pydantic) and `frontend/src/types/chat.ts` (Zod), checked against shared examples in `docs/chat-contract.examples.json`. Change all three together; see `docs/chat-contract.md`. This API is camelCase on the wire, unlike the rest.
+- **Dependencies:** ask before adding a new package to either side. Zod (frontend) is used for runtime validation of the chat contract.
 - **Git:** commit and push only when the owner says so; no Co-Authored-By line.

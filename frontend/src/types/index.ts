@@ -41,3 +41,17 @@ export type {
   CardCharges,
   ForecastEvent,
 } from './accountForecast';
+export type {
+  BotMessage,
+  ChartMessage,
+  ChatAction,
+  ChatRequest,
+  ChatResponse,
+  ConfirmMessage,
+  ErrorMessage,
+  LinkMessage,
+  QuickRepliesMessage,
+  StatMessage,
+  TableMessage,
+  TextMessage,
+} from './chat';
