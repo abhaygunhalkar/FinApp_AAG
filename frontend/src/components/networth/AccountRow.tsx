@@ -127,7 +127,7 @@ function StaleNote({ days }: { days: number }) {
   );
 }
 
-/** A credit card on one line: badge, name, APR and due date, utilization, balance. */
+/** A credit card: badge, name over APR and due date, utilization, balance. */
 function CreditCardRow({
   account,
   hidden,
@@ -171,15 +171,22 @@ function CreditCardRow({
             {initials(account.institution || account.name)}
           </span>
         )}
-        <span className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center sm:gap-2">
-          <span
-            title={account.name}
-            className="min-w-0 truncate text-[15px] font-semibold text-slate-900 dark:text-slate-100"
-          >
-            {account.name}
+        <span className="min-w-0 flex-1 flex flex-col">
+          <span className="min-w-0 flex items-center gap-2">
+            <span
+              title={account.name}
+              className="min-w-0 truncate text-[15px] font-semibold text-slate-900 dark:text-slate-100"
+            >
+              {account.name}
+            </span>
+            {highestApr && (
+              <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                highest APR
+              </span>
+            )}
           </span>
-          {(meta || stale !== null || highestApr) && (
-            <span className="min-w-0 flex items-center gap-2 sm:shrink-0">
+          {(meta || stale !== null) && (
+            <span className="min-w-0 flex items-center gap-2">
               {(meta || stale !== null) && (
                 <span className="min-w-0 truncate text-[13px] text-slate-500 dark:text-slate-400">
                   {meta}
@@ -191,11 +198,6 @@ function CreditCardRow({
                         updated {stale} days ago
                       </span>
                     ))}
-                </span>
-              )}
-              {highestApr && (
-                <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                  highest APR
                 </span>
               )}
             </span>

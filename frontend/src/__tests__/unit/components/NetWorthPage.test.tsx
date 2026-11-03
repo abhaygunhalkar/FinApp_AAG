@@ -167,7 +167,7 @@ describe('NetWorth page', () => {
     expect(screen.getByRole('button', { name: 'Add original amount' })).toBeInTheDocument();
   });
 
-  it('shows each card on one line under a combined utilization summary', () => {
+  it('shows each card with its APR, due date and utilization under a combined summary', () => {
     mocks.accounts[2] = {
       ...mocks.accounts[2],
       credit_limit: 6_000,
