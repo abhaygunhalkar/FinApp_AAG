@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     PLAID_CLIENT_ID: str | None = None
     PLAID_SECRET: str | None = None
     PLAID_ENV: str = "sandbox"
+    # The app has one owner and no logins; chat tools only act for this id.
+    OWNER_USER_ID: str = "owner"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

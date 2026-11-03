@@ -99,7 +99,7 @@ Every API response, success or error, is wrapped in the same envelope: `{"succes
 
 ### Configuration
 
-All backend config is env vars / `backend/.env` (see `backend/.env.example`), loaded via `app/config.py` (`pydantic-settings`, cached with `lru_cache`): `DATABASE_URL`, `MARKET_API_PROVIDER`, `REFRESH_INTERVAL_MINUTES`, `BROKERS` (comma-separated, drives the broker dropdown), `FINNHUB_API_KEY`, `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV`. Frontend: `VITE_API_BASE_URL` (defaults to `http://localhost:8000`).
+All backend config is env vars / `backend/.env` (see `backend/.env.example`), loaded via `app/config.py` (`pydantic-settings`, cached with `lru_cache`): `DATABASE_URL`, `MARKET_API_PROVIDER`, `REFRESH_INTERVAL_MINUTES`, `BROKERS` (comma-separated, drives the broker dropdown), `FINNHUB_API_KEY`, `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV`, `OWNER_USER_ID` (chat tools act only for this id). Frontend: `VITE_API_BASE_URL` (defaults to `http://localhost:8000`).
 
 ### Auth
 
@@ -130,5 +130,6 @@ There is no authentication or user model in the app; every request acts on the o
 - **Money formatting:** per-feature helpers, not one shared util: `components/networth/format.ts` (`fmtMoney`, `fmtCompact`, `fmtPct`, `timeAgo`, `staleDays`) and `components/dashboard2/format.ts` (`fmtMoney`, `fmtSigned`). Both respect the "hide numbers" toggle (`uiStore.hideBalances`, mask `••••••`) and use `−` (U+2212) for negatives.
 - **Charts:** Recharts.
 - **Chat contract:** the chat assistant's request/response shapes are mirrored in `backend/app/schemas/chat.py` (Pydantic) and `frontend/src/types/chat.ts` (Zod), checked against shared examples in `docs/chat-contract.examples.json`. Change all three together; see `docs/chat-contract.md`. This API is camelCase on the wire, unlike the rest.
+- **Chat tools:** read-only functions in `backend/app/services/chat_tools/`, registered in a `ToolRegistry` for function calling. They reuse services/repositories, take the user from a server-built `ToolContext` (only `OWNER_USER_ID` is allowed), and return money as `Decimal` cents. See `docs/chat-tools.md`.
 - **Dependencies:** ask before adding a new package to either side. Zod (frontend) is used for runtime validation of the chat contract.
 - **Git:** commit and push only when the owner says so; no Co-Authored-By line.
