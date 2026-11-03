@@ -58,15 +58,19 @@ Do this after the code that knows `AUTH_PROXY_SECRET` is deployed. `pydantic-set
 On the VM, in `~/FinApp_AAG`:
 
 ```bash
-F=/etc/nginx/sites-available/finapp
+# The file nginx loads. On this VM it's a plain file, not a link to
+# sites-available/finapp, so edits to sites-available do nothing.
+F=/etc/nginx/sites-enabled/finapp
 U=$(sudo head -1 /etc/nginx/.htpasswd | cut -d: -f1)   # your basic-auth username
 S=$(openssl rand -hex 32)                              # the shared secret
 
 # nginx: forward the username and the secret to the API
-grep -q X-Remote-User $F || sudo sed -i 's|proxy_pass http://127.0.0.1:8000;|proxy_pass http://127.0.0.1:8000;\n        proxy_set_header X-Remote-User $remote_user;|' $F
-sudo sed -i '/X-Proxy-Secret/d' $F
-sudo sed -i "s|proxy_set_header X-Remote-User \$remote_user;|proxy_set_header X-Remote-User \$remote_user;\n        proxy_set_header X-Proxy-Secret $S;|" $F
+grep -q X-Remote-User $F || sudo sed -i --follow-symlinks 's|proxy_pass http://127.0.0.1:8000;|proxy_pass http://127.0.0.1:8000;\n        proxy_set_header X-Remote-User $remote_user;|' $F
+sudo sed -i --follow-symlinks '/X-Proxy-Secret/d' $F
+sudo sed -i --follow-symlinks "s|proxy_set_header X-Remote-User \$remote_user;|proxy_set_header X-Remote-User \$remote_user;\n        proxy_set_header X-Proxy-Secret $S;|" $F
 sudo nginx -t && sudo systemctl reload nginx
+# Check nginx is really using it (prints the lines, secret hidden)
+sudo nginx -T 2>/dev/null | grep -E "X-Remote-User|X-Proxy-Secret" | sed -E 's/(X-Proxy-Secret) [^;]*/\1 <hidden>/'
 
 # backend: the owner and the same secret
 sed -i '/^OWNER_USER_ID=/d; /^AUTH_PROXY_SECRET=/d' backend/.env

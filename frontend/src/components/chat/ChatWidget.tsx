@@ -56,6 +56,7 @@ export default function ChatWidget() {
             hidden={hidden}
             failure={chat.failure}
             onRetry={chat.retry}
+            onNewConversation={chat.reset}
             onClose={close}
             onMinimize={() => setState('minimized')}
             onExpand={open}

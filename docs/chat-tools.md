@@ -5,12 +5,22 @@ Read-only functions the chat assistant can call to answer questions. They sit in
 | | File |
 |---|---|
 | Registry, context, errors, `money()` | `backend/app/services/chat_tools/registry.py` |
-| Tools | `backend/app/services/chat_tools/accounts.py`, `bills.py` |
+| Tools | `backend/app/services/chat_tools/accounts.py`, `bills.py`, `cashflow.py`, `debts.py`, `networth.py`, `portfolio.py` |
 | `build_registry()` | `backend/app/services/chat_tools/__init__.py` |
 | Input and result schemas | `backend/app/schemas/chat_tools.py` |
-| Tests | `backend/tests/unit/test_chat_tools.py` |
+| Tests | `backend/tests/unit/test_chat_tools.py`, `test_chat_tools_more.py` |
 
-No endpoint or model calls these yet.
+The rule-based chat engine (`docs/chat-engine.md`) calls them through `POST /api/chat`.
+
+| Tool | Answers | Reuses |
+|---|---|---|
+| `getBalance` | Account balances, net worth totals | `FinancialAccountService.get_all`, `get_summary` |
+| `getUpcomingBills` | Bills due in the next N days | `RecurringExpenseRepository`, `bill_dates()` |
+| `getCashFlowForecast` | Will each bank account cover its bills before payday | `AccountForecastService.get_forecast` |
+| `getIncome` | Paychecks, next pay date, what's left over each month | `IncomeService.get_all`, `get_cash_flow_summary` |
+| `getDebts` | Credit cards (utilization, APR, due) and loans (paid off, payoff) | `FinancialAccountService.get_all` |
+| `getNetWorthTrend` | How net worth changed over 1W–ALL | `FinancialAccountService.get_snapshots`, `get_summary` |
+| `getPortfolio` | Portfolio value, gains, today's movers, brokers | `DashboardService.get_summary`, `get_broker_summary`, `HoldingsService.get_all_holdings` |
 
 ## How a call works
 
@@ -91,6 +101,44 @@ Returns fixed costs due from today through today + `withinDays`, both days inclu
 
 Reuses `RecurringExpenseRepository.get_all`, `bill_dates()` (`account_forecast_service.py`), and `account_link.display_label`.
 
+### getCashFlowForecast
+
+Input: `{ withinDays?: int 1–90, default 14 }`
+
+For each checking or savings account that has a bill or paycheck in the window: the current balance, bills and income in the window, the ending balance, the lowest balance and its date, and `shortDate`/`shortBill` (the first day and the bill that take it below zero, or null). Also returns bills charged to credit cards (`cardCharges`) and bills with no paying account (`unlinked`, `unlinkedCount`), which aren't in any projection.
+
+### getIncome
+
+Input: none. Returns income sources (soonest next pay date first), with amount, frequency, monthly amount, next pay date and deposit account, plus the monthly picture:
+- income, fixed costs and what's left over;
+- `keptPct`, the share of income left after fixed costs;
+- `liquidCash` in checking and savings;
+- `emergencyMonths`, how many months of fixed costs that cash covers.
+
+### getDebts
+
+Input: none. Returns credit cards (balance, limit, `utilizationPct`, APR, due date) and loans or mortgages (balance, original amount, `paidOffPct`, APR, payoff date), largest balance first, plus totals. Overall `utilizationPct` counts only cards with a limit set.
+
+### getNetWorthTrend
+
+Input: `{ range?: "1W" | "1M" | "3M" | "1Y" | "ALL", default "1M" }`
+
+Returns daily snapshots in the range, ending with today's live net worth (the same number the Net Worth page shows), evenly thinned to at most 40 points with both ends kept.
+- `change` and `changePct` are measured from the first point.
+- `high` and `low` use every day, not just the thinned points.
+- **Not enough history:** with fewer than two points there's no trend yet, and `change` is null.
+
+### getPortfolio
+
+Input: none. Returns:
+- market value, amount invested, and unrealized gain (with %);
+- today's change, realized gain to date, and annual dividends;
+- the number of holdings, and value and gain by broker;
+- today's three biggest gainers and losers, in dollars;
+- `stale: true` when the last market-data refresh failed.
+
+**Read-only by design.** The watchlist and earnings data aren't tools. Reading the watchlist through its service fetches live quotes and writes them, and the earnings calendar calls Finnhub from its router.
+
 ## Planned enhancements
 
 These were specified but need data the app doesn't have yet:
@@ -102,7 +150,7 @@ These were specified but need data the app doesn't have yet:
 | `compareSpending({ periodA, periodB, category? })` | Same, built on `getSpending`. |
 | `getBudgetStatus({ category? })` | A budgets table (category, monthly limit), a service and a UI to set them, plus spending data to compare against. |
 
-Other tools could be built today on existing services: net worth trend (`get_snapshots`), cash-flow forecast (`AccountForecastService.get_forecast`), income (`IncomeService`), and portfolio summary (`DashboardService.get_summary`).
+Other tools could be built from existing data but were left out as rarely asked, or better seen on their pages: realized gains by year, options summary, recent trades, watchlist and portfolio insights. Realized gains would first need the `/api/transactions/sells` logic moved from its router into a service.
 
 ## Adding a tool
 

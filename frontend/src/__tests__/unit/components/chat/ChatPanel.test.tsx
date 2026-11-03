@@ -76,6 +76,7 @@ beforeEach(() => {
     onSend: vi.fn(),
     onAction: vi.fn(),
     onNavigate: vi.fn(),
+    onNewConversation: vi.fn(),
   };
 });
 
@@ -105,8 +106,8 @@ describe('ChatPanel: dialog', () => {
 
   it('keeps Tab and Shift+Tab inside the panel', () => {
     renderPanel();
-    const buttons = within(screen.getByRole('dialog')).getAllByRole('button');
-    const first = buttons[0]; // Minimize
+    // New conversation is disabled in an empty chat, so Minimize comes first.
+    const first = screen.getByRole('button', { name: 'Minimize assistant' });
     const last = screen.getByRole('button', { name: 'Send' }); // disabled while empty
     fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'hi' } });
     last.focus();
@@ -114,6 +115,19 @@ describe('ChatPanel: dialog', () => {
     expect(first).toHaveFocus();
     fireEvent.keyDown(first, { key: 'Tab', shiftKey: true });
     expect(last).toHaveFocus();
+  });
+
+  it('New conversation is offered once there is something to clear', () => {
+    const { rerender } = renderPanel();
+    expect(screen.getByRole('button', { name: 'New conversation' })).toBeDisabled();
+    rerender(
+      <MemoryRouter>
+        <ChatPanel {...props} entries={CONVERSATION} />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'New conversation' }));
+    expect(props.onNewConversation).toHaveBeenCalled();
+    expect(screen.getByLabelText('Message')).toHaveFocus();
   });
 
   it('minimized, it shows a small bar that expands or closes', () => {

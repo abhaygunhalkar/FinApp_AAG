@@ -151,3 +151,19 @@ def match_accounts(text: str, accounts: list[AccountRef]) -> list[AccountRef]:
     if top < THRESHOLD:
         return []
     return [a for a in accounts if scores[a.id] >= top - 0.05]
+
+
+def extract_range(text: str) -> str | None:
+    """A net worth trend range: 1W, 1M, 3M, 1Y or ALL, if the message names one."""
+    t = text.lower()
+    if re.search(r"\b(3|three) months\b|\bquarter\b|\b90 days\b", t):
+        return "3M"
+    if re.search(r"\ball[- ]time\b|\bever\b|\bsince (the )?(start|beginning)\b", t):
+        return "ALL"
+    if re.search(r"\byear\b|\b12 months\b|\bytd\b", t):
+        return "1Y"
+    if re.search(r"\bweek\b|\b7 days\b", t):
+        return "1W"
+    if re.search(r"\bmonth\b|\b30 days\b", t):
+        return "1M"
+    return None

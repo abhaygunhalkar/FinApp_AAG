@@ -289,6 +289,29 @@ class TestIntents:
         assert reply["messages"][0]["type"] == "stat"
         assert reply["messages"][1]["rows"][0][0] == "Rent"
 
+    @pytest.mark.parametrize(
+        ("message", "intent"),
+        [
+            ("will I have enough to cover my bills?", "cashFlowForecast"),
+            ("when's my next paycheck?", "income"),
+            ("credit card utilization", "debts"),
+            ("how has my net worth changed this month?", "netWorthTrend"),
+            ("how is my portfolio doing today?", "portfolio"),
+        ],
+    )
+    def test_new_intents(
+        self,
+        client: TestClient,
+        env: Env,
+        data: Session,
+        message: str,
+        intent: str,
+    ) -> None:
+        reply = answer(client, {"sessionId": "s-new", "message": message})
+        assert reply["messages"][-1]["type"] == "quickReplies"
+        session = env.store.get(OWNER, "s-new")
+        assert session is not None and session.state["intent"] == intent
+
     def test_help(self, client: TestClient) -> None:
         reply = answer(client, {"sessionId": "s", "message": "help"})
         assert reply["messages"][-1]["type"] == "quickReplies"

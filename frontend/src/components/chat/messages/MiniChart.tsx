@@ -80,7 +80,9 @@ export default function MiniChart({ message, hidden }: { message: ChartMessage; 
         ) : (
           <LineChart data={rows}>
             <XAxis dataKey="label" {...axis} />
-            <YAxis hide />
+            {/* Scale to the data: a few thousand on a large balance would
+                otherwise draw as a flat line. */}
+            <YAxis hide domain={['dataMin', 'dataMax']} />
             {tooltip}
             {message.series.map((s, i) => (
               <Line

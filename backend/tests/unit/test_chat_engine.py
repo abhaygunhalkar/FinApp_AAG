@@ -10,7 +10,12 @@ from sqlalchemy.orm import Session
 
 from app.models.financial_account import FinancialAccount
 from app.models.recurring_expense import RecurringExpense
-from app.schemas.chat import ChatAction, ChatRequest, parse_chat_response
+from app.schemas.chat import (
+    ChatAction,
+    ChatRequest,
+    dump_chat_response,
+    parse_chat_response,
+)
 from app.services.chat_engine import (
     EXAMPLE_QUESTIONS,
     ChatSession,
@@ -47,7 +52,7 @@ PHRASES: list[tuple[str, str | None, dict[str, Any]]] = [
     ("What's my net worth?", "netWorth", {}),
     ("networth", "netWorth", {}),
     ("how much am I worth", "netWorth", {}),
-    ("total debt", "netWorth", {}),
+    ("total assets", "netWorth", {}),
     # balances, all and one account
     ("Show my account balances", "balances", {}),
     ("balances", "balances", {}),
@@ -67,6 +72,38 @@ PHRASES: list[tuple[str, str | None, dict[str, Any]]] = [
     ("bills due this month", "upcomingBills", {"withinDays": 28}),
     ("what do I have to pay tomorrow", "upcomingBills", {"withinDays": 1}),
     ("bills for the next 90 days", "upcomingBills", {"withinDays": 60}),
+    # net worth trend
+    ("how has my net worth changed this month?", "netWorthTrend", {"range": "1M"}),
+    ("net worth trend over the past year", "netWorthTrend", {"range": "1Y"}),
+    ("has my net worth grown in the last 3 months", "netWorthTrend", {"range": "3M"}),
+    ("how is my net worth doing", "netWorthTrend", {}),
+    ("net worth history since the beginning", "netWorthTrend", {"range": "ALL"}),
+    # cash-flow forecast
+    ("Will I have enough to cover my bills?", "cashFlowForecast", {}),
+    ("am I going to run short before payday", "cashFlowForecast", {}),
+    (
+        "can I afford my bills in the next 30 days",
+        "cashFlowForecast",
+        {"withinDays": 30},
+    ),
+    ("cash forecast for next week", "cashFlowForecast", {"withinDays": 13}),
+    # income
+    ("when is my next paycheck?", "income", {}),
+    ("when do I get paid", "income", {}),
+    ("how much do I earn a month", "income", {}),
+    ("what's left over each month", "income", {}),
+    ("cash flow", "income", {}),
+    # debts
+    ("how much do I owe in total debt", "debts", {}),
+    ("credit card utilization", "debts", {}),
+    ("show my credit card balances", "debts", {}),
+    ("which card has the highest APR", "debts", {}),
+    ("how much is left on my mortgage", "debts", {}),
+    # portfolio
+    ("How is my portfolio doing today?", "portfolio", {}),
+    ("how are my stocks doing", "portfolio", {}),
+    ("top movers today", "portfolio", {}),
+    ("unrealized gains on my investments", "portfolio", {}),
     # help
     ("help", "help", {}),
     ("hi there", "help", {}),
@@ -134,7 +171,7 @@ def ask(
     response = engine.handle(
         request, EngineContext(db, user, ChatSession("s-1"), TODAY)
     )
-    wire: dict[str, Any] = response.model_dump(mode="json", by_alias=True)
+    wire: dict[str, Any] = dump_chat_response(response)
     # Every reply must satisfy the wire contract.
     parse_chat_response(wire)
     return wire
@@ -339,7 +376,14 @@ class TestFallback:
         with caplog.at_level(logging.INFO, logger="app.services.chat_engine.rules"):
             r = ask(engine, data, "send $500 to Total Checking 1234, cc me@x.com")
         assert kinds(r) == ["text", "quickReplies"]
-        assert [c[1] for c in chips(r)] == ["netWorth", "balances", "upcomingBills"]
+        assert [c[1] for c in chips(r)] == [
+            "netWorth",
+            "upcomingBills",
+            "cashFlowForecast",
+            "income",
+            "debts",
+            "portfolio",
+        ]
         [record] = caplog.records
         logged = record.getMessage()
         assert "no_intent" in logged
@@ -404,3 +448,204 @@ class TestEngineSetup:
         r = ask(engine, db_session, "one")
         assert r["messages"][0]["type"] == "error"
         assert r["messages"][0]["message"] == "I need accountId to answer that."
+
+
+@pytest.fixture
+def money(db_session: Session) -> Session:
+    """Accounts with a bill that overdraws checking, a paycheck, history and
+    holdings, for the cash flow, income, debt, trend and portfolio answers."""
+    from app.models.holding import Holding
+    from app.models.income_source import IncomeSource
+    from app.models.net_worth_snapshot import NetWorthSnapshot
+
+    checking = FinancialAccount(
+        name="Total Checking",
+        institution="Chase",
+        account_type="checking",
+        balance=1000,
+    )
+    card = FinancialAccount(
+        name="Sapphire",
+        institution="Chase",
+        account_type="credit_card",
+        balance=300,
+        credit_limit=10000,
+        apr=21.49,
+    )
+    store = FinancialAccount(
+        name="Store card", account_type="credit_card", balance=50, apr=29.99
+    )
+    db_session.add_all([checking, card, store])
+    db_session.commit()
+    db_session.add_all(
+        [
+            RecurringExpense(
+                name="Rent",
+                category="Housing",
+                amount=1500,
+                frequency="monthly",
+                next_due_date=date(2026, 11, 5),
+                paid_from_account_id=checking.id,
+            ),
+            IncomeSource(
+                name="Paycheck",
+                category="Salary",
+                amount=2000,
+                frequency="biweekly",
+                pay_date=date(2026, 11, 6),
+                weekend_rule="none",
+                deposited_to_account_id=checking.id,
+            ),
+            *[
+                NetWorthSnapshot(
+                    date=date(2026, 10, d),
+                    total_assets=0,
+                    total_liabilities=0,
+                    net_worth=500 + d,
+                )
+                for d in range(3, 32)
+            ],
+            Holding(
+                ticker="AAA",
+                quantity=10,
+                average_buy_price=100,
+                current_price=120,
+                broker="Schwab",
+            ),
+        ]
+    )
+    db_session.commit()
+    return db_session
+
+
+class TestMoreAnswers:
+    def test_cash_flow_forecast_warns_of_a_shortfall(
+        self, engine: RuleBasedEngine, money: Session
+    ) -> None:
+        r = ask(engine, money, "will I have enough to cover my bills?")
+        assert kinds(r) == ["error", "table", "link", "quickReplies"]
+        assert r["messages"][0] == {
+            "type": "error",
+            "code": "shortfall",
+            "message": (
+                "Total Checking (Chase) could run short on Nov 5, when Rent is due."
+            ),
+        }
+        row = r["messages"][1]["rows"][0]
+        assert row == ["Total Checking (Chase)", -500.0, "Nov 5", 1500.0]
+        assert [c[0] for c in chips(r)] == [
+            "Next 7 days",
+            "Next 30 days",
+            "Next paycheck",
+            "Bills due this week",
+        ]
+
+    def test_cash_flow_forecast_all_clear(
+        self, engine: RuleBasedEngine, money: Session
+    ) -> None:
+        r = ask(
+            engine,
+            money,
+            action={"type": "cashFlowForecast", "payload": {"withinDays": 2}},
+        )
+        assert r["messages"][0]["text"].startswith(
+            "No bills or paychecks reach your checking or savings accounts "
+            "through Nov 4."
+        )
+        r = ask(
+            engine,
+            money,
+            action={"type": "cashFlowForecast", "payload": {"withinDays": 7}},
+        )
+        assert r["messages"][0]["type"] == "error"  # Rent on Nov 5
+        money.query(RecurringExpense).update({"amount": 900})
+        money.commit()
+        r = ask(
+            engine,
+            money,
+            action={"type": "cashFlowForecast", "payload": {"withinDays": 7}},
+        )
+        assert r["messages"][0]["text"] == (
+            "Yes. Every account stays above zero through Nov 9."
+        )
+
+    def test_income(self, engine: RuleBasedEngine, money: Session) -> None:
+        r = ask(engine, money, "when's my next paycheck?")
+        assert kinds(r) == [
+            "text",
+            "stat",
+            "stat",
+            "table",
+            "text",
+            "link",
+            "quickReplies",
+        ]
+        assert (
+            r["messages"][0]["text"] == "Next paycheck: Paycheck on Nov 6 ($2,000.00)."
+        )
+        assert r["messages"][1] == {
+            "type": "stat",
+            "label": "Monthly income",
+            "value": 4333.33,
+            "currency": "USD",
+        }
+        assert r["messages"][3]["rows"] == [["Paycheck", "Nov 6", 2000.0, "biweekly"]]
+
+    def test_debts(self, engine: RuleBasedEngine, money: Session) -> None:
+        r = ask(engine, money, "how are my credit cards looking")
+        assert kinds(r) == ["stat", "text", "table", "text", "link", "quickReplies"]
+        assert r["messages"][1]["text"] == (
+            "Credit cards: $350.00 of $10,000.00 limit, 3% used."
+        )
+        assert r["messages"][2]["rows"][0] == [
+            "Sapphire (Chase)",
+            300.0,
+            "3%",
+            "21.49%",
+            None,
+        ]
+        assert r["messages"][3]["text"] == (
+            "Highest APR with a balance: Store card at 29.99%."
+        )
+
+    def test_net_worth_trend(self, engine: RuleBasedEngine, money: Session) -> None:
+        r = ask(engine, money, "how has my net worth changed this week?")
+        assert kinds(r) == ["stat", "text", "chart", "link", "quickReplies"]
+        stat, text, chart = r["messages"][:3]
+        # Live net worth: 1,000 checking + 1,200 portfolio − 350 cards.
+        # The week starts at Oct 26's snapshot, $526.
+        assert (stat["value"], stat["delta"]) == (1850.0, 1324.0)
+        assert text["text"] == (
+            "Up 251.7% over the past week. High $1,850.00, low $526.00."
+        )
+        assert chart["kind"] == "line"
+        assert [p["label"] for p in chart["series"][0]["points"]][-1] == "Nov 2"
+        assert [c[0] for c in chips(r)] == [
+            "Past month",
+            "Past 3 months",
+            "Net worth breakdown",
+        ]
+
+    def test_net_worth_without_history(
+        self, engine: RuleBasedEngine, db_session: Session
+    ) -> None:
+        r = ask(engine, db_session, "net worth trend")
+        assert r["messages"][0]["text"].startswith("There isn't enough history yet")
+
+    def test_portfolio(self, engine: RuleBasedEngine, money: Session) -> None:
+        r = ask(engine, money, "how is my portfolio doing today?")
+        assert kinds(r) == ["stat", "text", "link", "quickReplies"]
+        assert r["messages"][0]["label"] == "Portfolio value"
+        assert r["messages"][1]["text"] == (
+            "Overall +$200.00 (+20%) on $1,000.00 invested, across 1 holdings."
+        )
+
+    def test_empty_states(self, engine: RuleBasedEngine, db_session: Session) -> None:
+        for question, start in [
+            ("when do I get paid", "You haven't added any income yet."),
+            ("my debts", "You have no credit cards or loans tracked."),
+            ("portfolio", "You don't have any stocks or ETFs yet."),
+            ("can I cover my bills", "No bills or paychecks reach your checking"),
+        ]:
+            reply = ask(engine, db_session, question)
+            assert reply["messages"][0]["text"].startswith(start), question

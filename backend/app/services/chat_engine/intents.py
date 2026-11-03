@@ -16,7 +16,11 @@ from typing import Any
 
 from app.schemas.chat import (
     BotMessage,
+    ChartMessage,
+    ChartPoint,
+    ChartSeries,
     ChatAction,
+    ErrorMessage,
     LinkMessage,
     QuickRepliesMessage,
     QuickReply,
@@ -24,10 +28,19 @@ from app.schemas.chat import (
     TableMessage,
     TextMessage,
 )
-from app.schemas.chat_tools import GetBalanceResult, GetUpcomingBillsResult
+from app.schemas.chat_tools import (
+    GetBalanceResult,
+    GetCashFlowForecastResult,
+    GetDebtsResult,
+    GetIncomeResult,
+    GetNetWorthTrendResult,
+    GetPortfolioResult,
+    GetUpcomingBillsResult,
+)
 from app.services.chat_engine.entities import (
     MAX_DAYS,
     AccountRef,
+    extract_range,
     extract_window,
     match_accounts,
 )
@@ -120,8 +133,11 @@ def starter_chips(today: date) -> list[QuickReply]:
     """The top things the bot can do; used for help, fallback and errors."""
     return [
         chip("Net worth", "netWorth"),
-        chip("Account balances", "balances"),
         chip("Bills due this week", "upcomingBills", withinDays=days_to_sunday(today)),
+        chip("Can I cover my bills?", "cashFlowForecast"),
+        chip("Next paycheck", "income"),
+        chip("Credit cards", "debts"),
+        chip("Portfolio today", "portfolio"),
     ]
 
 
@@ -129,9 +145,9 @@ def starter_chips(today: date) -> list[QuickReply]:
 # frontend/src/components/chat/examples.ts.
 EXAMPLE_QUESTIONS = [
     "What's my net worth?",
-    "Show my account balances",
+    "Will I have enough to cover my bills?",
     "What bills are due this week?",
-    "How much is in savings?",
+    "How is my portfolio doing today?",
 ]
 
 TYPE_LABELS = {
@@ -165,8 +181,10 @@ def _help_format(_r: Any, _e: Entities, _today: date) -> list[BotMessage]:
         TextMessage(
             type="text",
             text=(
-                "I can tell you your net worth, the balance of any account, and "
-                "which bills are coming up. Try one of these:"
+                "I can tell you your net worth and how it's changed, any account's "
+                "balance, which bills are coming up and whether your accounts "
+                "cover them, your income, your credit cards and loans, and how "
+                "your portfolio is doing. Try one of these:"
             ),
         )
     ]
@@ -205,7 +223,7 @@ NET_WORTH = Intent(
     patterns=_p(
         r"\bnet ?worth\b",
         r"\bhow much am i worth\b",
-        r"\btotal (assets|liabilities|debt)\b",
+        r"\btotal (assets|liabilities)\b",
     ),
     tool="getBalance",
     extract=_no_entities,
@@ -426,15 +444,505 @@ UPCOMING_BILLS = Intent(
     follow_ups=_bills_follow_ups,
 )
 
+
+def _text(text: str) -> TextMessage:
+    return TextMessage(type="text", text=text)
+
+
+def _stat(label: str, value: Decimal, delta: Decimal | None = None) -> StatMessage:
+    return StatMessage(
+        type="stat",
+        label=label,
+        value=float(value),
+        delta=float(delta) if delta is not None else None,
+    )
+
+
+def _link(label: str, route: str) -> LinkMessage:
+    return LinkMessage(type="link", label=label, route=route)
+
+
+def _pct(value: float | None) -> str:
+    return "—" if value is None else f"{value:g}%"
+
+
+def _signed(amount: Decimal) -> str:
+    return f"+{fmt_money(amount)}" if amount > 0 else fmt_money(amount)
+
+
+def _signed_pct(value: float) -> str:
+    """ "+2.2%" / "−2.83%", with a true minus sign like the rest of the app."""
+    return f"{value:+g}%".replace("-", "−")
+
+
+def _bills_this_week(today: date) -> QuickReply:
+    return chip(
+        "Bills due this week", "upcomingBills", withinDays=days_to_sunday(today)
+    )
+
+
+# --- cash-flow forecast --------------------------------------------------------
+
+FORECAST_DAYS = 90
+
+
+def _forecast_extract(text: str, ctx: ExtractContext) -> Entities:
+    window = extract_window(text, ctx.today)
+    return {} if window is None else {"withinDays": window.days}
+
+
+def _forecast_format(
+    result: GetCashFlowForecastResult, _e: Entities, _today: date
+) -> list[BotMessage]:
+    if not result.accounts:
+        # Only accounts with a bill or paycheck in the window are projected.
+        return [
+            _text(
+                "No bills or paychecks reach your checking or savings accounts "
+                f"through {fmt_day(result.end)}. Only bills and pay linked to an "
+                "account are projected; link them on Fixed Costs and Cash Flow."
+            ),
+            _link("Open Cash Flow", "/cash-flow"),
+        ]
+    short = [a for a in result.accounts if a.short_date is not None]
+    out: list[BotMessage] = []
+    if short:
+        for a in short:
+            assert a.short_date is not None
+            out.append(
+                ErrorMessage(
+                    type="error",
+                    code="shortfall",
+                    message=f"{a.name} could run short on {fmt_day(a.short_date)}"
+                    + (f", when {a.short_bill} is due." if a.short_bill else "."),
+                )
+            )
+    else:
+        out.append(
+            _text(
+                "Yes. Every account stays above zero through " f"{fmt_day(result.end)}."
+            )
+        )
+    out.append(
+        TableMessage(
+            type="table",
+            # Lowest point and where it ends up answer "will I have enough";
+            # four columns also fit the chat panel.
+            columns=["Account", "Lowest", "On", f"{fmt_day(result.end)}"],
+            rows=[
+                [
+                    a.name,
+                    float(a.lowest_balance),
+                    fmt_day(a.lowest_date),
+                    float(a.ending_balance),
+                ]
+                for a in result.accounts
+            ],
+        )
+    )
+    notes = []
+    if result.card_charges:
+        notes.append(f"{fmt_money(result.card_charges)} of bills go on credit cards")
+    if result.unlinked_count:
+        notes.append(
+            f"{fmt_money(result.unlinked)} in {result.unlinked_count} "
+            f"bill{'' if result.unlinked_count == 1 else 's'} with no paying "
+            "account isn't counted"
+        )
+    if notes:
+        out.append(_text("; ".join(notes).capitalize() + "."))
+    out.append(_link("Open Cash Flow", "/cash-flow"))
+    return out
+
+
+def _forecast_follow_ups(
+    result: GetCashFlowForecastResult, _e: Entities, today: date
+) -> list[QuickReply]:
+    shown = (result.end - result.start).days
+    windows = [("Next 7 days", 7), ("Next 30 days", 30), ("Next 60 days", 60)]
+    chips = [
+        chip(label, "cashFlowForecast", withinDays=d)
+        for label, d in windows
+        if d != shown
+    ]
+    return [*chips[:2], chip("Next paycheck", "income"), _bills_this_week(today)]
+
+
+CASH_FLOW_FORECAST = Intent(
+    name="cashFlowForecast",
+    patterns=_p(
+        r"\benough\b",
+        r"\b(run|running) (out|short|low)\b",
+        r"\b(cover|afford)\b",
+        r"\b(forecast|projected|projection)\b",
+        r"\b(before|until|till) (my )?(next )?pay ?(day|check)\b",
+        r"\boverdra\w*\b",
+    ),
+    tool="getCashFlowForecast",
+    extract=_forecast_extract,
+    payload_keys=frozenset({"withinDays"}),
+    build_input=lambda e: {"withinDays": e["withinDays"]} if "withinDays" in e else {},
+    format=_forecast_format,
+    follow_ups=_forecast_follow_ups,
+)
+
+
+# --- income ----------------------------------------------------------------------
+
+
+def _income_format(
+    result: GetIncomeResult, _e: Entities, _today: date
+) -> list[BotMessage]:
+    if not result.sources:
+        return [
+            _text("You haven't added any income yet. Add it on the Cash Flow page."),
+            _link("Open Cash Flow", "/cash-flow"),
+        ]
+    out: list[BotMessage] = []
+    nxt = next((s for s in result.sources if s.next_pay_date), None)
+    if nxt is not None and nxt.next_pay_date is not None:
+        out.append(
+            _text(
+                f"Next paycheck: {nxt.name} on {fmt_day(nxt.next_pay_date)} "
+                f"({fmt_money(nxt.amount)})."
+            )
+        )
+    out += [
+        _stat("Monthly income", result.monthly_income),
+        _stat("Left over each month", result.monthly_left_over),
+        TableMessage(
+            type="table",
+            columns=["Income", "Next pay", "Amount", "How often"],
+            rows=[
+                [
+                    s.name,
+                    fmt_day(s.next_pay_date) if s.next_pay_date else None,
+                    float(s.amount),
+                    s.frequency,
+                ]
+                for s in result.sources
+            ],
+        ),
+    ]
+    facts = [
+        f"Fixed costs take {fmt_money(result.monthly_fixed_costs)} a month"
+        + (
+            f", so you keep {result.kept_pct:g}% of income"
+            if result.kept_pct is not None
+            else ""
+        )
+        + "."
+    ]
+    if result.emergency_months is not None:
+        facts.append(
+            f"Your {fmt_money(result.liquid_cash)} in checking and savings covers "
+            f"{result.emergency_months:g} months of fixed costs."
+        )
+    out += [_text(" ".join(facts)), _link("Open Cash Flow", "/cash-flow")]
+    return out
+
+
+INCOME = Intent(
+    name="income",
+    patterns=_p(
+        r"\b(income|salary|earn\w*)\b",
+        r"\bpay ?(day|check|checks)\b",
+        r"\bget(ting)? paid\b",
+        r"\b(left ?over|surplus)\b",
+        r"\bcash ?flow\b",
+    ),
+    tool="getIncome",
+    extract=_no_entities,
+    payload_keys=frozenset(),
+    build_input=lambda _e: {},
+    format=_income_format,
+    follow_ups=lambda _r, _e, today: [
+        chip("Can I cover my bills?", "cashFlowForecast"),
+        _bills_this_week(today),
+        chip("Net worth", "netWorth"),
+    ],
+)
+
+
+# --- debts -------------------------------------------------------------------------
+
+
+def _debts_format(
+    result: GetDebtsResult, _e: Entities, _today: date
+) -> list[BotMessage]:
+    if not result.cards and not result.loans:
+        return [
+            _text("You have no credit cards or loans tracked."),
+            _link("Open Net Worth", "/net-worth"),
+        ]
+    out: list[BotMessage] = [_stat("Total owed", result.total)]
+    if result.cards:
+        used = (
+            f" of {fmt_money(result.card_limit)} limit, "
+            f"{_pct(result.utilization_pct)} used"
+            if result.card_limit
+            else ""
+        )
+        out += [
+            _text(f"Credit cards: {fmt_money(result.card_balance)}{used}."),
+            TableMessage(
+                type="table",
+                columns=["Card", "Balance", "Used", "APR", "Due"],
+                rows=[
+                    [
+                        c.name,
+                        float(c.balance),
+                        _pct(c.utilization_pct),
+                        _pct(c.apr),
+                        fmt_day(c.due_date) if c.due_date else None,
+                    ]
+                    for c in result.cards
+                ],
+            ),
+        ]
+        priced = [c for c in result.cards if c.apr is not None and c.balance > 0]
+        if len(priced) > 1:
+            top = max(priced, key=lambda c: c.apr or 0)
+            out.append(
+                _text(f"Highest APR with a balance: {top.name} at {_pct(top.apr)}.")
+            )
+    if result.loans:
+        out.append(
+            TableMessage(
+                type="table",
+                columns=["Loan", "Balance", "Paid off", "APR", "Payoff"],
+                rows=[
+                    [
+                        loan.name,
+                        float(loan.balance),
+                        _pct(loan.paid_off_pct),
+                        _pct(loan.apr),
+                        f"{loan.payoff_date:%b %Y}" if loan.payoff_date else None,
+                    ]
+                    for loan in result.loans
+                ],
+            )
+        )
+    out.append(_link("Open Net Worth", "/net-worth"))
+    return out
+
+
+DEBTS = Intent(
+    name="debts",
+    patterns=_p(
+        r"\bcredit ?cards?\b",
+        r"\butili[sz]ation\b",
+        r"\b(debts?|loans?|mortgage)\b",
+        r"\baprs?\b",
+        r"\bpay ?off\b",
+        r"\binterest\b",
+    ),
+    tool="getDebts",
+    extract=_no_entities,
+    payload_keys=frozenset(),
+    build_input=lambda _e: {},
+    format=_debts_format,
+    follow_ups=lambda _r, _e, today: [
+        _bills_this_week(today),
+        chip("Account balances", "balances"),
+        chip("Net worth", "netWorth"),
+    ],
+)
+
+
+# --- net worth trend ---------------------------------------------------------------
+
+RANGE_WORDS = {
+    "1W": "past week",
+    "1M": "past month",
+    "3M": "past 3 months",
+    "1Y": "past year",
+    "ALL": "since you started tracking",
+}
+
+
+def _trend_extract(text: str, _ctx: ExtractContext) -> Entities:
+    found = extract_range(text)
+    return {} if found is None else {"range": found}
+
+
+def _trend_format(
+    result: GetNetWorthTrendResult, _e: Entities, _today: date
+) -> list[BotMessage]:
+    words = RANGE_WORDS[result.range]
+    if result.change is None:
+        return [
+            _text(
+                "There isn't enough history yet to show a trend. A snapshot is "
+                "saved every day, so check back soon."
+            ),
+            _link("Open Net Worth", "/net-worth"),
+        ]
+    assert result.high is not None and result.low is not None
+    # The stat card already shows the change in dollars; say it as a share.
+    if result.change == 0:
+        summary = f"No change over the {words}."
+    else:
+        size = (
+            f"{abs(result.change_pct):g}%"
+            if result.change_pct is not None
+            else fmt_money(abs(result.change))
+        )
+        direction = "Up" if result.change > 0 else "Down"
+        summary = (
+            f"{direction} {size} over the {words}. "
+            f"High {fmt_money(result.high)}, low {fmt_money(result.low)}."
+        )
+    return [
+        _stat("Net worth", result.points[-1].value, result.change),
+        _text(summary),
+        ChartMessage(
+            type="chart",
+            kind="line",
+            series=[
+                ChartSeries(
+                    name="Net worth",
+                    points=[
+                        ChartPoint(label=fmt_day(p.date), value=float(p.value))
+                        for p in result.points
+                    ],
+                )
+            ],
+        ),
+        _link("Open Net Worth", "/net-worth"),
+    ]
+
+
+def _trend_follow_ups(
+    result: GetNetWorthTrendResult, _e: Entities, _today: date
+) -> list[QuickReply]:
+    ranges = [
+        ("Past week", "1W"),
+        ("Past month", "1M"),
+        ("Past 3 months", "3M"),
+        ("Past year", "1Y"),
+    ]
+    chips = [
+        chip(label, "netWorthTrend", range=code)
+        for label, code in ranges
+        if code != result.range
+    ]
+    return [*chips[:2], chip("Net worth breakdown", "netWorth")]
+
+
+NET_WORTH_TREND = Intent(
+    name="netWorthTrend",
+    patterns=_p(
+        r"\bnet ?worth\b.*\b(chang\w*|trend\w*|grow\w*|grew|gone (up|down)|went "
+        r"(up|down)|histor\w*|over time)\b",
+        r"\bhow (has|did|is) my net ?worth (been )?(chang|do|go|trend)\w*",
+        r"\b(trend|history) of my net ?worth\b",
+    ),
+    tool="getNetWorthTrend",
+    extract=_trend_extract,
+    payload_keys=frozenset({"range"}),
+    build_input=lambda e: {"range": e["range"]} if "range" in e else {},
+    format=_trend_format,
+    follow_ups=_trend_follow_ups,
+)
+
+
+# --- portfolio ---------------------------------------------------------------------
+
+
+def _portfolio_format(
+    result: GetPortfolioResult, _e: Entities, _today: date
+) -> list[BotMessage]:
+    if result.holdings == 0:
+        return [
+            _text("You don't have any stocks or ETFs yet."),
+            _link("Open Holdings", "/holdings"),
+        ]
+    gain_pct = (
+        f" ({_signed_pct(result.unrealized_gain_pct)})"
+        if result.unrealized_gain_pct is not None
+        else ""
+    )
+    out: list[BotMessage] = []
+    if result.stale:
+        out.append(_text("Prices may be out of date: the last market update failed."))
+    out += [
+        _stat("Portfolio value", result.value, result.day_change),
+        # Today's change is on the stat card; this adds the overall gain.
+        _text(
+            f"Overall {_signed(result.unrealized_gain)}"
+            f"{gain_pct} on {fmt_money(result.invested)} invested, across "
+            f"{result.holdings} holdings."
+        ),
+    ]
+    movers = [*result.gainers, *result.losers]
+    if movers:
+        out.append(
+            TableMessage(
+                type="table",
+                # Today's biggest moves; three columns fit the chat panel.
+                columns=["Mover", "%", "Today"],
+                rows=[
+                    [m.ticker, _signed_pct(m.day_change_pct), float(m.day_change)]
+                    for m in movers
+                ],
+            )
+        )
+    if len(result.brokers) > 1:
+        out.append(
+            TableMessage(
+                type="table",
+                columns=["Broker", "Value", "Gain"],
+                rows=[
+                    [b.broker, float(b.value), float(b.gain)] for b in result.brokers
+                ],
+            )
+        )
+    out.append(_link("Open Holdings", "/holdings"))
+    return out
+
+
+PORTFOLIO = Intent(
+    name="portfolio",
+    patterns=_p(
+        r"\bportfolio\b",
+        r"\b(stocks?|etfs?|investments?|holdings?|shares)\b",
+        r"\b(movers?|gainers?|losers?)\b",
+        r"\b(market|unreali[sz]ed|dividends?)\b",
+        r"\b(up|down) today\b",
+    ),
+    tool="getPortfolio",
+    extract=_no_entities,
+    payload_keys=frozenset(),
+    build_input=lambda _e: {},
+    format=_portfolio_format,
+    follow_ups=lambda _r, _e, _today: [
+        chip("Net worth", "netWorth"),
+        chip("Net worth this month", "netWorthTrend", range="1M"),
+    ],
+)
+
+
 # Topics people will ask about that need data the app doesn't have yet.
 UNSUPPORTED = re.compile(
-    r"\b(spen[dt]|spending|budgets?|transactions?|purchases?|bought|groceries)\b"
+    r"\b(spen[dt]|spending|budgets?|transactions?|purchases?|groceries)\b"
 )
 
 
 def default_intents() -> IntentRegistry:
     registry = IntentRegistry()
-    for intent in (HELP, NET_WORTH, UPCOMING_BILLS, BALANCES):
+    # Order breaks ties: the more specific intent goes first.
+    for intent in (
+        HELP,
+        NET_WORTH_TREND,
+        NET_WORTH,
+        CASH_FLOW_FORECAST,
+        DEBTS,
+        UPCOMING_BILLS,
+        INCOME,
+        PORTFOLIO,
+        BALANCES,
+    ):
         registry.register(intent)
     return registry
 

@@ -13,5 +13,10 @@ export function fmtAmount(value: number, currency: string, hidden: boolean): str
     f = new Intl.NumberFormat(undefined, { style: 'currency', currency });
     formatters.set(currency, f);
   }
-  return f.format(value);
+  // A true minus sign (U+2212), as elsewhere in the app, wherever the
+  // locale puts it.
+  return f
+    .formatToParts(value)
+    .map((p) => (p.type === 'minusSign' ? '−' : p.value))
+    .join('');
 }

@@ -5,7 +5,7 @@
  */
 export const EXAMPLE_QUESTIONS = [
   "What's my net worth?",
-  'Show my account balances',
+  'Will I have enough to cover my bills?',
   'What bills are due this week?',
-  'How much is in savings?',
+  'How is my portfolio doing today?',
 ];

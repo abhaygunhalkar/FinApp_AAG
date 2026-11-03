@@ -73,6 +73,11 @@ describe('MessageRenderer', () => {
     expect(screen.getAllByRole('cell').map((c) => c.textContent)).toEqual(['Gym', '—', '$45.50']);
   });
 
+  it('negative amounts use a true minus sign', () => {
+    show({ type: 'table', columns: ['Ticker', 'Today'], rows: [['MSFT', -295.8]] });
+    expect(screen.getByText('−$295.80')).toBeInTheDocument();
+  });
+
   it('MiniChart describes its data for screen readers', () => {
     show({
       type: 'chart',

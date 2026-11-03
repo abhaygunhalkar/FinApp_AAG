@@ -26,11 +26,11 @@ class FinancialAccountService:
     @staticmethod
     def label(account: FinancialAccount) -> str:
         """How an account is named elsewhere in the app: "Name (Institution)"."""
-        return (
-            f"{account.name} ({account.institution})"
-            if account.institution
-            else account.name
-        )
+        return FinancialAccountService.label_of(account.name, account.institution)
+
+    @staticmethod
+    def label_of(name: str, institution: str | None) -> str:
+        return f"{name} ({institution})" if institution else name
 
     @staticmethod
     def detach_links(db: Session, account: FinancialAccount) -> None:

@@ -61,7 +61,15 @@ def add_bill(
 
 class TestRegistry:
     def test_lists_only_the_tools_with_data(self) -> None:
-        assert registry.names() == ["getBalance", "getUpcomingBills"]
+        assert registry.names() == [
+            "getBalance",
+            "getUpcomingBills",
+            "getCashFlowForecast",
+            "getIncome",
+            "getDebts",
+            "getNetWorthTrend",
+            "getPortfolio",
+        ]
 
     def test_definitions_are_ready_for_function_calling(self) -> None:
         defs = {d["name"]: d for d in registry.definitions()}

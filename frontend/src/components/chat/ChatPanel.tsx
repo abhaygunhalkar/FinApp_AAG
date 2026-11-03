@@ -13,6 +13,8 @@ export interface ChatPanelProps extends ChatHandlers {
   hidden: boolean;
   failure?: ChatFailure | null;
   onRetry?: () => void;
+  /** Clear the conversation and start a new one. */
+  onNewConversation?: () => void;
   onClose: () => void;
   onMinimize: () => void;
   onExpand: () => void;
@@ -32,6 +34,7 @@ export default function ChatPanel({
   hidden,
   failure = null,
   onRetry,
+  onNewConversation,
   onClose,
   onMinimize,
   onExpand,
@@ -117,9 +120,27 @@ export default function ChatPanel({
             Assistant
           </h2>
           <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-            Net worth, balances and bills
+            Money, bills and investments
           </p>
         </div>
+        {onNewConversation && (
+          <button
+            type="button"
+            onClick={() => {
+              onNewConversation();
+              refocus();
+            }}
+            disabled={entries.length === 0 && !failure}
+            aria-label="New conversation"
+            title="New conversation"
+            className={`${iconButton} disabled:opacity-40 disabled:hover:bg-transparent`}
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
+              <path d="M5.43 4.5A2.93 2.93 0 0 0 2.5 7.43v7.14A2.93 2.93 0 0 0 5.43 17.5h7.14a2.93 2.93 0 0 0 2.93-2.93V11a.75.75 0 0 0-1.5 0v3.57c0 .79-.64 1.43-1.43 1.43H5.43C4.64 16 4 15.36 4 14.57V7.43C4 6.64 4.64 6 5.43 6H9a.75.75 0 0 0 0-1.5H5.43Z" />
+              <path d="M15.98 2.72a1.75 1.75 0 0 0-2.47 0L8.1 8.13a1.75 1.75 0 0 0-.46.8l-.6 2.42a.75.75 0 0 0 .91.91l2.42-.6a1.75 1.75 0 0 0 .8-.46l5.41-5.41a1.75 1.75 0 0 0 0-2.47l-.6-.6Z" />
+            </svg>
+          </button>
+        )}
         <button
           type="button"
           onClick={onMinimize}
@@ -144,7 +165,8 @@ export default function ChatPanel({
               Ask about your money
             </p>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              I can look up your net worth, account balances and upcoming bills.
+              Net worth and how it's changed, balances, upcoming bills and whether you can cover
+              them, income, cards and loans, and your portfolio.
             </p>
           </div>
           <ul className="flex flex-col gap-2" aria-label="Example questions">

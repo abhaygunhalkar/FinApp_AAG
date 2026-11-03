@@ -76,7 +76,7 @@ describe('ChatWidget', () => {
     failOnceWith(504, 'That took too long. Please try again.', 'timeout');
     renderWidget();
     await openPanel();
-    fireEvent.click(screen.getByRole('button', { name: 'Show my account balances' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Will I have enough to cover my bills?' }));
     expect(await screen.findByText('That took too long. Please try again.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('Back now.')).toBeInTheDocument();
@@ -88,12 +88,31 @@ describe('ChatWidget', () => {
     replyWith([{ type: 'text', text: 'ok' }]);
     renderWidget();
     await openPanel();
-    fireEvent.click(screen.getByRole('button', { name: 'Show my account balances' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Will I have enough to cover my bills?' }));
     expect(screen.getByLabelText('Message')).toHaveFocus();
     (document.activeElement as HTMLElement).blur();
     fireEvent.keyDown(document.body, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await screen.findByRole('button', { name: /Open assistant, 1 unread/ });
+  });
+
+  it('New conversation clears the chat and brings back the examples', async () => {
+    replyWith([{ type: 'text', text: 'Hello.' }]);
+    renderWidget();
+    await openPanel();
+    const restart = screen.getByRole('button', { name: 'New conversation' });
+    expect(restart).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: "What's my net worth?" }));
+    await screen.findByText('Hello.');
+    fireEvent.click(restart);
+    expect(screen.queryByText('Hello.')).not.toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Example questions' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Message')).toHaveFocus();
+    // The next question goes to a new server session.
+    fireEvent.click(screen.getByRole('button', { name: "What's my net worth?" }));
+    await screen.findByText('Hello.');
+    const [first, second] = received as { sessionId: string }[];
+    expect(second.sessionId).not.toBe(first.sessionId);
   });
 
   it('counts replies that arrive while minimized, and clears them on open', async () => {

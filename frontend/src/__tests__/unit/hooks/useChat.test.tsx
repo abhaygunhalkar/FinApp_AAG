@@ -134,6 +134,49 @@ describe('useChat', () => {
     expect(result.current.entries).toHaveLength(1);
   });
 
+  it('reset clears the conversation and starts a new session', async () => {
+    replyWith(TEXT);
+    const { result } = renderHook(() => useChat(), { wrapper });
+    const before = result.current.sessionId;
+    act(() => result.current.send('hi'));
+    await waitFor(() => expect(result.current.entries).toHaveLength(2));
+
+    act(() => result.current.reset());
+    expect(result.current.entries).toEqual([]);
+    expect(result.current.failure).toBeNull();
+    expect(result.current.sessionId).not.toBe(before);
+    expect(sessionStorage.getItem('finapp.chat.sessionId')).toBe(result.current.sessionId);
+
+    act(() => result.current.send('again'));
+    await waitFor(() => expect(result.current.entries).toHaveLength(2));
+    expect(received[1]).toEqual({ sessionId: result.current.sessionId, message: 'again' });
+  });
+
+  it('drops a reply from before the reset', async () => {
+    let release = () => {};
+    chatServer.use(
+      http.post(CHAT_URL, async ({ request }) => {
+        const body = (await request.json()) as { sessionId: string };
+        await new Promise<void>((resolve) => (release = resolve));
+        return HttpResponse.json({
+          success: true,
+          data: { sessionId: body.sessionId, messages: TEXT },
+          error: null,
+        });
+      }),
+    );
+    const { result } = renderHook(() => useChat(), { wrapper });
+    act(() => result.current.send('slow'));
+    await waitFor(() => expect(result.current.pending).toBe(true));
+    act(() => result.current.reset());
+    expect(result.current.pending).toBe(false);
+    await act(async () => {
+      release();
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(result.current.entries).toEqual([]);
+  });
+
   it('ignores new turns while waiting for a reply', async () => {
     replyWith(TEXT);
     const { result } = renderHook(() => useChat(), { wrapper });
