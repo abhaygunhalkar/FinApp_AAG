@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import type { FinancialAccount } from '../../types';
 import type { CategoryConfig } from './accountConfig';
-import AccountRow, { type DetailField } from './AccountRow';
+import AccountRow, { StaleNote, type DetailField } from './AccountRow';
 import { isCreditType } from './accountConfig';
-import { fmtMoney, fmtPct } from './format';
+import { fmtMoney, fmtPct, staleDays } from './format';
 import { share } from './netWorthMath';
 
 interface AccountsCardProps {
@@ -111,10 +111,23 @@ export default function AccountsCard({
   );
 }
 
-/** Balance against the combined limit of the cards that have one. */
+/**
+ * Balance against the combined limit of the cards that have one, and how
+ * stale the oldest card balance is (said once here, not on every card).
+ */
 function CreditSummary({ accounts, hidden }: { accounts: FinancialAccount[]; hidden: boolean }) {
+  const stale = accounts.reduce<number | null>((oldest, a) => {
+    const days = staleDays(a.last_synced);
+    return days !== null && (oldest === null || days > oldest) ? days : oldest;
+  }, null);
   const withLimit = accounts.filter((a) => a.credit_limit);
-  if (withLimit.length === 0) return null;
+  if (withLimit.length === 0) {
+    return stale === null ? null : (
+      <p className="px-4 sm:px-5 pt-1.5 pb-1 text-[13px] text-[#B45309] dark:text-amber-400">
+        updated {stale} days ago
+      </p>
+    );
+  }
   const balance = withLimit.reduce((s, a) => s + a.balance, 0);
   const limit = withLimit.reduce((s, a) => s + (a.credit_limit ?? 0), 0);
   const used = share(balance, limit);
@@ -122,6 +135,7 @@ function CreditSummary({ accounts, hidden }: { accounts: FinancialAccount[]; hid
     <div className="px-4 sm:px-5 pt-1.5 pb-1">
       <p className="text-[13px] text-slate-500 dark:text-slate-400">
         {fmtMoney(balance, hidden)} of {fmtMoney(limit, hidden)} limit · {fmtPct(used)} utilization
+        {stale !== null && <StaleNote days={stale} />}
       </p>
       <div
         className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-[#F2F4F7] dark:bg-slate-700"

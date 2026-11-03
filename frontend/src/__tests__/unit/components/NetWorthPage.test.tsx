@@ -198,6 +198,26 @@ describe('NetWorth page', () => {
     expect(screen.getByRole('button', { name: 'Edit Amex' })).not.toHaveTextContent('highest APR');
   });
 
+  it('says once, in the summary, when card balances are stale', () => {
+    const ago = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
+    mocks.accounts[2] = { ...mocks.accounts[2], credit_limit: 6_000, last_synced: ago(5) };
+    mocks.accounts.push(
+      account({
+        id: 4,
+        name: 'Amex',
+        account_type: 'credit_card',
+        balance: 500,
+        is_asset: false,
+        credit_limit: 4_000,
+        last_synced: ago(8),
+      }),
+    );
+    render(<NetWorth />);
+    expect(screen.getByText(/limit · 20%\s+utilization/)).toHaveTextContent('updated 8 days ago');
+    expect(screen.getByRole('button', { name: 'Edit Visa' })).not.toHaveTextContent('updated');
+    expect(screen.getByRole('button', { name: 'Edit Amex' })).not.toHaveTextContent('updated');
+  });
+
   it('does not tag a paid-off card as highest APR', () => {
     mocks.accounts[2] = { ...mocks.accounts[2], balance: 0, apr: 29 };
     mocks.accounts.push(

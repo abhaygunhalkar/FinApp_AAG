@@ -31,20 +31,15 @@ export default function AccountRow({
   const credit = isCreditType(account.account_type);
   const loan = isLoanType(account.account_type);
 
-  // Freshness is in the page header; a row only says so when it's stale.
-  const stale = subtitleOverride ? null : staleDays(account.last_synced);
-
   if (credit && onEdit) {
+    // Card freshness is shown once, in the credit card summary.
     return (
-      <CreditCardRow
-        account={account}
-        hidden={hidden}
-        onEdit={onEdit}
-        stale={stale}
-        highestApr={highestApr}
-      />
+      <CreditCardRow account={account} hidden={hidden} onEdit={onEdit} highestApr={highestApr} />
     );
   }
+
+  // Freshness is in the page header; a row only says so when it's stale.
+  const stale = subtitleOverride ? null : staleDays(account.last_synced);
 
   const subtitle =
     subtitleOverride ??
@@ -118,7 +113,7 @@ export default function AccountRow({
   );
 }
 
-function StaleNote({ days }: { days: number }) {
+export function StaleNote({ days }: { days: number }) {
   return (
     <>
       {' · '}
@@ -132,13 +127,11 @@ function CreditCardRow({
   account,
   hidden,
   onEdit,
-  stale,
   highestApr,
 }: {
   account: FinancialAccount;
   hidden: boolean;
   onEdit: (account: FinancialAccount, focus?: DetailField) => void;
-  stale: number | null;
   highestApr: boolean;
 }) {
   const issuer = findIssuer(account.name, account.institution);
@@ -185,21 +178,9 @@ function CreditCardRow({
               </span>
             )}
           </span>
-          {(meta || stale !== null) && (
-            <span className="min-w-0 flex items-center gap-2">
-              {(meta || stale !== null) && (
-                <span className="min-w-0 truncate text-[13px] text-slate-500 dark:text-slate-400">
-                  {meta}
-                  {stale !== null &&
-                    (meta ? (
-                      <StaleNote days={stale} />
-                    ) : (
-                      <span className="text-[#B45309] dark:text-amber-400">
-                        updated {stale} days ago
-                      </span>
-                    ))}
-                </span>
-              )}
+          {meta && (
+            <span className="min-w-0 truncate text-[13px] text-slate-500 dark:text-slate-400">
+              {meta}
             </span>
           )}
         </span>
