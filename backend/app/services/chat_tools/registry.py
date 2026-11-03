@@ -72,6 +72,10 @@ class ToolRegistry:
             raise ValueError(f"Tool {tool.name} is already registered")
         self._tools[tool.name] = tool
 
+    def allows(self, user_id: str) -> bool:
+        """Only the app's owner may use the tools."""
+        return user_id == self._owner_id
+
     def names(self) -> list[str]:
         return list(self._tools)
 
@@ -86,7 +90,7 @@ class ToolRegistry:
             ToolError: For an unknown tool, invalid input, or a handler's
                 own error (e.g. an account that doesn't exist).
         """
-        if ctx.user_id != self._owner_id:
+        if not self.allows(ctx.user_id):
             raise ToolAccessError("Not allowed")
         tool = self._tools.get(name)
         if tool is None:

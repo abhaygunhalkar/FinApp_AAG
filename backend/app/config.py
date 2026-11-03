@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     PLAID_ENV: str = "sandbox"
     # The app has one owner and no logins; chat tools only act for this id.
     OWNER_USER_ID: str = "owner"
+    # Which chat engine answers: "rules" (the only one so far).
+    CHAT_ENGINE: str = "rules"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
