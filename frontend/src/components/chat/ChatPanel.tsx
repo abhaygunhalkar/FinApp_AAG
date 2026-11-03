@@ -119,26 +119,28 @@ export default function ChatPanel({
           >
             Assistant
           </h2>
-          <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-            Money, bills and investments
-          </p>
+          {/* Shown until the chat starts, when New chat takes its room. */}
+          {entries.length === 0 && !failure && (
+            <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+              Money, bills and investments
+            </p>
+          )}
         </div>
-        {onNewConversation && (
+        {/* Labelled so it's easy to spot; only shown once there's
+            something to clear. */}
+        {onNewConversation && (entries.length > 0 || failure) && (
           <button
             type="button"
             onClick={() => {
               onNewConversation();
               refocus();
             }}
-            disabled={entries.length === 0 && !failure}
-            aria-label="New conversation"
-            title="New conversation"
-            className={`${iconButton} disabled:opacity-40 disabled:hover:bg-transparent`}
+            className="mr-1 inline-flex h-8 shrink-0 items-center gap-1 rounded-full border border-[#BFD3F5] bg-white pl-2 pr-3 text-xs font-semibold text-[#1D4ED8] transition-colors hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8] dark:border-blue-800 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
           >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
-              <path d="M5.43 4.5A2.93 2.93 0 0 0 2.5 7.43v7.14A2.93 2.93 0 0 0 5.43 17.5h7.14a2.93 2.93 0 0 0 2.93-2.93V11a.75.75 0 0 0-1.5 0v3.57c0 .79-.64 1.43-1.43 1.43H5.43C4.64 16 4 15.36 4 14.57V7.43C4 6.64 4.64 6 5.43 6H9a.75.75 0 0 0 0-1.5H5.43Z" />
-              <path d="M15.98 2.72a1.75 1.75 0 0 0-2.47 0L8.1 8.13a1.75 1.75 0 0 0-.46.8l-.6 2.42a.75.75 0 0 0 .91.91l2.42-.6a1.75 1.75 0 0 0 .8-.46l5.41-5.41a1.75 1.75 0 0 0 0-2.47l-.6-.6Z" />
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+              <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
             </svg>
+            New chat
           </button>
         )}
         <button

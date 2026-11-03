@@ -106,7 +106,7 @@ describe('ChatPanel: dialog', () => {
 
   it('keeps Tab and Shift+Tab inside the panel', () => {
     renderPanel();
-    // New conversation is disabled in an empty chat, so Minimize comes first.
+    // New chat isn't shown in an empty chat, so Minimize comes first.
     const first = screen.getByRole('button', { name: 'Minimize assistant' });
     const last = screen.getByRole('button', { name: 'Send' }); // disabled while empty
     fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'hi' } });
@@ -117,17 +117,22 @@ describe('ChatPanel: dialog', () => {
     expect(last).toHaveFocus();
   });
 
-  it('New conversation is offered once there is something to clear', () => {
+  it('New chat is shown, labelled, once there is something to clear', () => {
     const { rerender } = renderPanel();
-    expect(screen.getByRole('button', { name: 'New conversation' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'New chat' })).not.toBeInTheDocument();
     rerender(
       <MemoryRouter>
         <ChatPanel {...props} entries={CONVERSATION} />
       </MemoryRouter>,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'New conversation' }));
+    fireEvent.click(screen.getByRole('button', { name: 'New chat' }));
     expect(props.onNewConversation).toHaveBeenCalled();
     expect(screen.getByLabelText('Message')).toHaveFocus();
+  });
+
+  it('New chat is also offered after a failed first message', () => {
+    renderPanel({ failure: { message: 'Down.', canRetry: true } });
+    expect(screen.getByRole('button', { name: 'New chat' })).toBeInTheDocument();
   });
 
   it('minimized, it shows a small bar that expands or closes', () => {

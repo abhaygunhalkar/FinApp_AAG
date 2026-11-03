@@ -96,15 +96,14 @@ describe('ChatWidget', () => {
     await screen.findByRole('button', { name: /Open assistant, 1 unread/ });
   });
 
-  it('New conversation clears the chat and brings back the examples', async () => {
+  it('New chat clears the chat and brings back the examples', async () => {
     replyWith([{ type: 'text', text: 'Hello.' }]);
     renderWidget();
     await openPanel();
-    const restart = screen.getByRole('button', { name: 'New conversation' });
-    expect(restart).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'New chat' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: "What's my net worth?" }));
     await screen.findByText('Hello.');
-    fireEvent.click(restart);
+    fireEvent.click(screen.getByRole('button', { name: 'New chat' }));
     expect(screen.queryByText('Hello.')).not.toBeInTheDocument();
     expect(screen.getByRole('list', { name: 'Example questions' })).toBeInTheDocument();
     expect(screen.getByLabelText('Message')).toHaveFocus();
