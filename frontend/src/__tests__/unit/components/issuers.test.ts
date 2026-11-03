@@ -20,6 +20,19 @@ describe('findIssuer', () => {
     expect(key('Travel Card', 'Wells Fargo')).toBe('wellsfargo');
   });
 
+  it('recognises banks and brokerages from the institution', () => {
+    expect(key('Total Checking', 'Chase')).toBe('chase');
+    expect(key('Online Savings', 'Ally Bank')).toBe('ally');
+    expect(key('Brokerage', 'Charles Schwab')).toBe('schwab');
+    expect(key('Everyday Checking', 'Wells Fargo')).toBe('wellsfargo');
+    expect(key('Bank Of America')).toBe('bofa');
+    expect(key('Chase Bank')).toBe('chase');
+    expect(key('UFB Direct - HYS')).toBe('ufb');
+    expect(key('Checking', 'U.S. Bank')).toBe('usbank');
+    expect(key('Checking', 'US Bank')).toBe('usbank');
+    expect(key('Savings', 'Navy Federal Credit Union')).toBe('navyfederal');
+  });
+
   it('returns null when nothing matches', () => {
     expect(key('Rewards Card', 'Harbor Bank')).toBeNull();
     expect(key('Purchase card')).toBeNull(); // "chase" inside a word doesn't count
@@ -27,7 +40,7 @@ describe('findIssuer', () => {
   });
 
   it('has a logo or a wordmark for every issuer', () => {
-    for (const name of ['Amex', 'Chase', 'Capital One', 'Citi']) {
+    for (const name of ['Amex', 'Chase', 'Capital One', 'Citi', 'Ally', 'Schwab', 'Fidelity']) {
       const issuer = findIssuer(name)!;
       expect(issuer.path ?? issuer.text).toBeTruthy();
     }
