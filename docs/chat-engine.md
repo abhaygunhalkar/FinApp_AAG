@@ -43,14 +43,15 @@ It only offers what the tools can answer.
 | `cashFlowForecast` | "will I have enough to cover my bills", "am I going to run short before payday", "can I afford my bills in the next 30 days" | `withinDays` | `getCashFlowForecast` |
 | `debts` | "credit card utilization", "which card has the highest APR", "how much is left on my mortgage", "total debt" | none | `getDebts` |
 | `income` | "when's my next paycheck", "when do I get paid", "what's left over each month", "cash flow" | none | `getIncome` |
-| `portfolio` | "how is my portfolio doing today", "how are my stocks doing", "top movers" | none | `getPortfolio` |
+| `portfolio` | "how is my portfolio doing today", "how are my ETFs doing", "how are my stocks doing", "top movers" | `type` (stock / etf, from "ETF", "fund", "stock", "shares"; both or neither mean all) | `getPortfolio` |
+| `options` | "what options do I have open", "options expiring this week", "how much premium did I collect", "my covered calls" | none | `getOptions` |
 | `markBillPaid` (flow) | "I paid rent", "mark the water bill as paid", "mark a bill paid" | `billId`, fuzzy-matched against your bills | `getBills`, then `markBillPaid` |
 | `cancelFlow` | "cancel", "never mind", "stop" | none | none |
 | `balances` | "show my balances", "how much is in savings", "what do I owe on amex", "chase balance" | `accountId`, matched against the user's own accounts | `getBalance` |
 | `upcomingBills` | "bills due this week", "payments due in the next 10 days", "what do I have to pay tomorrow" | `withinDays` (1–60) | `getUpcomingBills` |
 | `help` | "help", "hi", "what can you do" | none | none |
 
-**Matching.** Each intent has regex patterns. The intent with the most matching patterns wins, and ties go to the one registered first. The order is `help`, `netWorthTrend`, `netWorth`, `cashFlowForecast`, `debts`, `upcomingBills`, `income`, `portfolio`, `balances`, chosen so the more specific intent wins:
+**Matching.** Each intent has regex patterns. The intent with the most matching patterns wins, and ties go to the one registered first. The order is `help`, `cancelFlow`, `markBillPaid`, `netWorthTrend`, `netWorth`, `cashFlowForecast`, `debts`, `upcomingBills`, `income`, `options`, `portfolio`, `balances`, chosen so the more specific intent wins:
 - "what's my net worth" is a snapshot, because `netWorthTrend` only matches change words ("changed", "trend", "grown").
 - "will I have enough to pay my bills" is a forecast.
 - "credit card balances" lists the cards.
@@ -96,7 +97,8 @@ Session state for flows: `state["flow"] = {"name", "step": "choose" | "confirm",
   - **Income:** the next paycheck, monthly income and left-over stats, a table of sources, and how many months of fixed costs your cash covers.
   - **Debts:** a total-owed stat, card utilization, a cards table (balance, % used, APR, due) and a loans table (balance, % paid off, APR, payoff), and the highest-APR card with a balance.
   - **Net worth trend:** a stat with the change as its delta, a sentence with the % change and high/low, and a line chart.
-  - **Portfolio:** a value stat with today's change as its delta, the overall gain, today's movers table and a by-broker table.
+  - **Portfolio:** a value stat with today's change as its delta, the overall gain, today's movers table and a by-broker table. For ETFs or stocks only, the labels and link follow ("ETF value", Open ETF Holdings), and chips switch between ETFs, stocks and the whole portfolio.
+  - **Options:** a P&L stat, open positions and how many expire this week, the win rate, and a table of open positions ("MSFT 565C sold", expiry or "Today", premium received or paid).
 - **No repeated numbers.** When a stat card shows the change, the sentence under it gives something else (the %, the overall gain) rather than the same amount again.
 - **Chat-panel-sized tables.** Tables keep to three or four columns so they fit the panel. Percentages are text (`"+2.2%"`) because number cells are drawn as money.
 - **Follow-up chips:** every reply ends with a `quickReplies` message, except the forbidden error and a flow's confirm card (whose Yes/No buttons are the next step). The chips only ever point at the intents above. The bills answer adds "Mark a bill paid" when there's a bill you pay yourself.

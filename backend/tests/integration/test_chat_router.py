@@ -297,6 +297,8 @@ class TestIntents:
             ("credit card utilization", "debts"),
             ("how has my net worth changed this month?", "netWorthTrend"),
             ("how is my portfolio doing today?", "portfolio"),
+            ("how are my ETFs doing?", "portfolio"),
+            ("any options expiring this week?", "options"),
         ],
     )
     def test_new_intents(

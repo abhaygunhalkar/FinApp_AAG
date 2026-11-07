@@ -201,6 +201,14 @@ class GetNetWorthTrendResult(ChatModel):
 
 # --- getPortfolio ------------------------------------------------------------------
 
+HoldingKind = Literal["all", "stock", "etf"]
+
+
+class GetPortfolioInput(ChatModel):
+    type: HoldingKind = Field(
+        "all", description="all (default), stock (stocks only) or etf (ETFs only)."
+    )
+
 
 class BrokerValue(ChatModel):
     broker: str
@@ -218,12 +226,14 @@ class Mover(ChatModel):
 
 
 class GetPortfolioResult(ChatModel):
+    type: HoldingKind
     value: Decimal
     invested: Decimal
     unrealized_gain: Decimal
     unrealized_gain_pct: float | None
     day_change: Decimal
-    realized_gain: Decimal
+    # Realized gain to date; only for the whole portfolio (type "all").
+    realized_gain: Decimal | None
     annual_dividends: Decimal
     holdings: int
     brokers: list[BrokerValue]
@@ -271,3 +281,32 @@ class MarkBillPaidResult(ChatModel):
     # The due date that was paid, and the one it moved to.
     paid_due_date: date
     next_due_date: date
+
+
+# --- getOptions -------------------------------------------------------------------
+
+
+class OptionPosition(ChatModel):
+    id: int
+    ticker: str
+    # sell_put, sell_call, buy_call or buy_put
+    trade_type: str
+    strike: Decimal
+    expiry_date: date
+    contracts: int
+    # Premium for the whole position (per-share premium × 100 × contracts):
+    # received for sells, paid for buys.
+    premium: Decimal
+    broker: str | None
+
+
+class GetOptionsResult(ChatModel):
+    # Realized P&L of closed, expired and assigned trades.
+    realized_pnl: Decimal
+    # Share of those trades that made money, 0–100; None with none closed.
+    win_rate: float | None
+    open_positions: int
+    expiring_this_week: int
+    # Open positions, soonest expiry first.
+    open: list[OptionPosition]
+    trades: int

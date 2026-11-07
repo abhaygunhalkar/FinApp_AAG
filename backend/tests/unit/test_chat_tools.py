@@ -71,6 +71,7 @@ class TestRegistry:
             "getDebts",
             "getNetWorthTrend",
             "getPortfolio",
+            "getOptions",
         ]
 
     def test_definitions_are_ready_for_function_calling(self) -> None:

@@ -292,3 +292,118 @@ class TestPortfolio:
             "Schwab": 2,
             "Merrill": 1,
         }
+
+
+class TestPortfolioByType:
+    def holdings(self, db: Session) -> None:
+        for ticker, kind, qty, cost, price, broker in [
+            ("AAPL", "stock", 10, 100, 110, "Schwab"),
+            ("VOO", "etf", 2, 400, 500, "Schwab"),
+            ("SCHD", "etf", 10, 25, 24, "Robinhood"),
+        ]:
+            db.add(
+                Holding(
+                    ticker=ticker,
+                    holding_type=kind,
+                    quantity=qty,
+                    average_buy_price=cost,
+                    current_price=price,
+                    broker=broker,
+                )
+            )
+        db.commit()
+
+    def test_etfs_only(self, db_session: Session) -> None:
+        self.holdings(db_session)
+        result = call(db_session, "getPortfolio", {"type": "etf"})
+        assert result.type == "etf"
+        assert (result.holdings, result.value) == (2, Decimal("1240.00"))
+        assert result.invested == Decimal("1050.00")
+        assert (result.unrealized_gain, result.unrealized_gain_pct) == (
+            Decimal("190.00"),
+            18.1,
+        )
+        assert result.realized_gain is None  # only for the whole portfolio
+        assert [(b.broker, b.holdings) for b in result.brokers] == [
+            ("Schwab", 1),
+            ("Robinhood", 1),
+        ]
+
+    def test_stocks_and_etfs_add_up_to_all(self, db_session: Session) -> None:
+        self.holdings(db_session)
+        parts = [
+            call(db_session, "getPortfolio", {"type": t}).value
+            for t in ("stock", "etf")
+        ]
+        whole = call(db_session, "getPortfolio")
+        assert sum(parts) == whole.value == Decimal("2340.00")
+        assert whole.realized_gain is not None
+
+    def test_invalid_type(self, db_session: Session) -> None:
+        with pytest.raises(ToolError, match="type"):
+            call(db_session, "getPortfolio", {"type": "bonds"})
+
+
+class TestOptions:
+    def trade(self, db: Session, **kw: Any) -> None:
+        from app.models.options_trade import OptionsTrade
+
+        defaults: dict[str, Any] = {
+            "ticker": "AAPL",
+            "trade_type": "sell_put",
+            "strike_price": 180,
+            "premium": 2.5,
+            "contracts": 1,
+            "open_date": date.today() - timedelta(days=30),
+            "expiry_date": date.today() + timedelta(days=20),
+            "status": "open",
+        }
+        db.add(OptionsTrade(**{**defaults, **kw}))
+        db.commit()
+
+    def test_no_trades(self, db_session: Session) -> None:
+        result = call(db_session, "getOptions")
+        assert (result.trades, result.open, result.win_rate) == (0, [], None)
+
+    def test_summary_and_open_positions(self, db_session: Session) -> None:
+        soon = date.today() + timedelta(days=2)
+        self.trade(
+            db_session,
+            ticker="MSFT",
+            trade_type="sell_call",
+            strike_price=565,
+            premium=5.4,
+            expiry_date=soon,
+        )
+        self.trade(
+            db_session,
+            ticker="SPY",
+            trade_type="buy_put",
+            strike_price=500.5,
+            premium=3,
+            contracts=2,
+        )
+        # Closed: +250 (expired worthless) and −100 (bought back higher).
+        self.trade(db_session, status="expired_worthless")
+        self.trade(db_session, status="closed", close_price=3.5)
+
+        result = call(db_session, "getOptions")
+
+        assert (result.trades, result.open_positions, result.expiring_this_week) == (
+            4,
+            2,
+            1,
+        )
+        assert result.realized_pnl == Decimal("150.00")
+        assert result.win_rate == 50.0
+        msft, spy = result.open
+        assert (msft.ticker, msft.expiry_date, msft.premium) == (
+            "MSFT",
+            soon,
+            Decimal("540.00"),  # received
+        )
+        assert (spy.contracts, spy.premium, spy.strike) == (
+            2,
+            Decimal("-600.00"),  # paid
+            Decimal("500.50"),
+        )

@@ -22,7 +22,8 @@ The rule-based chat engine (`docs/chat-engine.md`) calls them through `POST /api
 | `getIncome` | Paychecks, next pay date, what's left over each month | `IncomeService.get_all`, `get_cash_flow_summary` |
 | `getDebts` | Credit cards (utilization, APR, due) and loans (paid off, payoff) | `FinancialAccountService.get_all` |
 | `getNetWorthTrend` | How net worth changed over 1W–ALL | `FinancialAccountService.get_snapshots`, `get_summary` |
-| `getPortfolio` | Portfolio value, gains, today's movers, brokers | `DashboardService.get_summary`, `get_broker_summary`, `HoldingsService.get_all_holdings` |
+| `getPortfolio` | Value, gains, today's movers and brokers, for all holdings or just stocks or ETFs | `DashboardService.get_summary`, `get_broker_summary`, `HoldingsService.get_all_holdings` |
+| `getOptions` | Options P&L, win rate, open positions, what expires this week | `OptionsService.get_summary`, `list_trades` |
 
 ## How a call works
 
@@ -132,12 +133,21 @@ Returns daily snapshots in the range, ending with today's live net worth (the sa
 
 ### getPortfolio
 
-Input: none. Returns:
+Input: `{ type?: "all" | "stock" | "etf", default "all" }`. With `all`, the totals are the dashboard's; with `stock` or `etf` they're summed from just those holdings, and `realizedGain` is null (it's only tracked for the whole portfolio). Returns:
 - market value, amount invested, and unrealized gain (with %);
 - today's change, realized gain to date, and annual dividends;
 - the number of holdings, and value and gain by broker;
 - today's three biggest gainers and losers, in dollars;
 - `stale: true` when the last market-data refresh failed.
+
+### getOptions
+
+Input: none. Returns:
+- realized P&L of closed, expired and assigned trades, and the win rate on them (null with none closed);
+- how many positions are open and how many expire this week;
+- each open position, soonest expiry first: ticker, type, strike, expiry, contracts, and premium for the whole position (positive when received for sells, negative when paid for buys).
+
+It doesn't fetch live option quotes, so it stays fast and offline.
 
 **Read-only by design.** The watchlist and earnings data aren't tools. Reading the watchlist through its service fetches live quotes and writes them, and the earnings calendar calls Finnhub from its router.
 
@@ -166,7 +176,7 @@ These were specified but need data the app doesn't have yet:
 | `compareSpending({ periodA, periodB, category? })` | Same, built on `getSpending`. |
 | `getBudgetStatus({ category? })` | A budgets table (category, monthly limit), a service and a UI to set them, plus spending data to compare against. |
 
-Other tools could be built from existing data but were left out as rarely asked, or better seen on their pages: realized gains by year, options summary, recent trades, watchlist and portfolio insights. Realized gains would first need the `/api/transactions/sells` logic moved from its router into a service.
+Other tools could be built from existing data but were left out as rarely asked, or better seen on their pages: realized gains by year, recent trades, watchlist and portfolio insights. Realized gains would first need the `/api/transactions/sells` logic moved from its router into a service.
 
 ## Adding a tool
 

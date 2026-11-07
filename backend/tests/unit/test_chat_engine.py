@@ -29,6 +29,7 @@ from app.services.chat_engine.intents import (
     Intent,
     IntentRegistry,
     default_intents,
+    fmt_day,
 )
 from app.services.chat_engine.rules import redact
 from app.services.chat_tools import ToolRegistry, build_registry
@@ -101,7 +102,21 @@ PHRASES: list[tuple[str, str | None, dict[str, Any]]] = [
     ("how much is left on my mortgage", "debts", {}),
     # portfolio
     ("How is my portfolio doing today?", "portfolio", {}),
-    ("how are my stocks doing", "portfolio", {}),
+    ("how are my stocks doing", "portfolio", {"type": "stock"}),
+    ("how are my ETFs doing", "portfolio", {"type": "etf"}),
+    ("show my index funds", "portfolio", {"type": "etf"}),
+    ("how are my stocks and ETFs doing", "portfolio", {}),
+    # options
+    ("what options do I have open", "options", {}),
+    ("options expiring this week", "options", {}),
+    ("how much premium did I collect", "options", {}),
+    ("my covered calls", "options", {}),
+    ("any puts expiring soon", "options", {}),
+    (
+        "I paid my insurance premium",
+        "markBillPaid",
+        {"unknownBill": "insurance premium"},
+    ),
     ("top movers today", "portfolio", {}),
     ("unrealized gains on my investments", "portfolio", {}),
     # help
@@ -654,3 +669,112 @@ class TestMoreAnswers:
         ]:
             reply = ask(engine, db_session, question)
             assert reply["messages"][0]["text"].startswith(start), question
+
+
+class TestEtfAndOptionsAnswers:
+    def test_etf_answer(self, engine: RuleBasedEngine, db_session: Session) -> None:
+        from app.models.holding import Holding
+
+        db_session.add_all(
+            [
+                Holding(
+                    ticker="VOO",
+                    holding_type="etf",
+                    quantity=2,
+                    average_buy_price=400,
+                    current_price=500,
+                    broker="Schwab",
+                ),
+                Holding(
+                    ticker="AAPL",
+                    holding_type="stock",
+                    quantity=1,
+                    average_buy_price=100,
+                    current_price=100,
+                    broker="Schwab",
+                ),
+            ]
+        )
+        db_session.commit()
+        r = ask(engine, db_session, "how are my ETFs doing?")
+        assert r["messages"][0]["label"] == "ETF value"
+        assert r["messages"][0]["value"] == 1000.0
+        assert r["messages"][1]["text"] == (
+            "Overall +$200.00 (+25%) on $800.00 invested, across 1 ETFs."
+        )
+        assert r["messages"][-2] == {
+            "type": "link",
+            "label": "Open ETF Holdings",
+            "route": "/etf-holdings",
+        }
+        assert [c[0] for c in chips(r)] == [
+            "Stocks only",
+            "Whole portfolio",
+            "Options",
+            "Net worth",
+        ]
+
+    def test_no_etfs(self, engine: RuleBasedEngine, db_session: Session) -> None:
+        r = ask(
+            engine, db_session, action={"type": "portfolio", "payload": {"type": "etf"}}
+        )
+        assert r["messages"][0]["text"] == "You don't have any ETFs yet."
+
+    def test_options_answer(self, engine: RuleBasedEngine, db_session: Session) -> None:
+        from datetime import timedelta
+
+        from app.models.options_trade import OptionsTrade
+
+        today = date.today()
+        db_session.add_all(
+            [
+                OptionsTrade(
+                    ticker="MSFT",
+                    trade_type="sell_call",
+                    strike_price=565,
+                    premium=5.4,
+                    contracts=1,
+                    open_date=today - timedelta(days=10),
+                    expiry_date=today + timedelta(days=3),
+                    status="open",
+                ),
+                OptionsTrade(
+                    ticker="SPY",
+                    trade_type="buy_put",
+                    strike_price=500.5,
+                    premium=3,
+                    contracts=2,
+                    open_date=today - timedelta(days=10),
+                    expiry_date=today + timedelta(days=30),
+                    status="open",
+                ),
+                OptionsTrade(
+                    ticker="AAPL",
+                    trade_type="sell_put",
+                    strike_price=180,
+                    premium=2.5,
+                    contracts=1,
+                    open_date=today - timedelta(days=60),
+                    expiry_date=today - timedelta(days=30),
+                    status="expired_worthless",
+                ),
+            ]
+        )
+        db_session.commit()
+        r = ask(engine, db_session, "what options do I have open?")
+        assert kinds(r) == ["stat", "text", "table", "link", "quickReplies"]
+        assert (r["messages"][0]["label"], r["messages"][0]["value"]) == (
+            "Options P&L",
+            250.0,
+        )
+        assert r["messages"][1]["text"] == (
+            "2 open positions, 1 expiring this week. Win rate 100% on closed trades."
+        )
+        assert r["messages"][2]["rows"] == [
+            ["MSFT 565C sold", fmt_day(today + timedelta(days=3)), 540.0],
+            ["SPY 500.5P bought ×2", fmt_day(today + timedelta(days=30)), -600.0],
+        ]
+
+    def test_no_options(self, engine: RuleBasedEngine, db_session: Session) -> None:
+        r = ask(engine, db_session, "options")
+        assert r["messages"][0]["text"] == "You have no options trades yet."

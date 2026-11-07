@@ -34,8 +34,10 @@ from app.schemas.chat_tools import (
     GetDebtsResult,
     GetIncomeResult,
     GetNetWorthTrendResult,
+    GetOptionsResult,
     GetPortfolioResult,
     GetUpcomingBillsResult,
+    OptionPosition,
 )
 from app.services.chat_engine.entities import (
     MAX_DAYS,
@@ -199,9 +201,9 @@ def _help_format(_r: Any, _e: Entities, _today: date) -> list[BotMessage]:
             text=(
                 "I can tell you your net worth and how it's changed, any account's "
                 "balance, which bills are coming up and whether your accounts "
-                "cover them, your income, your credit cards and loans, and how "
-                "your portfolio is doing. You can also mark a bill paid "
-                '("I paid rent"). Try one of these:'
+                "cover them, your income, your credit cards and loans, how "
+                "your stocks and ETFs are doing, and your options. You can also "
+                'mark a bill paid ("I paid rent"). Try one of these:'
             ),
         )
     ]
@@ -873,13 +875,41 @@ NET_WORTH_TREND = Intent(
 # --- portfolio ---------------------------------------------------------------------
 
 
+# What each portfolio filter is called, and where its page is.
+KINDS = {
+    "all": (
+        "Portfolio value",
+        "holdings",
+        "stocks or ETFs",
+        "Open Holdings",
+        "/holdings",
+    ),
+    "stock": ("Stock value", "stocks", "stocks", "Open Holdings", "/holdings"),
+    "etf": ("ETF value", "ETFs", "ETFs", "Open ETF Holdings", "/etf-holdings"),
+}
+
+ETF_WORDS = re.compile(r"\b(etfs?|index funds?|funds?)\b")
+STOCK_WORDS = re.compile(r"\b(stocks?|shares|equit(y|ies))\b")
+
+
+def _portfolio_extract(text: str, _ctx: ExtractContext) -> Entities:
+    t = text.lower()
+    etf, stock = bool(ETF_WORDS.search(t)), bool(STOCK_WORDS.search(t))
+    if etf and not stock:
+        return {"type": "etf"}
+    if stock and not etf:
+        return {"type": "stock"}
+    return {}
+
+
 def _portfolio_format(
     result: GetPortfolioResult, _e: Entities, _today: date
 ) -> list[BotMessage]:
+    label, count_word, empty_word, link_label, route = KINDS[result.type]
     if result.holdings == 0:
         return [
-            _text("You don't have any stocks or ETFs yet."),
-            _link("Open Holdings", "/holdings"),
+            _text(f"You don't have any {empty_word} yet."),
+            _link(link_label, route),
         ]
     gain_pct = (
         f" ({_signed_pct(result.unrealized_gain_pct)})"
@@ -890,12 +920,12 @@ def _portfolio_format(
     if result.stale:
         out.append(_text("Prices may be out of date: the last market update failed."))
     out += [
-        _stat("Portfolio value", result.value, result.day_change),
+        _stat(label, result.value, result.day_change),
         # Today's change is on the stat card; this adds the overall gain.
         _text(
             f"Overall {_signed(result.unrealized_gain)}"
             f"{gain_pct} on {fmt_money(result.invested)} invested, across "
-            f"{result.holdings} holdings."
+            f"{result.holdings} {count_word}."
         ),
     ]
     movers = [*result.gainers, *result.losers]
@@ -921,27 +951,119 @@ def _portfolio_format(
                 ],
             )
         )
-    out.append(_link("Open Holdings", "/holdings"))
+    out.append(_link(link_label, route))
     return out
+
+
+def _portfolio_follow_ups(
+    result: GetPortfolioResult, _e: Entities, _today: date
+) -> list[QuickReply]:
+    switch = {
+        "all": [
+            chip("ETFs only", "portfolio", type="etf"),
+            chip("Stocks only", "portfolio", type="stock"),
+        ],
+        "etf": [
+            chip("Stocks only", "portfolio", type="stock"),
+            chip("Whole portfolio", "portfolio", type="all"),
+        ],
+        "stock": [
+            chip("ETFs only", "portfolio", type="etf"),
+            chip("Whole portfolio", "portfolio", type="all"),
+        ],
+    }[result.type]
+    return [*switch, chip("Options", "options"), chip("Net worth", "netWorth")]
 
 
 PORTFOLIO = Intent(
     name="portfolio",
     patterns=_p(
         r"\bportfolio\b",
-        r"\b(stocks?|etfs?|investments?|holdings?|shares)\b",
+        r"\b(stocks?|etfs?|investments?|holdings?|shares|funds?)\b",
         r"\b(movers?|gainers?|losers?)\b",
         r"\b(market|unreali[sz]ed|dividends?)\b",
         r"\b(up|down) today\b",
     ),
     tool="getPortfolio",
+    extract=_portfolio_extract,
+    payload_keys=frozenset({"type"}),
+    build_input=lambda e: {"type": e["type"]} if "type" in e else {},
+    format=_portfolio_format,
+    follow_ups=_portfolio_follow_ups,
+)
+
+
+# --- options -----------------------------------------------------------------------
+
+MAX_OPTION_ROWS = 8
+
+
+def _contract(p: OptionPosition) -> str:
+    """ "MSFT 565C sold" / "SPY 500P bought ×2"."""
+    right = "P" if p.trade_type.endswith("put") else "C"
+    side = "sold" if p.trade_type.startswith("sell_") else "bought"
+    count = f" ×{p.contracts}" if p.contracts > 1 else ""
+    return f"{p.ticker} {p.strike.normalize():f}{right} {side}{count}"
+
+
+def _options_format(
+    result: GetOptionsResult, _e: Entities, today: date
+) -> list[BotMessage]:
+    if result.trades == 0:
+        return [
+            _text("You have no options trades yet."),
+            _link("Open Options", "/options"),
+        ]
+    n = result.open_positions
+    facts = [
+        f"{n} open position{'' if n == 1 else 's'}, "
+        f"{result.expiring_this_week} expiring this week."
+    ]
+    if result.win_rate is not None:
+        facts.append(f"Win rate {result.win_rate:g}% on closed trades.")
+    out: list[BotMessage] = [
+        _stat("Options P&L", result.realized_pnl),
+        _text(" ".join(facts)),
+    ]
+    if result.open:
+        out.append(
+            TableMessage(
+                type="table",
+                columns=["Open", "Expires", "Premium"],
+                rows=[
+                    [
+                        _contract(p),
+                        "Today" if p.expiry_date == today else fmt_day(p.expiry_date),
+                        float(p.premium),
+                    ]
+                    for p in result.open[:MAX_OPTION_ROWS]
+                ],
+            )
+        )
+        if len(result.open) > MAX_OPTION_ROWS:
+            more = len(result.open) - MAX_OPTION_ROWS
+            out.append(_text(f"{more} more on the Options page."))
+    out.append(_link("Open Options", "/options"))
+    return out
+
+
+OPTIONS = Intent(
+    name="options",
+    patterns=_p(
+        r"\boptions?\b",
+        r"\b(puts?|calls?)\b",
+        r"\bpremiums?\b",
+        r"\bexpir\w*",
+        r"\b(strikes?|wheel|assigned|assignment|contracts?)\b",
+    ),
+    tool="getOptions",
     extract=_no_entities,
     payload_keys=frozenset(),
     build_input=lambda _e: {},
-    format=_portfolio_format,
+    format=_options_format,
     follow_ups=lambda _r, _e, _today: [
+        chip("Portfolio today", "portfolio"),
         chip("Net worth", "netWorth"),
-        chip("Net worth this month", "netWorthTrend", range="1M"),
     ],
 )
 
@@ -967,6 +1089,7 @@ def default_intents() -> IntentRegistry:
         DEBTS,
         UPCOMING_BILLS,
         INCOME,
+        OPTIONS,
         PORTFOLIO,
         BALANCES,
     ):
