@@ -19,7 +19,7 @@ const TIER: Record<
   { solid: string; hatch: string; card: string; pill: string; text: string }
 > = {
   short: {
-    solid: '#DC2626',
+    solid: 'var(--color-loss-600)',
     hatch: 'rgba(220, 38, 38, 0.45)',
     card: 'border-red-200 bg-red-50/60 dark:border-red-800 dark:bg-red-900/20',
     pill: 'bg-red-600 text-white',
@@ -33,7 +33,7 @@ const TIER: Record<
     text: 'text-amber-800 dark:text-amber-300',
   },
   covered: {
-    solid: '#059669',
+    solid: 'var(--color-gain-600)',
     hatch: 'rgba(5, 150, 105, 0.35)',
     card: 'border-slate-200 dark:border-slate-700',
     pill: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',

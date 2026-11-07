@@ -20,10 +20,10 @@ function ChangePill({
 }) {
   const style =
     value > 0
-      ? { arrow: '▲', cls: 'bg-[#0F3D2E] text-[#6EE7B7]' }
+      ? { arrow: '▲', cls: 'bg-gain-bg-dark text-gain-pale' }
       : value < 0
-        ? { arrow: '▼', cls: 'bg-[#3B1518] text-[#FCA5A5]' }
-        : { arrow: '', cls: 'bg-white/10 text-[#C9D2DF]' };
+        ? { arrow: '▼', cls: 'bg-loss-bg-dark text-loss-pale' }
+        : { arrow: '', cls: 'bg-white/10 text-hero-250' };
   return (
     <span
       className={`inline-flex w-fit items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums ${style.cls}`}
@@ -35,14 +35,14 @@ function ChangePill({
 }
 
 /** Line colours on the dark strip: green when the day is up, red when down. */
-const UP_COLOR = '#4ADE80';
-const DOWN_COLOR = '#F87171';
+const UP_COLOR = 'var(--color-gain-bright)';
+const DOWN_COLOR = 'var(--color-loss-bright)';
 
 function Sparkline({ intraday, up }: { intraday: IntradaySeries | undefined; up: boolean }) {
   const points = intraday?.points ?? [];
   if (points.length < 2) {
     return (
-      <p className="flex h-14 items-center justify-end text-[11px] text-[#A9B4C6]">
+      <p className="flex h-14 items-center justify-end text-[11px] text-hero-350">
         {intraday ? 'No intraday prices yet' : 'Loading today’s prices…'}
       </p>
     );
@@ -98,7 +98,7 @@ export default function Hero({
     return (
       <section
         aria-label="Portfolio value"
-        className="flex flex-wrap items-center gap-x-7 gap-y-4 rounded-2xl bg-[#0C1322] px-5 py-4"
+        className="flex flex-wrap items-center gap-x-7 gap-y-4 rounded-2xl bg-hero-bg px-5 py-4"
       >
         <div className="flex flex-col gap-2">
           <Skeleton className="h-3 w-28 !bg-white/10" />
@@ -125,16 +125,16 @@ export default function Hero({
   return (
     <section
       aria-label="Portfolio value"
-      className="flex flex-wrap items-center gap-x-7 gap-y-4 rounded-2xl bg-[#0C1322] px-5 py-4 text-white"
+      className="flex flex-wrap items-center gap-x-7 gap-y-4 rounded-2xl bg-hero-bg px-5 py-4 text-white"
     >
       <div className="flex flex-col gap-1.5">
-        <span className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#A9B4C6]">
+        <span className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-hero-350">
           Portfolio value
           <button
             type="button"
             title={cashNote}
             aria-label={cashNote}
-            className="rounded-full text-[#A9B4C6] hover:text-white focus-visible:outline-2 focus-visible:outline-[#7AB0FF]"
+            className="rounded-full text-hero-350 hover:text-white focus-visible:outline-2 focus-visible:outline-hero-accent"
           >
             <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
               <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13M8.75 11.5h-1.5V7h1.5zM8 5.9a.9.9 0 1 1 0-1.8.9.9 0 0 1 0 1.8" />
@@ -163,7 +163,7 @@ export default function Hero({
       </div>
       <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-0.5">
         <Sparkline intraday={intraday} up={summary.daily_change >= 0} />
-        <span className="text-right text-[11px] text-[#A9B4C6]">
+        <span className="text-right text-[11px] text-hero-350">
           {intraday && !intraday.is_today ? 'Last trading day' : 'Today'}
         </span>
       </div>

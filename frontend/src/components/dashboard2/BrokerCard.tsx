@@ -4,8 +4,13 @@ import { Card, Empty, SkeletonRows } from './Card';
 import { fmtMoney, fmtPct, fmtShare, tone } from './format';
 
 /** One blue, darkest for the largest broker. */
-const SHADES = ['#1D4ED8', '#3B82F6', '#60A5FA', '#93C5FD'];
-const OTHER_COLOR = '#CBD5E1';
+const SHADES = [
+  'var(--color-accent-700)',
+  'var(--color-accent-500)',
+  'var(--color-accent-400)',
+  'var(--color-accent-300)',
+];
+const OTHER_COLOR = 'var(--color-slate-300)';
 /** Rows shown before the rest fold into "+N more". */
 const MAX_ROWS = 4;
 
@@ -53,7 +58,7 @@ export default function BrokerCard({
   return (
     <Card
       title="By broker"
-      aside={<span className="text-xs text-[#5B6472] dark:text-slate-400">share · return</span>}
+      aside={<span className="text-xs text-ink-500 dark:text-slate-400">share · return</span>}
     >
       <div
         className="flex h-1.5 gap-[2px] overflow-hidden rounded-full"
@@ -72,7 +77,7 @@ export default function BrokerCard({
           return (
             <li
               key={b.broker}
-              className="grid grid-cols-[10px_minmax(0,1fr)_auto] items-center gap-2 border-t border-[#F1F2F5] py-1.5 dark:border-slate-700"
+              className="grid grid-cols-[10px_minmax(0,1fr)_auto] items-center gap-2 border-t border-ink-100 py-1.5 dark:border-slate-700"
             >
               <span
                 className="h-2 w-2 rounded-sm"
@@ -80,16 +85,16 @@ export default function BrokerCard({
                 aria-hidden="true"
               />
               <span className="flex min-w-0 flex-col">
-                <span className="truncate text-[13px] font-semibold text-[#0E1116] dark:text-white">
+                <span className="truncate text-[13px] font-semibold text-ink-900 dark:text-white">
                   {b.broker}
                 </span>
-                <span className="text-xs text-[#5B6472] dark:text-slate-400">
+                <span className="text-xs text-ink-500 dark:text-slate-400">
                   {fmtShare(b.market_value, total)} · {b.holding_count}{' '}
                   {b.holding_count === 1 ? 'holding' : 'holdings'}
                 </span>
               </span>
               <span className="flex flex-col text-right tabular-nums">
-                <span className="text-[13px] font-semibold text-[#0E1116] dark:text-white">
+                <span className="text-[13px] font-semibold text-ink-900 dark:text-white">
                   {fmtMoney(b.market_value, hidden)}
                 </span>
                 <span className={`text-xs ${t.className}`}>
@@ -103,16 +108,16 @@ export default function BrokerCard({
           );
         })}
         {folded && (
-          <li className="border-t border-[#F1F2F5] pt-1.5 dark:border-slate-700">
+          <li className="border-t border-ink-100 pt-1.5 dark:border-slate-700">
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
               aria-expanded={expanded}
-              className="flex w-full items-center justify-between rounded-md py-0.5 text-[13px] font-medium text-[#1D4ED8] hover:underline dark:text-blue-400"
+              className="flex w-full items-center justify-between rounded-md py-0.5 text-[13px] font-medium text-accent-700 hover:underline dark:text-blue-400"
             >
               <span>{expanded ? 'Show fewer' : `+${rest.length} more`}</span>
               {!expanded && (
-                <span className="tabular-nums text-[#5B6472] dark:text-slate-400">
+                <span className="tabular-nums text-ink-500 dark:text-slate-400">
                   {fmtMoney(restValue, hidden)}
                 </span>
               )}

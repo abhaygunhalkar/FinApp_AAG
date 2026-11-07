@@ -3,7 +3,7 @@ import type { OptionsYtd } from './calc';
 import { fmtSigned, tone } from './format';
 
 export default function OptionsCard({ ytd, hidden }: { ytd: OptionsYtd | null; hidden: boolean }) {
-  const aside = <span className="text-xs text-[#5B6472] dark:text-slate-400">YTD</span>;
+  const aside = <span className="text-xs text-ink-500 dark:text-slate-400">YTD</span>;
   if (!ytd) {
     return (
       <Card title="Options" aside={aside}>
@@ -47,7 +47,7 @@ export default function OptionsCard({ ytd, hidden }: { ytd: OptionsYtd | null; h
         />
       </div>
       {kept !== null && (
-        <p className="mt-auto text-xs text-[#5B6472] dark:text-slate-400">
+        <p className="mt-auto text-xs text-ink-500 dark:text-slate-400">
           {kept}% of premium collected kept
         </p>
       )}

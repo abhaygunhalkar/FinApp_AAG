@@ -142,7 +142,7 @@ export default function CoveredCallSimulator() {
   const tooltipStyle = {
     fontSize: 12,
     borderRadius: '6px',
-    border: '1px solid #e5e7eb',
+    border: '1px solid var(--color-gray-200)',
     backgroundColor: '#fff',
   };
 
@@ -246,7 +246,7 @@ export default function CoveredCallSimulator() {
                     contentStyle={tooltipStyle}
                   />
                   {/* Zero line */}
-                  <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="4 2" />
+                  <ReferenceLine y={0} stroke="var(--color-slate-400)" strokeDasharray="4 2" />
                   {/* Strike */}
                   <ReferenceLine
                     x={inputs.K}
@@ -257,18 +257,18 @@ export default function CoveredCallSimulator() {
                   {/* Breakeven */}
                   <ReferenceLine
                     x={summary.breakeven}
-                    stroke="#6b7280"
+                    stroke="var(--color-gray-500)"
                     strokeDasharray="4 2"
-                    label={{ value: `BE $${summary.breakeven.toFixed(2)}`, fontSize: 10, fill: '#6b7280', position: 'insideBottomLeft' }}
+                    label={{ value: `BE $${summary.breakeven.toFixed(2)}`, fontSize: 10, fill: 'var(--color-gray-500)', position: 'insideBottomLeft' }}
                   />
                   {/* Current price */}
                   <ReferenceLine
                     x={inputs.S}
-                    stroke="#3b82f6"
+                    stroke="var(--color-accent-500)"
                     strokeDasharray="4 2"
-                    label={{ value: `Now $${inputs.S}`, fontSize: 10, fill: '#3b82f6', position: 'insideTopLeft' }}
+                    label={{ value: `Now $${inputs.S}`, fontSize: 10, fill: 'var(--color-accent-500)', position: 'insideTopLeft' }}
                   />
-                  <Line type="monotone" dataKey="pnl" stroke="#10b981" strokeWidth={2.5} dot={false} />
+                  <Line type="monotone" dataKey="pnl" stroke="var(--color-gain-500)" strokeWidth={2.5} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -318,7 +318,7 @@ export default function CoveredCallSimulator() {
                   <Line
                     type="monotone"
                     dataKey="sellerGain"
-                    stroke="#10b981"
+                    stroke="var(--color-gain-500)"
                     strokeWidth={2}
                     strokeDasharray="6 3"
                     dot={false}

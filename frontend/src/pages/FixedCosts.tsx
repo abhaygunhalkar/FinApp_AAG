@@ -469,7 +469,7 @@ export default function FixedCosts() {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] text-sm">
                 <thead>
-                  <tr className="bg-[#1e3a5f] text-slate-100 text-xs uppercase tracking-wider">
+                  <tr className="bg-accent-header text-slate-100 text-xs uppercase tracking-wider">
                     <th className="text-left font-semibold px-4 py-3">Expense</th>
                     <th className="text-left font-semibold px-3 py-3">How often</th>
                     <th className="text-left font-semibold px-3 py-3">Next due</th>

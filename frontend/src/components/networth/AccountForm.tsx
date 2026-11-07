@@ -55,7 +55,7 @@ function initialForm(account?: FinancialAccount | null, defaults?: AccountFormDe
 }
 
 const inputClass =
-  'w-full h-11 px-3 rounded-xl border border-[#D0D5DD] dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/40 focus:border-[#1D4ED8] transition';
+  'w-full h-11 px-3 rounded-xl border border-ink-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-accent-700/40 focus:border-accent-700 transition';
 
 const labelClass = 'block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5';
 
@@ -199,7 +199,7 @@ export default function AccountForm({
       aria-modal="true"
       aria-labelledby="account-form-title"
     >
-      <div className="absolute inset-0 bg-[#0C1322]/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-hero-bg/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 w-full sm:max-w-md sm:mx-4 max-h-[92vh] flex flex-col bg-white dark:bg-slate-800 rounded-t-[24px] sm:rounded-[24px] shadow-2xl overflow-hidden">
         <div className="px-6 pt-6 pb-4 flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -343,7 +343,7 @@ export default function AccountForm({
           <button type="submit" className="sr-only" aria-hidden="true" tabIndex={-1} />
         </form>
 
-        <div className="px-6 py-4 border-t border-[#E4E7EC] dark:border-slate-700 flex gap-3">
+        <div className="px-6 py-4 border-t border-ink-200 dark:border-slate-700 flex gap-3">
           {isEditing && onDelete && (
             <button
               type="button"
@@ -359,7 +359,7 @@ export default function AccountForm({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="h-11 px-4 rounded-full border border-[#D0D5DD] dark:border-slate-600 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+            className="h-11 px-4 rounded-full border border-ink-300 dark:border-slate-600 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -367,7 +367,7 @@ export default function AccountForm({
             type="button"
             onClick={() => handleSubmit()}
             disabled={isSubmitting}
-            className="h-11 px-5 rounded-full bg-[#0C1322] dark:bg-white text-white dark:text-[#0C1322] text-sm font-semibold hover:bg-[#1F2A3F] dark:hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-11 px-5 rounded-full bg-hero-bg dark:bg-white text-white dark:text-hero-bg text-sm font-semibold hover:bg-ink-800 dark:hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Saving…' : isEditing ? 'Save' : 'Add'}
           </button>

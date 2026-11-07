@@ -45,7 +45,7 @@ function initialForm(expense?: RecurringExpense | null, category?: ExpenseCatego
 }
 
 const inputClass =
-  'w-full h-11 px-3 rounded-xl border border-[#D0D5DD] dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/40 focus:border-[#1D4ED8] transition';
+  'w-full h-11 px-3 rounded-xl border border-ink-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-accent-700/40 focus:border-accent-700 transition';
 
 /** Bills are paid from a bank account or charged to a card. */
 const PAYMENT_TYPES: AccountType[] = ['checking', 'savings', 'credit_card'];
@@ -118,7 +118,7 @@ export default function ExpenseForm({ expense, defaultCategory, onClose }: Expen
       aria-modal="true"
       aria-labelledby="expense-form-title"
     >
-      <div className="absolute inset-0 bg-[#0C1322]/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-hero-bg/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 w-full sm:max-w-lg sm:mx-4 max-h-[92vh] flex flex-col bg-white dark:bg-slate-800 rounded-t-[24px] sm:rounded-[24px] shadow-2xl overflow-hidden">
         <div className="px-6 pt-6 pb-4 flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -300,7 +300,7 @@ export default function ExpenseForm({ expense, defaultCategory, onClose }: Expen
           <button
             type="button"
             onClick={onClose}
-            className="h-11 px-5 rounded-xl border border-[#D0D5DD] dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            className="h-11 px-5 rounded-xl border border-ink-300 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
           >
             Cancel
           </button>

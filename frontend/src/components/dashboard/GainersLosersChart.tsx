@@ -104,7 +104,7 @@ export default function GainersLosersChart() {
             {chartData.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={entry.unrealized_gain_pct >= 0 ? '#10b981' : '#ef4444'}
+                fill={entry.unrealized_gain_pct >= 0 ? 'var(--color-gain-500)' : 'var(--color-loss-500)'}
               />
             ))}
           </Bar>

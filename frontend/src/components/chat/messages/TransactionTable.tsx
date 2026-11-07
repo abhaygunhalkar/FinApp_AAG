@@ -14,7 +14,7 @@ export default function TransactionTable({
     <div className={`${card} w-full overflow-x-auto`}>
       <table className="w-full text-left text-[13px] tabular-nums">
         <thead>
-          <tr className="border-b border-[#E4E7EC] dark:border-slate-700">
+          <tr className="border-b border-ink-200 dark:border-slate-700">
             {message.columns.map((c) => (
               <th
                 key={c}
@@ -28,10 +28,7 @@ export default function TransactionTable({
         </thead>
         <tbody>
           {message.rows.map((row, i) => (
-            <tr
-              key={i}
-              className="border-b border-[#F2F4F7] last:border-0 dark:border-slate-700/60"
-            >
+            <tr key={i} className="border-b border-ink-75 last:border-0 dark:border-slate-700/60">
               {row.map((cell, j) => (
                 <td
                   key={j}

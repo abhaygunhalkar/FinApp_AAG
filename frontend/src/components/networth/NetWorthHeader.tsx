@@ -32,7 +32,7 @@ export default function NetWorthHeader({
           aria-pressed={hidden}
           aria-label={hidden ? 'Show balances' : 'Hide balances'}
           title={hidden ? 'Show balances' : 'Hide balances'}
-          className="h-11 w-11 flex items-center justify-center rounded-full border border-[#E4E7EC] dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8]"
+          className="h-11 w-11 flex items-center justify-center rounded-full border border-ink-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-700"
         >
           {hidden ? <EyeOffIcon /> : <EyeIcon />}
         </button>
@@ -106,7 +106,7 @@ function AddMenu({ onAdd, connectBusy }: { onAdd: (a: AddAction) => void; connec
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="h-11 px-4 inline-flex items-center gap-1.5 rounded-full bg-[#0C1322] dark:bg-white text-white dark:text-[#0C1322] text-sm font-semibold hover:bg-[#1F2A3F] dark:hover:bg-slate-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8]"
+        className="h-11 px-4 inline-flex items-center gap-1.5 rounded-full bg-hero-bg dark:bg-white text-white dark:text-hero-bg text-sm font-semibold hover:bg-ink-800 dark:hover:bg-slate-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-700"
       >
         <svg viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4" aria-hidden="true">
           <path d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z" />
@@ -118,7 +118,7 @@ function AddMenu({ onAdd, connectBusy }: { onAdd: (a: AddAction) => void; connec
           role="menu"
           aria-label="Add to net worth"
           onKeyDown={onMenuKeyDown}
-          className="absolute right-0 z-30 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-[#E4E7EC] dark:border-slate-700 bg-white dark:bg-slate-800 p-1.5 shadow-[0_16px_40px_-12px_rgba(12,19,34,0.25)]"
+          className="absolute right-0 z-30 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-ink-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1.5 shadow-[0_16px_40px_-12px_rgba(12,19,34,0.25)]"
         >
           {MENU_ITEMS.map((item, i) => (
             <button
@@ -135,7 +135,7 @@ function AddMenu({ onAdd, connectBusy }: { onAdd: (a: AddAction) => void; connec
               }}
               className="w-full min-h-11 flex items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-700/60 focus:bg-slate-50 dark:focus:bg-slate-700/60 focus:outline-none disabled:opacity-50"
             >
-              <span className="h-9 w-9 shrink-0 rounded-lg bg-[#F4F5F7] dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center">
+              <span className="h-9 w-9 shrink-0 rounded-lg bg-ink-60 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center">
                 {item.icon}
               </span>
               <span>

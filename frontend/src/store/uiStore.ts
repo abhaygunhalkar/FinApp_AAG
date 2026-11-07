@@ -11,8 +11,26 @@ export interface HoldingsFilter {
 /** How far ahead the Fixed Costs "Coming up" card looks, in days. */
 export type ComingUpDays = 7 | 14 | 30;
 
+/** Colour palettes, defined in src/palettes.css. */
+export const PALETTES = [
+  { id: 'classic', label: 'Classic blue' },
+  { id: 'brass', label: 'Aubergine & Brass' },
+] as const;
+export type Palette = (typeof PALETTES)[number]['id'];
+
+function isPalette(value: unknown): value is Palette {
+  return PALETTES.some((p) => p.id === value);
+}
+
+/** The palette a deployment starts with (VITE_DEFAULT_PALETTE), before the user picks one. */
+export const DEFAULT_PALETTE: Palette = isPalette(import.meta.env.VITE_DEFAULT_PALETTE)
+  ? import.meta.env.VITE_DEFAULT_PALETTE
+  : 'classic';
+
 export interface UIState {
   theme: 'light' | 'dark';
+  /** Colour palette; persisted in localStorage. */
+  palette: Palette;
   /** Mask every balance on the Net Worth page; persisted in localStorage. */
   hideBalances: boolean;
   /** Fixed Costs "Coming up" window; persisted in localStorage. */
@@ -21,6 +39,7 @@ export interface UIState {
   holdingsFilter: HoldingsFilter;
   etfFilter: HoldingsFilter;
   setTheme: (theme: 'light' | 'dark') => void;
+  setPalette: (palette: Palette) => void;
   toggleHideBalances: () => void;
   setComingUpDays: (days: ComingUpDays) => void;
   toggleSidebar: () => void;
@@ -37,7 +56,19 @@ function getInitialTheme(): 'light' | 'dark' {
   } catch {
     // localStorage may be unavailable (e.g., SSR or privacy mode)
   }
-  return 'light';
+  return 'dark';
+}
+
+function getInitialPalette(): Palette {
+  try {
+    const stored = localStorage.getItem('palette');
+    if (isPalette(stored)) {
+      return stored;
+    }
+  } catch {
+    // localStorage may be unavailable
+  }
+  return DEFAULT_PALETTE;
 }
 
 function getInitialHideBalances(): boolean {
@@ -70,6 +101,7 @@ const defaultFilter: HoldingsFilter = {
 
 export const useUIStore = create<UIState>((set) => ({
   theme: getInitialTheme(),
+  palette: getInitialPalette(),
   hideBalances: getInitialHideBalances(),
   comingUpDays: getInitialComingUpDays(),
   sidebarCollapsed: false,
@@ -83,6 +115,15 @@ export const useUIStore = create<UIState>((set) => ({
       // localStorage may be unavailable
     }
     set({ theme });
+  },
+
+  setPalette: (palette) => {
+    try {
+      localStorage.setItem('palette', palette);
+    } catch {
+      // localStorage may be unavailable
+    }
+    set({ palette });
   },
 
   toggleHideBalances: () => {

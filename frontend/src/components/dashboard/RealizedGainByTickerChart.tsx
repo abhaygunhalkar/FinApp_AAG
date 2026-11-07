@@ -97,7 +97,7 @@ export default function RealizedGainByTickerChart() {
           />
           <Bar dataKey="gain" radius={[4, 4, 0, 0]}>
             {chartData.map((entry) => (
-              <Cell key={entry.ticker} fill={entry.gain >= 0 ? '#10b981' : '#ef4444'} />
+              <Cell key={entry.ticker} fill={entry.gain >= 0 ? 'var(--color-gain-500)' : 'var(--color-loss-500)'} />
             ))}
           </Bar>
         </BarChart>

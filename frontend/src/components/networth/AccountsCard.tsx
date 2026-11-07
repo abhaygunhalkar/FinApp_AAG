@@ -50,8 +50,8 @@ export default function AccountsCard({
   const highestAprId = topApr && topApr.balance > 0 ? topApr.id : null;
 
   return (
-    <section className="rounded-[20px] border border-[#E4E7EC] dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
-      <header className="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-[#E4E7EC] dark:border-slate-700">
+    <section className="rounded-[20px] border border-ink-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
+      <header className="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-ink-200 dark:border-slate-700">
         <h2 className="flex items-center gap-2.5 text-base font-semibold text-slate-900 dark:text-slate-100">
           <span
             className="h-2.5 w-2.5 rounded-full"
@@ -71,7 +71,7 @@ export default function AccountsCard({
         groups.map((g) => (
           <div
             key={g.category.key}
-            className="border-b border-[#F2F4F7] dark:border-slate-700/60 last:border-b-0"
+            className="border-b border-ink-75 dark:border-slate-700/60 last:border-b-0"
           >
             {showGroupLabels && (
               <h3 className="px-4 sm:px-5 pt-3 text-xs font-semibold uppercase tracking-[0.1em] text-slate-500 dark:text-slate-400">
@@ -138,7 +138,7 @@ function CreditSummary({ accounts, hidden }: { accounts: FinancialAccount[]; hid
         {stale !== null && <StaleNote days={stale} />}
       </p>
       <div
-        className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-[#F2F4F7] dark:bg-slate-700"
+        className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-ink-75 dark:bg-slate-700"
         role="progressbar"
         aria-label="Total credit utilization"
         aria-valuenow={Math.round(used)}

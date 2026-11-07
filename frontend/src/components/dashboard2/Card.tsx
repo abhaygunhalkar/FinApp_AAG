@@ -16,10 +16,10 @@ export function Card({
   return (
     <section
       aria-label={title}
-      className={`flex flex-col gap-2.5 rounded-[14px] border border-[#E4E7EC] bg-white px-4 py-3.5 dark:border-slate-700 dark:bg-slate-800 ${className}`}
+      className={`flex flex-col gap-2.5 rounded-[14px] border border-ink-200 bg-white px-4 py-3.5 dark:border-slate-700 dark:bg-slate-800 ${className}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-        <h2 className="text-sm font-semibold text-[#0E1116] dark:text-white">{title}</h2>
+        <h2 className="text-sm font-semibold text-ink-900 dark:text-white">{title}</h2>
         {aside}
       </div>
       {children}
@@ -51,7 +51,7 @@ export function SkeletonRows({ rows = 4 }: { rows?: number }) {
 /** Short centred message for a section with nothing to show yet. */
 export function Empty({ children }: { children: ReactNode }) {
   return (
-    <p className="flex flex-1 items-center justify-center py-6 text-center text-[13px] text-[#5B6472] dark:text-slate-400">
+    <p className="flex flex-1 items-center justify-center py-6 text-center text-[13px] text-ink-500 dark:text-slate-400">
       {children}
     </p>
   );
@@ -73,22 +73,20 @@ export function StatRow({
 }) {
   return (
     <div
-      className={`flex items-baseline justify-between gap-3 border-t border-[#F1F2F5] py-1.5 dark:border-slate-700 ${
+      className={`flex items-baseline justify-between gap-3 border-t border-ink-100 py-1.5 dark:border-slate-700 ${
         indent ? 'pl-3 text-xs' : 'text-[13px]'
       }`}
     >
       <span
         className={
-          strong
-            ? 'font-semibold text-[#0E1116] dark:text-white'
-            : 'text-[#5B6472] dark:text-slate-400'
+          strong ? 'font-semibold text-ink-900 dark:text-white' : 'text-ink-500 dark:text-slate-400'
         }
       >
         {label}
       </span>
       <span
         className={`tabular-nums ${strong ? 'font-bold' : indent ? '' : 'font-semibold'} ${
-          valueClass || 'text-[#0E1116] dark:text-white'
+          valueClass || 'text-ink-900 dark:text-white'
         }`}
       >
         {value}

@@ -89,14 +89,14 @@ export default function Dashboard2() {
   const updated = asOf(summary?.last_successful_fetch ?? null);
 
   return (
-    <div className="mx-auto flex max-w-[1240px] flex-col gap-3 text-[13px] text-[#0E1116] tabular-nums dark:text-slate-100">
+    <div className="mx-auto flex max-w-[1240px] flex-col gap-3 text-[13px] text-ink-900 tabular-nums dark:text-slate-100">
       <header className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1 pt-1">
-          <h1 className="text-xl font-bold tracking-tight text-[#0E1116] dark:text-white">
+          <h1 className="text-xl font-bold tracking-tight text-ink-900 dark:text-white">
             Dashboard
           </h1>
           {summary && (
-            <span className="text-[13px] text-[#5B6472] dark:text-slate-400">
+            <span className="text-[13px] text-ink-500 dark:text-slate-400">
               {summary.number_of_holdings}{' '}
               {summary.number_of_holdings === 1 ? 'holding' : 'holdings'}
               {brokerCount !== undefined &&

@@ -17,7 +17,7 @@ export default function BreakdownCard({
   emptyText,
 }: BreakdownCardProps) {
   return (
-    <section className="rounded-[20px] border border-[#E4E7EC] dark:border-slate-700 bg-white dark:bg-slate-800 p-5 sm:p-6">
+    <section className="rounded-[20px] border border-ink-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 sm:p-6">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
         <span className="text-base font-semibold text-slate-900 dark:text-slate-100">
@@ -72,8 +72,8 @@ export default function BreakdownCard({
 
 export function HomeEquityCard({ onAddProperty }: { onAddProperty: () => void }) {
   return (
-    <section className="rounded-[20px] border-2 border-dashed border-[#D0D5DD] dark:border-slate-600 bg-white/60 dark:bg-slate-800/60 p-5 sm:p-6 flex flex-col">
-      <div className="h-11 w-11 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-[#1D4ED8] dark:text-blue-300 flex items-center justify-center">
+    <section className="rounded-[20px] border-2 border-dashed border-ink-300 dark:border-slate-600 bg-white/60 dark:bg-slate-800/60 p-5 sm:p-6 flex flex-col">
+      <div className="h-11 w-11 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-accent-700 dark:text-blue-300 flex items-center justify-center">
         <svg
           viewBox="0 0 24 24"
           fill="none"
@@ -99,7 +99,7 @@ export function HomeEquityCard({ onAddProperty }: { onAddProperty: () => void })
       <button
         type="button"
         onClick={onAddProperty}
-        className="mt-4 self-start h-11 px-4 rounded-full bg-[#0C1322] dark:bg-white text-white dark:text-[#0C1322] text-sm font-semibold hover:bg-[#1F2A3F] dark:hover:bg-slate-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8]"
+        className="mt-4 self-start h-11 px-4 rounded-full bg-hero-bg dark:bg-white text-white dark:text-hero-bg text-sm font-semibold hover:bg-ink-800 dark:hover:bg-slate-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-700"
       >
         Add property value
       </button>

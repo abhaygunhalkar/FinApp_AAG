@@ -34,7 +34,7 @@ export default function SectorCard({
         note ? (
           <span className="text-xs font-medium text-[#9A3412] dark:text-orange-300">{note}</span>
         ) : (
-          <span className="text-xs text-[#5B6472] dark:text-slate-400">% of stocks</span>
+          <span className="text-xs text-ink-500 dark:text-slate-400">% of stocks</span>
         )
       }
     >
@@ -45,20 +45,20 @@ export default function SectorCard({
       >
         {sectors.map((s, i) => (
           <li key={s.name} className="contents">
-            <span className="text-xs text-[#0E1116] dark:text-slate-200">{s.name}</span>
+            <span className="text-xs text-ink-900 dark:text-slate-200">{s.name}</span>
             <span
-              className="h-2 overflow-hidden rounded-full bg-[#F1F2F5] dark:bg-slate-700"
+              className="h-2 overflow-hidden rounded-full bg-ink-100 dark:bg-slate-700"
               aria-hidden="true"
             >
               <span
                 className="block h-full rounded-full"
                 style={{
                   width: `${(s.pct / max) * 100}%`,
-                  background: i === 0 ? '#1D4ED8' : '#93C5FD',
+                  background: i === 0 ? 'var(--color-accent-700)' : 'var(--color-accent-300)',
                 }}
               />
             </span>
-            <span className="text-right text-xs font-semibold tabular-nums text-[#0E1116] dark:text-white">
+            <span className="text-right text-xs font-semibold tabular-nums text-ink-900 dark:text-white">
               {s.pct.toFixed(1)}%
             </span>
           </li>

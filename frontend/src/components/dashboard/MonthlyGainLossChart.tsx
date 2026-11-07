@@ -126,9 +126,9 @@ export default function MonthlyGainLossChart() {
             formatter={(value) => (value === 'stocks' ? 'Stocks' : 'Options')}
             wrapperStyle={{ fontSize: 12 }}
           />
-          <Bar dataKey="stocks" radius={[4, 4, 0, 0]} fill="#3b82f6">
+          <Bar dataKey="stocks" radius={[4, 4, 0, 0]} fill="var(--color-accent-500)">
             {monthlyData.map((entry) => (
-              <Cell key={`stocks-${entry.month}`} fill={entry.stocks >= 0 ? '#3b82f6' : '#ef4444'} />
+              <Cell key={`stocks-${entry.month}`} fill={entry.stocks >= 0 ? 'var(--color-accent-500)' : 'var(--color-loss-500)'} />
             ))}
           </Bar>
           <Bar dataKey="options" radius={[4, 4, 0, 0]} fill="#8b5cf6">

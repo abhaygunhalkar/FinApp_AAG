@@ -142,7 +142,7 @@ export default function NetWorth() {
 
   return (
     <div
-      className="-m-6 min-h-[calc(100%+3rem)] bg-[#F4F5F7] dark:bg-slate-900 px-4 py-6 sm:p-6 lg:p-8"
+      className="-m-6 min-h-[calc(100%+3rem)] bg-ink-60 dark:bg-slate-900 px-4 py-6 sm:p-6 lg:p-8"
       style={{
         fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
         fontFeatureSettings: "'tnum'",
@@ -195,7 +195,7 @@ export default function NetWorth() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
           <AccountsCard
             title="Assets"
-            dotColor="#1D4ED8"
+            dotColor="var(--color-accent-700)"
             total={totalAssets}
             categories={ASSET_CATEGORIES}
             accounts={accountList.filter((a) => a.is_asset)}
@@ -219,10 +219,10 @@ export default function NetWorth() {
                 onClick={() =>
                   setForm({ account: null, defaults: { account_type: 'real_estate' } })
                 }
-                className="w-full min-h-14 px-4 sm:px-5 flex items-center gap-3.5 border-t border-[#E4E7EC] dark:border-slate-700 text-left text-sm font-semibold text-[#1D4ED8] dark:text-blue-300 hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#1D4ED8]"
+                className="w-full min-h-14 px-4 sm:px-5 flex items-center gap-3.5 border-t border-ink-200 dark:border-slate-700 text-left text-sm font-semibold text-accent-700 dark:text-blue-300 hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent-700"
               >
                 <span
-                  className="h-11 w-11 shrink-0 rounded-xl border-2 border-dashed border-[#BFD3F5] dark:border-blue-800 flex items-center justify-center"
+                  className="h-11 w-11 shrink-0 rounded-xl border-2 border-dashed border-accent-line dark:border-blue-800 flex items-center justify-center"
                   aria-hidden="true"
                 >
                   +

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { queryClient } from './hooks/queryClient';
@@ -45,14 +45,21 @@ const router = createBrowserRouter([
 
 function App() {
   const theme = useUIStore((state) => state.theme);
+  const palette = useUIStore((state) => state.palette);
 
-  useEffect(() => {
+  // Layout effects run before the first paint, so the page never flashes
+  // in the wrong theme.
+  useLayoutEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
   }, [theme]);
+
+  useLayoutEffect(() => {
+    document.documentElement.dataset.palette = palette;
+  }, [palette]);
 
   return (
     <QueryClientProvider client={queryClient}>

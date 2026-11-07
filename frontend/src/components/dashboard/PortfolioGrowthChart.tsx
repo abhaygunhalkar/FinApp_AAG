@@ -118,7 +118,7 @@ export default function PortfolioGrowthChart() {
           <Line
             type="monotone"
             dataKey="total_value"
-            stroke="#3b82f6"
+            stroke="var(--color-accent-500)"
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 4 }}

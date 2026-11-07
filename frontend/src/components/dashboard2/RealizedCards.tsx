@@ -4,7 +4,7 @@ import { Card, Empty, Skeleton, SkeletonRows } from './Card';
 import { fmtSigned, tone } from './format';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const STOCKS_COLOR = '#1D4ED8';
+const STOCKS_COLOR = 'var(--color-accent-700)';
 const OPTIONS_COLOR = '#7C3AED';
 /** Tickers listed before the rest fold into "+N more". */
 const TOP_TICKERS = 8;
@@ -41,14 +41,14 @@ function MonthTooltip({
   if (!active || !payload?.length) return null;
   const row = payload[0].payload;
   return (
-    <div className="rounded-lg border border-[#E4E7EC] bg-white px-3 py-2 text-xs shadow-md dark:border-slate-600 dark:bg-slate-800">
-      <p className="mb-1 font-semibold text-[#0E1116] dark:text-white">{MONTHS[row.month]}</p>
+    <div className="rounded-lg border border-ink-200 bg-white px-3 py-2 text-xs shadow-md dark:border-slate-600 dark:bg-slate-800">
+      <p className="mb-1 font-semibold text-ink-900 dark:text-white">{MONTHS[row.month]}</p>
       <p className="tabular-nums dark:text-slate-200">
-        <span className="text-[#5B6472] dark:text-slate-400">Stocks </span>
+        <span className="text-ink-500 dark:text-slate-400">Stocks </span>
         {fmtSigned(row.stocks, hidden)}
       </p>
       <p className="tabular-nums dark:text-slate-200">
-        <span className="text-[#5B6472] dark:text-slate-400">Options </span>
+        <span className="text-ink-500 dark:text-slate-400">Options </span>
         {fmtSigned(row.options, hidden)}
       </p>
     </div>
@@ -79,7 +79,7 @@ export function MonthlyRealizedCard({
     <Card
       title={title}
       aside={
-        <div className="flex items-center gap-3 text-[11px] text-[#5B6472] dark:text-slate-400">
+        <div className="flex items-center gap-3 text-[11px] text-ink-500 dark:text-slate-400">
           <LegendDot color={STOCKS_COLOR} label="Stocks" />
           <LegendDot color={OPTIONS_COLOR} label="Options" />
           {any && (
@@ -101,14 +101,17 @@ export function MonthlyRealizedCard({
               <XAxis
                 dataKey="month"
                 tickFormatter={(m: number) => MONTHS[m][0]}
-                tick={{ fontSize: 11, fill: '#5B6472' }}
+                tick={{ fontSize: 11, fill: 'var(--color-ink-500)' }}
                 tickLine={false}
-                axisLine={{ stroke: '#DDE1E7' }}
+                axisLine={{ stroke: 'var(--color-ink-250)' }}
                 interval={0}
               />
               <YAxis hide domain={[(min: number) => Math.min(0, min), 'auto']} />
-              <ReferenceLine y={0} stroke="#DDE1E7" />
-              <Tooltip content={<MonthTooltip hidden={hidden} />} cursor={{ fill: '#F1F2F5' }} />
+              <ReferenceLine y={0} stroke="var(--color-ink-250)" />
+              <Tooltip
+                content={<MonthTooltip hidden={hidden} />}
+                cursor={{ fill: 'var(--color-ink-100)' }}
+              />
               <Bar
                 dataKey="stocks"
                 fill={STOCKS_COLOR}
@@ -141,7 +144,7 @@ export function TickerRealizedCard({
 }) {
   const [showAll, setShowAll] = useState(false);
   const title = 'Realized gain by ticker';
-  const aside = <span className="text-xs text-[#5B6472] dark:text-slate-400">Stocks · YTD</span>;
+  const aside = <span className="text-xs text-ink-500 dark:text-slate-400">Stocks · YTD</span>;
   if (!tickers) {
     return (
       <Card title={title} aside={aside}>
@@ -170,14 +173,12 @@ export function TickerRealizedCard({
           return (
             <li
               key={t.ticker}
-              className="grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-1 py-1 hover:bg-[#F1F2F5] dark:hover:bg-slate-700/50"
+              className="grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-1 py-1 hover:bg-ink-100 dark:hover:bg-slate-700/50"
             >
-              <span className="text-xs font-semibold text-[#0E1116] dark:text-white">
-                {t.ticker}
-              </span>
+              <span className="text-xs font-semibold text-ink-900 dark:text-white">{t.ticker}</span>
               <span className="h-2.5" aria-hidden="true">
                 <span
-                  className={`block h-full rounded-[3px] ${t.gain < 0 ? 'bg-[#B91C1C]' : 'bg-[#15803D]'}`}
+                  className={`block h-full rounded-[3px] ${t.gain < 0 ? 'bg-loss-700' : 'bg-gain-deep'}`}
                   style={{ width: `${Math.max((Math.abs(t.gain) / max) * 100, 1.5)}%` }}
                 />
               </span>
@@ -195,7 +196,7 @@ export function TickerRealizedCard({
           type="button"
           onClick={() => setShowAll((v) => !v)}
           aria-expanded={showAll}
-          className="w-fit text-[13px] font-medium text-[#1D4ED8] hover:underline dark:text-blue-400"
+          className="w-fit text-[13px] font-medium text-accent-700 hover:underline dark:text-blue-400"
         >
           {showAll ? 'Show top 8' : `+${more} more`}
         </button>

@@ -21,7 +21,7 @@ export default function ChatLauncher({ onOpen, unread, onPrefetch, buttonRef }: 
       onClick={onOpen}
       onPointerEnter={onPrefetch}
       onFocus={onPrefetch}
-      className="fixed bottom-5 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#0C1322] text-white shadow-[0_12px_30px_-8px_rgba(12,19,34,0.55)] transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1D4ED8] motion-reduce:transition-none motion-reduce:hover:scale-100 sm:bottom-6 sm:right-6 dark:ring-1 dark:ring-white/15"
+      className="fixed bottom-5 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-hero-bg text-white shadow-[0_12px_30px_-8px_rgba(12,19,34,0.55)] transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-700 motion-reduce:transition-none motion-reduce:hover:scale-100 sm:bottom-6 sm:right-6 dark:ring-1 dark:ring-white/15"
     >
       <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6" aria-hidden="true">
         <path d="M4.8 3h14.4A2.8 2.8 0 0 1 22 5.8v9.4a2.8 2.8 0 0 1-2.8 2.8H9.6l-4.3 3.6A.8.8 0 0 1 4 21v-3H4.8A2.8 2.8 0 0 1 2 15.2V5.8A2.8 2.8 0 0 1 4.8 3Zm3 6.4a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6Zm4.2 0a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6Zm4.2 0a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6Z" />

@@ -19,7 +19,7 @@ export default function ConfirmMessage({
           type="button"
           disabled={disabled}
           onClick={() => onAction(message.confirmAction, 'Yes')}
-          className="min-h-9 rounded-lg bg-[#1D4ED8] px-4 text-sm font-semibold text-white hover:bg-[#1E40AF] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8] disabled:opacity-50"
+          className="min-h-9 rounded-lg bg-accent-700 px-4 text-sm font-semibold text-white hover:bg-accent-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-700 disabled:opacity-50"
         >
           Yes
         </button>
@@ -27,7 +27,7 @@ export default function ConfirmMessage({
           type="button"
           disabled={disabled}
           onClick={() => onAction(message.cancelAction, 'No')}
-          className="min-h-9 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8] disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+          className="min-h-9 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-700 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
         >
           No
         </button>

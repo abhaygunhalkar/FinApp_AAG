@@ -44,7 +44,7 @@ export default function MessageList({
       {entries.map((entry, i) =>
         entry.role === 'user' ? (
           <div key={entry.id} className="flex justify-end">
-            <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-tr-md bg-[#1D4ED8] px-3.5 py-2.5 text-sm text-white">
+            <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-tr-md bg-accent-700 px-3.5 py-2.5 text-sm text-white">
               <span className="sr-only">You: </span>
               {entry.text}
             </p>
@@ -67,7 +67,7 @@ export default function MessageList({
             <button
               type="button"
               onClick={onRetry}
-              className="min-h-9 rounded-full border border-[#BFD3F5] bg-white px-3.5 text-sm font-medium text-[#1D4ED8] hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8] dark:border-blue-800 dark:bg-slate-800 dark:text-blue-300"
+              className="min-h-9 rounded-full border border-accent-line bg-white px-3.5 text-sm font-medium text-accent-700 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-700 dark:border-blue-800 dark:bg-slate-800 dark:text-blue-300"
             >
               Try again
             </button>
@@ -79,7 +79,7 @@ export default function MessageList({
           <span className="sr-only">Assistant is typing</span>
           <span
             aria-hidden="true"
-            className="inline-flex gap-1 rounded-2xl rounded-tl-md bg-[#F2F4F7] px-3.5 py-3 dark:bg-slate-700"
+            className="inline-flex gap-1 rounded-2xl rounded-tl-md bg-ink-75 px-3.5 py-3 dark:bg-slate-700"
           >
             {[0, 1, 2].map((d) => (
               <span

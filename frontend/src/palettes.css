@@ -1,0 +1,210 @@
+/* Colour palettes. The "classic" tokens below are the app's original colours;
+   another palette overrides them (and Tailwind's own palettes) under
+   html[data-palette="..."]. Components use these tokens instead of hex values,
+   so switching palettes is just changing that attribute (see uiStore). */
+@theme static {
+  /* Accent (primary actions, links, main chart lines) */
+  --color-accent-200: #bfdbfe;
+  --color-accent-300: #93c5fd;
+  --color-accent-400: #60a5fa;
+  --color-accent-500: #3b82f6;
+  --color-accent-700: #1d4ed8;
+  --color-accent-800: #1e40af;
+  --color-accent-900: #1e3a8a;
+  --color-accent-line: #bfd3f5;
+  --color-accent-header: #1e3a5f;
+
+  /* Neutrals for text, borders and washes on light surfaces */
+  --color-ink-50: #f7f8fa;
+  --color-ink-60: #f4f5f7;
+  --color-ink-75: #f2f4f7;
+  --color-ink-100: #f1f2f5;
+  --color-ink-150: #eef0f3;
+  --color-ink-200: #e4e7ec;
+  --color-ink-250: #dde1e7;
+  --color-ink-300: #d0d5dd;
+  --color-ink-500: #5b6472;
+  --color-ink-800: #1f2a3f;
+  --color-ink-900: #0e1116;
+
+  /* The dark hero cards (Dashboard 2, Net Worth) */
+  --color-hero-bg: #0c1322;
+  --color-hero-250: #c9d2df;
+  --color-hero-300: #c3cddd;
+  --color-hero-350: #a9b4c6;
+  --color-hero-400: #a3aec2;
+  --color-hero-accent: #7ab0ff;
+  --color-hero-accent-soft: #8fc1ff;
+  --color-hero-accent-pale: #9cc7ff;
+  --color-hero-accent-bg: #13294b;
+
+  /* Gains and losses */
+  --color-gain-500: #10b981;
+  --color-gain-600: #059669;
+  --color-gain-strong: #16a34a;
+  --color-gain-deep: #15803d;
+  --color-gain-bright: #4ade80;
+  --color-gain-pale: #6ee7b7;
+  --color-gain-bg-dark: #0f3d2e;
+  --color-loss-500: #ef4444;
+  --color-loss-600: #dc2626;
+  --color-loss-700: #b91c1c;
+  --color-loss-bright: #f87171;
+  --color-loss-pale: #fca5a5;
+  --color-loss-bg-dark: #3b1518;
+}
+
+/* ---- Aubergine & Brass: parchment/aubergine neutrals, brass accent,
+   jade gains, vermilion losses ---- */
+:root[data-palette='brass'] {
+  --color-white: #fffcf5;
+
+  --color-accent-200: #f1d58a;
+  --color-accent-300: #e7bd5a;
+  --color-accent-400: #d9a53a;
+  --color-accent-500: #bf8a24;
+  --color-accent-700: #94661a;
+  --color-accent-800: #7a5217;
+  --color-accent-900: #5d3f16;
+  --color-accent-line: #f1d58a;
+  --color-accent-header: #4a2a4e;
+
+  --color-ink-50: #f8f2e7;
+  --color-ink-60: #f5ede0;
+  --color-ink-75: #f3eadb;
+  --color-ink-100: #f3eadb;
+  --color-ink-150: #f0e6d6;
+  --color-ink-200: #e8dccb;
+  --color-ink-250: #e3d5c3;
+  --color-ink-300: #d9c9b8;
+  --color-ink-500: #6e5a6c;
+  --color-ink-800: #3a2840;
+  --color-ink-900: #23162a;
+
+  --color-hero-bg: #2a1830;
+  --color-hero-250: #d3c4b8;
+  --color-hero-300: #cdbdb4;
+  --color-hero-350: #b7a3ae;
+  --color-hero-400: #b09ca8;
+  --color-hero-accent: #e7bd5a;
+  --color-hero-accent-soft: #e7bd5a;
+  --color-hero-accent-pale: #f1d58a;
+  --color-hero-accent-bg: #3d2340;
+
+  --color-gain-500: #1d8d6e;
+  --color-gain-600: #15735a;
+  --color-gain-strong: #15735a;
+  --color-gain-deep: #135c49;
+  --color-gain-bright: #66c3a4;
+  --color-gain-pale: #66c3a4;
+  --color-gain-bg-dark: #103c31;
+  --color-loss-500: #e04a2b;
+  --color-loss-600: #c0371d;
+  --color-loss-700: #9d2c19;
+  --color-loss-bright: #f26a48;
+  --color-loss-pale: #fb9576;
+  --color-loss-bg-dark: #3a0f09;
+
+  /* Tailwind palettes used directly by class names */
+  --color-slate-50: #faf5ec;
+  --color-slate-100: #f3eadb;
+  --color-slate-200: #e6d9c6;
+  --color-slate-300: #cfbdb0;
+  --color-slate-400: #a8929e;
+  --color-slate-500: #81697c;
+  --color-slate-600: #634c63;
+  --color-slate-700: #4a354c;
+  --color-slate-800: #33223a;
+  --color-slate-900: #23162a;
+  --color-slate-950: #160c1b;
+  --color-gray-50: #faf5ec;
+  --color-gray-100: #f3eadb;
+  --color-gray-200: #e6d9c6;
+  --color-gray-300: #cfbdb0;
+  --color-gray-400: #a8929e;
+  --color-gray-500: #81697c;
+  --color-gray-600: #634c63;
+  --color-gray-700: #4a354c;
+  --color-gray-800: #33223a;
+  --color-gray-900: #23162a;
+  --color-gray-950: #160c1b;
+
+  --color-blue-50: #fdf6e3;
+  --color-blue-100: #f9e9c0;
+  --color-blue-200: #f1d58a;
+  --color-blue-300: #e7bd5a;
+  --color-blue-400: #d9a53a;
+  --color-blue-500: #bf8a24;
+  --color-blue-600: #94661a;
+  --color-blue-700: #7a5217;
+  --color-blue-800: #5d3f16;
+  --color-blue-900: #452f14;
+  --color-blue-950: #281a08;
+  --color-sky-50: #fdf6e3;
+  --color-sky-100: #f9e9c0;
+  --color-sky-200: #f1d58a;
+  --color-sky-300: #e7bd5a;
+  --color-sky-400: #d9a53a;
+  --color-sky-500: #bf8a24;
+  --color-sky-600: #94661a;
+  --color-sky-700: #7a5217;
+  --color-sky-800: #5d3f16;
+  --color-sky-900: #452f14;
+  --color-indigo-500: #bf8a24;
+  --color-indigo-600: #94661a;
+
+  --color-emerald-50: #ebf7f1;
+  --color-emerald-100: #cdeedf;
+  --color-emerald-200: #9fdcc3;
+  --color-emerald-300: #66c3a4;
+  --color-emerald-400: #39a886;
+  --color-emerald-500: #1d8d6e;
+  --color-emerald-600: #15735a;
+  --color-emerald-700: #135c49;
+  --color-emerald-800: #12493b;
+  --color-emerald-900: #103c31;
+  --color-emerald-950: #07221c;
+  --color-green-50: #ebf7f1;
+  --color-green-100: #cdeedf;
+  --color-green-200: #9fdcc3;
+  --color-green-300: #66c3a4;
+  --color-green-400: #39a886;
+  --color-green-500: #1d8d6e;
+  --color-green-600: #15735a;
+  --color-green-700: #135c49;
+  --color-green-800: #12493b;
+  --color-green-900: #103c31;
+  --color-green-950: #07221c;
+
+  --color-red-50: #fff1ec;
+  --color-red-100: #ffdfd4;
+  --color-red-200: #ffbfa9;
+  --color-red-300: #fb9576;
+  --color-red-400: #f26a48;
+  --color-red-500: #e04a2b;
+  --color-red-600: #c0371d;
+  --color-red-700: #9d2c19;
+  --color-red-800: #80271a;
+  --color-red-900: #682319;
+  --color-red-950: #3a0f09;
+}
+
+:root[data-palette='brass'] .bg-surface-gradient {
+  background:
+    radial-gradient(1200px 600px at 100% 0%, #f6e7c4 0%, transparent 60%),
+    linear-gradient(180deg, #faf5ec 0%, #f3eadb 100%);
+}
+
+:root[data-palette='brass'].dark .bg-surface-gradient {
+  background:
+    radial-gradient(1200px 600px at 100% 0%, #3a2440 0%, transparent 60%),
+    linear-gradient(180deg, #1c1022 0%, #23162a 100%);
+}
+
+:root[data-palette='brass'] .bg-finance-gradient {
+  background: linear-gradient(135deg, #3d2340 0%, #1c1022 100%);
+}
+
+:root[data-palette='brass'].dark .bg-finance-gradient {
+  background: linear-gradient(135deg, #23162a 0%, #0f0713 100%);
+}

@@ -62,11 +62,11 @@ export default function NetWorthHero({
   return (
     <section
       aria-label="Net worth summary"
-      className="rounded-2xl bg-[#0C1322] px-4 py-5 sm:px-6 text-white shadow-[0_12px_40px_-12px_rgba(12,19,34,0.45)]"
+      className="rounded-2xl bg-hero-bg px-4 py-5 sm:px-6 text-white shadow-[0_12px_40px_-12px_rgba(12,19,34,0.45)]"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#A3AEC2]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-hero-400">
             Net worth
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5">
@@ -79,7 +79,7 @@ export default function NetWorthHero({
             {change && (
               <ChangeBadge change={change} hidden={hidden} added={added.map((a) => a.name)} />
             )}
-            <span className="text-xs text-[#A3AEC2]">
+            <span className="text-xs text-hero-400">
               {scrubbed ? fmtDay(scrubbed.date) : change ? caption : 'Today'}
             </span>
           </div>
@@ -100,10 +100,10 @@ export default function NetWorthHero({
                 setRangeChanged(true);
                 setScrubIndex(null);
               }}
-              className={`flex-1 sm:flex-none h-7 min-w-9 px-2.5 rounded-full text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7AB0FF] ${
+              className={`flex-1 sm:flex-none h-7 min-w-9 px-2.5 rounded-full text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hero-accent ${
                 range === r.key
-                  ? 'bg-white text-[#0C1322]'
-                  : 'text-[#C3CDDD] hover:bg-white/10 hover:text-white'
+                  ? 'bg-white text-hero-bg'
+                  : 'text-hero-300 hover:bg-white/10 hover:text-white'
               }`}
             >
               {r.label}
@@ -126,7 +126,11 @@ export default function NetWorthHero({
       </div>
 
       <dl className="mt-3 grid grid-cols-2 lg:grid-cols-4 gap-px overflow-hidden rounded-xl bg-white/10">
-        <Stat label="Assets" value={fmtMoney(totalAssets, hidden)} valueClass="text-[#8FC1FF]" />
+        <Stat
+          label="Assets"
+          value={fmtMoney(totalAssets, hidden)}
+          valueClass="text-hero-accent-soft"
+        />
         <Stat
           label="Liabilities"
           value={fmtMoney(totalLiabilities, hidden)}
@@ -161,7 +165,7 @@ function ChangeBadge({
     <span
       title={note ?? undefined}
       className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-        up ? 'bg-[#13294B] text-[#9CC7FF]' : 'bg-[#3B1F0F] text-[#FDBA74]'
+        up ? 'bg-hero-accent-bg text-hero-accent-pale' : 'bg-[#3B1F0F] text-[#FDBA74]'
       }`}
     >
       <svg
@@ -196,10 +200,8 @@ function Stat({
   valueClass?: string;
 }) {
   return (
-    <div className="bg-[#0C1322] px-4 py-3 sm:px-5">
-      <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-[#A3AEC2]">
-        {label}
-      </dt>
+    <div className="bg-hero-bg px-4 py-3 sm:px-5">
+      <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-hero-400">{label}</dt>
       <dd className={`mt-0.5 text-xl font-bold ${valueClass}`}>{value}</dd>
     </div>
   );

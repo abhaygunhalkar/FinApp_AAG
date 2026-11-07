@@ -43,7 +43,14 @@ export interface CategoryConfig {
  * Breakdown palettes, applied by rank (largest category first). Dark and light
  * shades alternate so neighbouring segments always stay distinguishable.
  */
-export const ASSET_PALETTE = ['#1D4ED8', '#93C5FD', '#3B82F6', '#BFDBFE', '#1E3A8A', '#60A5FA'];
+export const ASSET_PALETTE = [
+  'var(--color-accent-700)',
+  'var(--color-accent-300)',
+  'var(--color-accent-500)',
+  'var(--color-accent-200)',
+  'var(--color-accent-900)',
+  'var(--color-accent-400)',
+];
 export const LIABILITY_PALETTE = ['#C2410C', '#FDBA74', '#F97316', '#FED7AA'];
 
 /** Categories for the breakdown bars and the account list grouping. */

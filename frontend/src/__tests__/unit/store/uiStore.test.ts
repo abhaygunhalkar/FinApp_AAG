@@ -25,6 +25,7 @@ vi.stubGlobal('localStorage', localStorageMock);
 
 // Import store AFTER mocking localStorage
 const { useUIStore } = await import('../../../store/uiStore');
+const initialState = useUIStore.getState();
 
 describe('uiStore', () => {
   beforeEach(() => {
@@ -48,9 +49,12 @@ describe('uiStore', () => {
   });
 
   describe('initial state', () => {
-    it('should default theme to light when localStorage is empty', () => {
-      const state = useUIStore.getState();
-      expect(state.theme).toBe('light');
+    it('should default theme to dark when localStorage is empty', () => {
+      expect(initialState.theme).toBe('dark');
+    });
+
+    it('should default palette to classic when localStorage is empty', () => {
+      expect(initialState.palette).toBe('classic');
     });
 
     it('should default sidebarCollapsed to false', () => {
@@ -85,6 +89,12 @@ describe('uiStore', () => {
     it('should persist theme to localStorage', () => {
       useUIStore.getState().setTheme('dark');
       expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', 'dark');
+    });
+
+    it('should update and persist the palette', () => {
+      useUIStore.getState().setPalette('brass');
+      expect(useUIStore.getState().palette).toBe('brass');
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('palette', 'brass');
     });
 
     it('should persist light theme to localStorage', () => {

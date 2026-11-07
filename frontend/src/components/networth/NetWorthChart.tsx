@@ -2,7 +2,7 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, YAxis } f
 import { fmtCompact } from './format';
 import type { SeriesPoint } from './netWorthMath';
 
-const LINE = '#7AB0FF';
+const LINE = 'var(--color-hero-accent)';
 const CHART_HEIGHT = 160;
 
 interface NetWorthChartProps {
@@ -60,7 +60,7 @@ export default function NetWorthChart({ series, hidden, animate, onScrub }: NetW
             domain={[min - pad, max + pad]}
             ticks={max === min ? [max] : [min, max]}
             tickFormatter={(v: number) => fmtCompact(v, hidden)}
-            tick={{ fill: '#A3AEC2', fontSize: 12 }}
+            tick={{ fill: 'var(--color-hero-400)', fontSize: 12 }}
             tickLine={false}
             axisLine={false}
             width={64}
@@ -79,7 +79,7 @@ export default function NetWorthChart({ series, hidden, animate, onScrub }: NetW
             strokeWidth={2}
             fill="url(#nwHeroFill)"
             dot={false}
-            activeDot={{ r: 5, fill: LINE, stroke: '#0C1322', strokeWidth: 2 }}
+            activeDot={{ r: 5, fill: LINE, stroke: 'var(--color-hero-bg)', strokeWidth: 2 }}
             isAnimationActive={animate}
             animationDuration={600}
             animationEasing="ease-out"
@@ -100,10 +100,10 @@ export function NetWorthChartEmpty() {
       />
       <div className="relative flex flex-col items-center gap-3 text-center px-4">
         <span className="relative flex h-3 w-3" aria-hidden="true">
-          <span className="absolute inline-flex h-full w-full rounded-full bg-[#7AB0FF] opacity-60 animate-ping motion-reduce:animate-none" />
-          <span className="relative inline-flex h-3 w-3 rounded-full bg-[#7AB0FF]" />
+          <span className="absolute inline-flex h-full w-full rounded-full bg-hero-accent opacity-60 animate-ping motion-reduce:animate-none" />
+          <span className="relative inline-flex h-3 w-3 rounded-full bg-hero-accent" />
         </span>
-        <p className="text-sm text-[#C3CDDD] bg-[#0C1322] px-2">
+        <p className="text-sm text-hero-300 bg-hero-bg px-2">
           Your trend builds over time — check back in a week
         </p>
       </div>

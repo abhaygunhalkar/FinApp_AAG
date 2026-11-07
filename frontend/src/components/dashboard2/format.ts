@@ -52,9 +52,9 @@ export const DOWN = '▼';
 
 /** Gains green with ▲, losses red with ▼, zero neutral: never colour alone. */
 export function tone(v: number): { arrow: string; className: string } {
-  if (v > 0) return { arrow: UP, className: 'text-[#15803D] dark:text-emerald-400' };
-  if (v < 0) return { arrow: DOWN, className: 'text-[#B91C1C] dark:text-red-400' };
-  return { arrow: '', className: 'text-[#5B6472] dark:text-slate-400' };
+  if (v > 0) return { arrow: UP, className: 'text-gain-deep dark:text-emerald-400' };
+  if (v < 0) return { arrow: DOWN, className: 'text-loss-700 dark:text-red-400' };
+  return { arrow: '', className: 'text-ink-500 dark:text-slate-400' };
 }
 
 const CURRENT_YEAR = () => new Date().getFullYear();

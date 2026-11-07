@@ -10,7 +10,7 @@ const LEFT_OVER_WARN = 500;
 
 const COSTS_COLOR = '#BA7517';
 const POPOVER_ID = 'income-share-breakdown';
-const LEFT_OVER_COLOR = '#cbd5e1';
+const LEFT_OVER_COLOR = 'var(--color-slate-300)';
 const SAVINGS_FILL = categoryFill('Savings & investing');
 
 function tone(pct: number | null): { bgClass: string; valueClass: string } {

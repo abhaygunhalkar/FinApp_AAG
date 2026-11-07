@@ -4,7 +4,7 @@ import { BankIcon, CardIcon, LoanIcon } from './NetWorthHeader';
 import { initials, timeAgo } from './format';
 
 const quickButtonClass =
-  'h-11 px-4 inline-flex items-center gap-2 rounded-full border border-[#E4E7EC] dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8]';
+  'h-11 px-4 inline-flex items-center gap-2 rounded-full border border-ink-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-700';
 
 export default function ConnectCard({ plaid }: { plaid: PlaidConnectFlow }) {
   const { data: items = [] } = usePlaidItems();
@@ -12,7 +12,7 @@ export default function ConnectCard({ plaid }: { plaid: PlaidConnectFlow }) {
   const disconnectMutation = useDisconnectPlaid();
 
   return (
-    <section className="rounded-[20px] border border-[#E4E7EC] dark:border-slate-700 bg-white dark:bg-slate-800 p-5 sm:p-6">
+    <section className="rounded-[20px] border border-ink-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 sm:p-6">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-xl">
           <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
@@ -53,7 +53,7 @@ export default function ConnectCard({ plaid }: { plaid: PlaidConnectFlow }) {
             type="button"
             onClick={plaid.start}
             disabled={plaid.isBusy}
-            className="h-11 px-5 inline-flex items-center rounded-full bg-[#0C1322] dark:bg-white text-white dark:text-[#0C1322] text-sm font-semibold hover:bg-[#1F2A3F] dark:hover:bg-slate-100 transition-colors disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8]"
+            className="h-11 px-5 inline-flex items-center rounded-full bg-hero-bg dark:bg-white text-white dark:text-hero-bg text-sm font-semibold hover:bg-ink-800 dark:hover:bg-slate-100 transition-colors disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-700"
           >
             {plaid.statusLabel ?? 'Connect a bank'}
           </button>
@@ -72,7 +72,7 @@ export default function ConnectCard({ plaid }: { plaid: PlaidConnectFlow }) {
       </div>
 
       {items.length > 0 && (
-        <div className="mt-5 border-t border-[#E4E7EC] dark:border-slate-700 pt-4">
+        <div className="mt-5 border-t border-ink-200 dark:border-slate-700 pt-4">
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500 dark:text-slate-400">
               Connected institutions
@@ -81,7 +81,7 @@ export default function ConnectCard({ plaid }: { plaid: PlaidConnectFlow }) {
               type="button"
               onClick={() => syncMutation.mutate()}
               disabled={syncMutation.isPending}
-              className="h-11 px-3 -mr-3 text-sm font-semibold text-[#1D4ED8] dark:text-blue-300 hover:underline disabled:opacity-50"
+              className="h-11 px-3 -mr-3 text-sm font-semibold text-accent-700 dark:text-blue-300 hover:underline disabled:opacity-50"
             >
               {syncMutation.isPending
                 ? 'Syncing…'
@@ -90,14 +90,14 @@ export default function ConnectCard({ plaid }: { plaid: PlaidConnectFlow }) {
                   : 'Sync all'}
             </button>
           </div>
-          <ul className="mt-1 divide-y divide-[#F2F4F7] dark:divide-slate-700/60">
+          <ul className="mt-1 divide-y divide-ink-75 dark:divide-slate-700/60">
             {items.map((item) => {
               const name = item.institution_name ?? 'Unknown institution';
               return (
                 <li key={item.item_id} className="flex items-center justify-between gap-3 py-2">
                   <span className="flex items-center gap-3 min-w-0">
                     <span
-                      className="h-9 w-9 shrink-0 rounded-lg bg-[#F4F5F7] dark:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-center"
+                      className="h-9 w-9 shrink-0 rounded-lg bg-ink-60 dark:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-center"
                       aria-hidden="true"
                     >
                       {initials(name)}

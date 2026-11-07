@@ -13,7 +13,7 @@ export default function LinkMessage({
     <Link
       to={message.route}
       onClick={onNavigate}
-      className="inline-flex min-h-9 items-center gap-1 rounded-lg text-sm font-semibold text-[#1D4ED8] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8] dark:text-blue-300"
+      className="inline-flex min-h-9 items-center gap-1 rounded-lg text-sm font-semibold text-accent-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-700 dark:text-blue-300"
     >
       {message.label}
       <span aria-hidden="true">→</span>

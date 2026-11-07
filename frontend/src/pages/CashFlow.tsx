@@ -99,7 +99,12 @@ export default function CashFlow() {
       .filter((p) => p.monthly > 0)
       .sort((a, b) => b.monthly - a.monthly);
     const left = income - fixed;
-    if (left > 0) parts.push({ name: 'Left after fixed costs', color: '#16a34a', monthly: left });
+    if (left > 0)
+      parts.push({
+        name: 'Left after fixed costs',
+        color: 'var(--color-gain-strong)',
+        monthly: left,
+      });
     return {
       income,
       parts: parts.map((p) => ({
@@ -369,7 +374,7 @@ export default function CashFlow() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[820px] text-sm">
               <thead>
-                <tr className="bg-[#1e3a5f] text-slate-100 text-xs uppercase tracking-wider">
+                <tr className="bg-accent-header text-slate-100 text-xs uppercase tracking-wider">
                   <th className="text-left font-semibold px-4 py-3">Source</th>
                   <th className="text-left font-semibold px-3 py-3">How often</th>
                   <th className="text-left font-semibold px-3 py-3">Deposited to</th>

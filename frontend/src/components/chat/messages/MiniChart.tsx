@@ -14,7 +14,7 @@ import {
 import type { ChartMessage } from '../../../types';
 import { fmtAmount } from '../format';
 
-const COLORS = ['#1D4ED8', '#F97316', '#0EA5E9', '#A855F7', '#14B8A6', '#E11D48'];
+const COLORS = ['var(--color-accent-700)', '#F97316', '#0EA5E9', '#A855F7', '#14B8A6', '#E11D48'];
 
 /** A small chart inside a bot message. Values are USD amounts. */
 export default function MiniChart({ message, hidden }: { message: ChartMessage; hidden: boolean }) {
@@ -37,7 +37,11 @@ export default function MiniChart({ message, hidden }: { message: ChartMessage; 
       isAnimationActive={false}
     />
   );
-  const axis = { tick: { fontSize: 11, fill: '#64748B' }, tickLine: false, axisLine: false };
+  const axis = {
+    tick: { fontSize: 11, fill: 'var(--color-slate-500)' },
+    tickLine: false,
+    axisLine: false,
+  };
 
   return (
     <div

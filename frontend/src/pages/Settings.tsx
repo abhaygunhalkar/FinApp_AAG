@@ -1,8 +1,17 @@
-import { useUIStore } from '../store/uiStore';
+import { PALETTES, useUIStore, type Palette } from '../store/uiStore';
+
+/** Fixed preview colours (background, surface, accent, gain, loss), so each
+    swatch shows its own palette whichever one is active. */
+const SWATCHES: Record<Palette, string[]> = {
+  classic: ['#0f172a', '#e2e8f0', '#1d4ed8', '#10b981', '#ef4444'],
+  brass: ['#23162a', '#f3eadb', '#bf8a24', '#1d8d6e', '#e04a2b'],
+};
 
 export default function Settings() {
   const theme = useUIStore((state) => state.theme);
   const setTheme = useUIStore((state) => state.setTheme);
+  const palette = useUIStore((state) => state.palette);
+  const setPalette = useUIStore((state) => state.setPalette);
 
   const refreshIntervalMinutes = 15;
 
@@ -51,6 +60,41 @@ export default function Settings() {
         <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
           Current theme: <span className="font-medium capitalize">{theme}</span>
         </p>
+
+        <fieldset className="mt-6">
+          <legend className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+            Colour palette
+          </legend>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {PALETTES.map((p) => (
+              <label
+                key={p.id}
+                className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
+                  palette === p.id
+                    ? 'border-blue-600 ring-1 ring-blue-600'
+                    : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="palette"
+                  value={p.id}
+                  checked={palette === p.id}
+                  onChange={() => setPalette(p.id)}
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="flex-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {p.label}
+                </span>
+                <span className="flex overflow-hidden rounded-md" aria-hidden="true">
+                  {SWATCHES[p.id].map((color) => (
+                    <span key={color} className="h-6 w-4" style={{ background: color }} />
+                  ))}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
       </section>
 
       {/* Refresh Interval Section */}

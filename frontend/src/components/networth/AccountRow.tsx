@@ -61,7 +61,7 @@ export default function AccountRow({
         <span
           className={`h-11 w-11 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold ${
             isAsset
-              ? 'bg-blue-50 text-[#1D4ED8] dark:bg-blue-900/30 dark:text-blue-200'
+              ? 'bg-blue-50 text-accent-700 dark:bg-blue-900/30 dark:text-blue-200'
               : 'bg-orange-50 text-[#C2410C] dark:bg-orange-900/30 dark:text-orange-200'
           }`}
           aria-hidden="true"
@@ -100,7 +100,7 @@ export default function AccountRow({
           type="button"
           onClick={() => onEdit(account)}
           aria-label={`Edit ${account.name}`}
-          className="-mx-2 px-2 py-1 w-[calc(100%+1rem)] min-h-11 flex items-center gap-3.5 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
+          className="-mx-2 px-2 py-1 w-[calc(100%+1rem)] min-h-11 flex items-center gap-3.5 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors focus-visible:outline-2 focus-visible:outline-accent-700"
         >
           {main}
         </button>
@@ -152,7 +152,7 @@ function CreditCardRow({
         type="button"
         onClick={() => onEdit(account)}
         aria-label={`Edit ${account.name}`}
-        className="-mx-2 px-2 py-1 w-[calc(100%+1rem)] min-h-11 flex items-center gap-3 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
+        className="-mx-2 px-2 py-1 w-[calc(100%+1rem)] min-h-11 flex items-center gap-3 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors focus-visible:outline-2 focus-visible:outline-accent-700"
       >
         {issuer ? (
           <IssuerBadge issuer={issuer} className="h-8 w-8 rounded-lg" />
@@ -191,7 +191,7 @@ function CreditCardRow({
           {used !== null && (
             <span className="flex items-center gap-1.5 sm:order-1">
               <span
-                className="h-1.5 w-[60px] overflow-hidden rounded-full bg-[#F2F4F7] dark:bg-slate-700"
+                className="h-1.5 w-[60px] overflow-hidden rounded-full bg-ink-75 dark:bg-slate-700"
                 role="progressbar"
                 aria-label="Credit utilization"
                 aria-valuenow={Math.round(used)}
@@ -217,7 +217,7 @@ function CreditCardRow({
               key={field}
               type="button"
               onClick={() => onEdit(account, field)}
-              className="py-1 text-[13px] font-medium text-[#1D4ED8] dark:text-blue-300 hover:underline focus-visible:outline-2 focus-visible:outline-[#1D4ED8] rounded"
+              className="py-1 text-[13px] font-medium text-accent-700 dark:text-blue-300 hover:underline focus-visible:outline-2 focus-visible:outline-accent-700 rounded"
             >
               {label}
             </button>
@@ -240,7 +240,7 @@ function LiabilityDetail({
     <button
       type="button"
       onClick={() => onEdit(account, field)}
-      className="-my-3 py-3 text-[13px] font-medium text-[#1D4ED8] dark:text-blue-300 hover:underline focus-visible:outline-2 focus-visible:outline-[#1D4ED8] rounded"
+      className="-my-3 py-3 text-[13px] font-medium text-accent-700 dark:text-blue-300 hover:underline focus-visible:outline-2 focus-visible:outline-accent-700 rounded"
     >
       {label}
     </button>
@@ -263,7 +263,7 @@ function LiabilityDetail({
     <div className="mt-2 pl-[58px]">
       {paid !== null && (
         <div
-          className="h-1.5 w-full overflow-hidden rounded-full bg-[#F2F4F7] dark:bg-slate-700"
+          className="h-1.5 w-full overflow-hidden rounded-full bg-ink-75 dark:bg-slate-700"
           role="progressbar"
           aria-label="Paid off"
           aria-valuenow={Math.round(paid)}

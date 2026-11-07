@@ -21,7 +21,7 @@ export interface ChatPanelProps extends ChatHandlers {
 }
 
 const iconButton =
-  'flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-[#1D4ED8] dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white';
+  'flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-accent-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white';
 
 /**
  * The chat window: a floating panel on wider screens, a full-screen sheet on
@@ -54,11 +54,11 @@ export default function ChatPanel({
 
   if (!open) {
     return (
-      <div className="fixed bottom-6 right-4 z-40 flex items-center gap-1 rounded-full border border-[#E4E7EC] bg-white py-1 pl-4 pr-1 shadow-lg sm:right-6 dark:border-slate-700 dark:bg-slate-800">
+      <div className="fixed bottom-6 right-4 z-40 flex items-center gap-1 rounded-full border border-ink-200 bg-white py-1 pl-4 pr-1 shadow-lg sm:right-6 dark:border-slate-700 dark:bg-slate-800">
         <button
           type="button"
           onClick={onExpand}
-          className="min-h-10 text-sm font-semibold text-slate-900 focus-visible:outline-2 focus-visible:outline-[#1D4ED8] dark:text-slate-100"
+          className="min-h-10 text-sm font-semibold text-slate-900 focus-visible:outline-2 focus-visible:outline-accent-700 dark:text-slate-100"
         >
           Assistant
           {pending && <span className="sr-only"> (replying)</span>}
@@ -103,11 +103,11 @@ export default function ChatPanel({
       role="dialog"
       aria-modal="true"
       aria-labelledby="chat-title"
-      className="fixed inset-0 z-40 flex flex-col bg-white sm:inset-auto sm:bottom-6 sm:right-6 sm:h-[min(640px,calc(100dvh-3rem))] sm:w-[400px] sm:overflow-hidden sm:rounded-2xl sm:border sm:border-[#E4E7EC] sm:shadow-[0_24px_60px_-16px_rgba(12,19,34,0.35)] dark:bg-slate-800 sm:dark:border-slate-700"
+      className="fixed inset-0 z-40 flex flex-col bg-white sm:inset-auto sm:bottom-6 sm:right-6 sm:h-[min(640px,calc(100dvh-3rem))] sm:w-[400px] sm:overflow-hidden sm:rounded-2xl sm:border sm:border-ink-200 sm:shadow-[0_24px_60px_-16px_rgba(12,19,34,0.35)] dark:bg-slate-800 sm:dark:border-slate-700"
     >
-      <header className="flex items-center gap-3 border-b border-[#E4E7EC] py-2 pl-4 pr-2 pt-[max(0.5rem,env(safe-area-inset-top))] dark:border-slate-700">
+      <header className="flex items-center gap-3 border-b border-ink-200 py-2 pl-4 pr-2 pt-[max(0.5rem,env(safe-area-inset-top))] dark:border-slate-700">
         <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0C1322] text-white"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-hero-bg text-white"
           aria-hidden="true"
         >
           <ChatIcon className="h-[18px] w-[18px]" />
@@ -135,7 +135,7 @@ export default function ChatPanel({
               onNewConversation();
               refocus();
             }}
-            className="mr-1 inline-flex h-8 shrink-0 items-center gap-1 rounded-full border border-[#BFD3F5] bg-white pl-2 pr-3 text-xs font-semibold text-[#1D4ED8] transition-colors hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8] dark:border-blue-800 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
+            className="mr-1 inline-flex h-8 shrink-0 items-center gap-1 rounded-full border border-accent-line bg-white pl-2 pr-3 text-xs font-semibold text-accent-700 transition-colors hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-700 dark:border-blue-800 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
           >
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
               <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
@@ -177,7 +177,7 @@ export default function ChatPanel({
                 <button
                   type="button"
                   onClick={() => send(q)}
-                  className="min-h-11 w-full rounded-xl border border-[#E4E7EC] bg-white px-4 text-left text-sm font-medium text-slate-800 transition-colors hover:border-[#BFD3F5] hover:bg-blue-50/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                  className="min-h-11 w-full rounded-xl border border-ink-200 bg-white px-4 text-left text-sm font-medium text-slate-800 transition-colors hover:border-accent-line hover:bg-blue-50/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                 >
                   {q}
                 </button>
