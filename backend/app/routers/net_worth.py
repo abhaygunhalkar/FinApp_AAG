@@ -56,6 +56,24 @@ def update_account(
     return ApiResponse(success=True, data=account, error=None)
 
 
+@router.post(
+    "/accounts/{account_id}/confirm",
+    response_model=ApiResponse[FinancialAccountResponse],
+)
+def confirm_balance(
+    account_id: int, db: Session = Depends(get_db)
+) -> JSONResponse | ApiResponse[FinancialAccountResponse]:
+    """Mark a manual account's balance as still correct."""
+    try:
+        account = FinancialAccountService.confirm_balance(db, account_id)
+    except HTTPException as exc:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"success": False, "data": None, "error": exc.detail},
+        )
+    return ApiResponse(success=True, data=account, error=None)
+
+
 @router.delete("/accounts/{account_id}", response_model=ApiResponse[None])
 def delete_account(
     account_id: int, db: Session = Depends(get_db)

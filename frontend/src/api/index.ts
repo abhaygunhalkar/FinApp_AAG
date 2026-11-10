@@ -29,6 +29,7 @@ export {
   getAccounts,
   createAccount,
   updateAccount,
+  confirmBalance,
   deleteAccount,
   getNetWorthSummary,
   getNetWorthSnapshots,

@@ -41,6 +41,7 @@ vi.mock('../../../hooks', () => ({
 vi.mock('../../../hooks/useNetWorth', () => ({
   useCreateAccount: () => mutation,
   useUpdateAccount: () => mutation,
+  useConfirmBalance: () => mutation,
 }));
 
 function account(overrides: Partial<FinancialAccount>): FinancialAccount {
@@ -234,17 +235,42 @@ describe('NetWorth page', () => {
     expect(screen.queryByText('highest APR')).not.toBeInTheDocument();
   });
 
-  it('says when a row is stale, and only then', () => {
+  it('says when a row is stale, and only then, by account type', () => {
     const ago = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
-    mocks.accounts[0] = { ...mocks.accounts[0], last_synced: ago(1) };
-    mocks.accounts[1] = { ...mocks.accounts[1], last_synced: ago(5) };
-    render(<NetWorth />);
+    // A loan is stale after 30 days, a checking account after 7.
+    mocks.accounts = mocks.accounts.slice(0, 2);
+    mocks.accounts[0] = { ...mocks.accounts[0], last_synced: ago(5) };
+    mocks.accounts[1] = { ...mocks.accounts[1], last_synced: ago(20) };
+    const { unmount } = render(<NetWorth />);
     expect(screen.getByRole('button', { name: 'Edit Chase Checking' })).not.toHaveTextContent(
       /updated|synced/,
     );
-    expect(screen.getByRole('button', { name: 'Edit Home Loan' })).toHaveTextContent(
-      'updated 5 days ago',
+    expect(screen.getByRole('button', { name: 'Edit Home Loan' })).not.toHaveTextContent(
+      /updated|synced/,
     );
+    expect(screen.queryByText(/need.? a check/)).not.toBeInTheDocument();
+    unmount();
+
+    mocks.accounts[0] = { ...mocks.accounts[0], last_synced: ago(9) };
+    mocks.accounts[1] = { ...mocks.accounts[1], last_synced: ago(40) };
+    render(<NetWorth />);
+    expect(screen.getByRole('button', { name: 'Edit Chase Checking' })).toHaveTextContent(
+      'updated 9 days ago',
+    );
+    expect(screen.getByRole('button', { name: 'Edit Home Loan' })).toHaveTextContent(
+      'updated 40 days ago',
+    );
+    expect(screen.getByText('2 balances need a check')).toBeInTheDocument();
+  });
+
+  it('opens the update panel from the stale banner', () => {
+    const ago = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
+    mocks.accounts = [{ ...mocks.accounts[0], last_synced: ago(10), updated_at: ago(10) }];
+    render(<NetWorth />);
+    fireEvent.click(screen.getByRole('button', { name: 'Update balances' }));
+    const panel = screen.getByRole('dialog', { name: 'Update balances' });
+    expect(within(panel).getByText('Chase Checking')).toBeInTheDocument();
+    expect(within(panel).getByRole('button', { name: 'Still right' })).toBeInTheDocument();
   });
 
   it('offers home equity only while no property is tracked', () => {

@@ -1,5 +1,7 @@
 """Repository for FinancialAccount CRUD operations."""
 
+from datetime import UTC, datetime
+
 from sqlalchemy.orm import Session
 
 from app.models.financial_account import FinancialAccount
@@ -60,6 +62,19 @@ class FinancialAccountRepository:
         # Liability details can be cleared, so apply every field that was sent.
         for field in LIABILITY_FIELDS & data.model_fields_set:
             setattr(account, field, getattr(data, field))
+        try:
+            db.commit()
+            db.refresh(account)
+            return account
+        except Exception:
+            db.rollback()
+            raise
+
+    @staticmethod
+    def touch(db: Session, account: FinancialAccount) -> FinancialAccount:
+        """Set updated_at to now (UTC, like the column default) without changing
+        anything else."""
+        account.updated_at = datetime.now(UTC).replace(tzinfo=None)
         try:
             db.commit()
             db.refresh(account)

@@ -1,8 +1,8 @@
 import type { FinancialAccount } from '../../types';
 import IssuerBadge from '../shared/IssuerBadge';
 import { findIssuer } from '../shared/issuers';
-import { ACCOUNT_TYPE_LABELS, isCreditType, isLoanType } from './accountConfig';
-import { fmtMoney, fmtMonthYear, fmtPct, fmtShortDate, initials, staleDays } from './format';
+import { ACCOUNT_TYPE_LABELS, accountStaleDays, isCreditType, isLoanType } from './accountConfig';
+import { fmtMoney, fmtMonthYear, fmtPct, fmtShortDate, initials } from './format';
 import { share } from './netWorthMath';
 
 export type DetailField = 'credit_limit' | 'original_amount' | 'apr';
@@ -39,7 +39,7 @@ export default function AccountRow({
   }
 
   // Freshness is in the page header; a row only says so when it's stale.
-  const stale = subtitleOverride ? null : staleDays(account.last_synced);
+  const stale = subtitleOverride ? null : accountStaleDays(account);
 
   const subtitle =
     subtitleOverride ??

@@ -3,6 +3,7 @@ import {
   getAccounts,
   createAccount,
   updateAccount,
+  confirmBalance,
   deleteAccount,
   getNetWorthSummary,
   getNetWorthSnapshots,
@@ -36,6 +37,14 @@ export function useUpdateAccount() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: FinancialAccountUpdate }) =>
       updateAccount(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
+export function useConfirmBalance() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => confirmBalance(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 }

@@ -1,4 +1,5 @@
-import type { AccountType } from '../../types';
+import type { AccountType, FinancialAccount } from '../../types';
+import { staleDays } from './format';
 
 export const ASSET_TYPES: AccountType[] = [
   'checking',
@@ -69,6 +70,27 @@ export const LIABILITY_CATEGORIES: CategoryConfig[] = [
   { key: 'credit_cards', label: 'Credit cards', types: ['credit_card'] },
   { key: 'other_liabilities', label: 'Other', types: ['other_liability'] },
 ];
+
+/** Days before a balance counts as out of date. Cash and cards move daily;
+    loans slowly; a home or car value hardly at all. */
+export const STALE_AFTER_DAYS: Record<AccountType, number> = {
+  checking: 7,
+  savings: 7,
+  credit_card: 7,
+  crypto: 7,
+  investment: 30,
+  loan: 30,
+  mortgage: 30,
+  other_asset: 30,
+  other_liability: 30,
+  real_estate: 90,
+  vehicle: 90,
+};
+
+/** Days since the account was updated, when that's past its type's limit; else null. */
+export function accountStaleDays(account: FinancialAccount, now = Date.now()): number | null {
+  return staleDays(account.last_synced, STALE_AFTER_DAYS[account.account_type], now);
+}
 
 export const isCreditType = (t: AccountType) => t === 'credit_card';
 export const isLoanType = (t: AccountType) => t === 'loan' || t === 'mortgage';

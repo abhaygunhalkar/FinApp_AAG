@@ -1,10 +1,14 @@
 """Tests for net worth totals and snapshots in FinancialAccountService."""
 
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
 
+import pytest
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.models.financial_account import FinancialAccount
 from app.models.holding import Holding
+from app.models.plaid_item import PlaidItem
 from app.repositories.net_worth_snapshot_repository import NetWorthSnapshotRepository
 from app.schemas.financial_account import FinancialAccountCreate, FinancialAccountUpdate
 from app.services.financial_account_service import FinancialAccountService
@@ -104,3 +108,42 @@ def test_crypto_counts_as_asset(db_session: Session) -> None:
         FinancialAccountCreate(name="BTC", account_type="crypto", balance=1200),
     )
     assert FinancialAccountService.get_summary(db_session).total_assets == 1200
+
+
+def test_confirm_balance_marks_account_up_to_date(db_session: Session) -> None:
+    created = FinancialAccountService.create(
+        db_session,
+        FinancialAccountCreate(name="Amex", account_type="credit_card", balance=1240.18),
+    )
+    account = db_session.get(FinancialAccount, created.id)
+    assert account is not None
+    old = datetime(2026, 1, 1)
+    account.updated_at = old
+    db_session.commit()
+
+    confirmed = FinancialAccountService.confirm_balance(db_session, created.id)
+
+    assert confirmed.balance == 1240.18
+    assert confirmed.last_synced is not None and confirmed.last_synced > old
+    assert datetime.now(UTC).replace(tzinfo=None) - confirmed.last_synced < timedelta(minutes=1)
+
+
+def test_confirm_balance_missing_account_is_404(db_session: Session) -> None:
+    with pytest.raises(HTTPException) as exc:
+        FinancialAccountService.confirm_balance(db_session, 999)
+    assert exc.value.status_code == 404
+
+
+def test_confirm_balance_rejects_linked_accounts(db_session: Session) -> None:
+    item = PlaidItem(item_id="item-1", access_token="token")
+    db_session.add(item)
+    db_session.commit()
+    linked = FinancialAccount(
+        name="Checking", account_type="checking", balance=500, plaid_item_id=item.id
+    )
+    db_session.add(linked)
+    db_session.commit()
+
+    with pytest.raises(HTTPException) as exc:
+        FinancialAccountService.confirm_balance(db_session, linked.id)
+    assert exc.value.status_code == 422

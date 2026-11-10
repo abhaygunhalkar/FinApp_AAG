@@ -38,6 +38,7 @@ export {
   useNetWorthSnapshots,
   useCreateAccount,
   useUpdateAccount,
+  useConfirmBalance,
   useDeleteAccount,
 } from './useNetWorth';
 export { usePlaidItems, useConnectPlaid, useSyncPlaid, useDisconnectPlaid } from './usePlaid';

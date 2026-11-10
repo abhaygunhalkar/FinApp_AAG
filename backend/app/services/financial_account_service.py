@@ -150,6 +150,23 @@ class FinancialAccountService:
         )
 
     @staticmethod
+    def confirm_balance(db: Session, account_id: int) -> FinancialAccountResponse:
+        """The owner checked a manual account and its balance is still right:
+        mark it as up to date without changing the balance."""
+        account = FinancialAccountRepository.get_by_id(db, account_id)
+        if account is None:
+            raise HTTPException(status_code=404, detail="Account not found")
+        if account.plaid_item_id is not None:
+            raise HTTPException(
+                status_code=422,
+                detail="Linked accounts are updated by syncing with the bank",
+            )
+        account = FinancialAccountRepository.touch(db, account)
+        return FinancialAccountService._to_response(
+            account, FinancialAccountService._sync_times(db)
+        )
+
+    @staticmethod
     def delete(db: Session, account_id: int) -> None:
         account = FinancialAccountRepository.get_by_id(db, account_id)
         if account is None:

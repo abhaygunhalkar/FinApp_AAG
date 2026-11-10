@@ -20,6 +20,9 @@ import {
   HomeEquityCard,
   NetWorthHeader,
   NetWorthHero,
+  StaleBanner,
+  UpdateBalancesPanel,
+  accountStaleDays,
   breakdown,
   timeAgo,
   type AccountFormDefaults,
@@ -56,6 +59,7 @@ export default function NetWorth() {
   const toggleHidden = useUIStore((s) => s.toggleHideBalances);
 
   const [form, setForm] = useState<FormState | null>(null);
+  const [updating, setUpdating] = useState(false);
 
   const accountList = useMemo(() => accounts ?? [], [accounts]);
   const portfolioValue = summary?.portfolio_value ?? 0;
@@ -96,6 +100,8 @@ export default function NetWorth() {
   const liquidCash = accountList
     .filter((a) => LIQUID_TYPES.includes(a.account_type))
     .reduce((s, a) => s + a.balance, 0);
+
+  const staleCount = accountList.filter((a) => accountStaleDays(a) !== null).length;
 
   const showHomeEquity =
     accountList.some((a) => a.account_type === 'mortgage') &&
@@ -156,6 +162,8 @@ export default function NetWorth() {
           onAdd={handleAdd}
           connectBusy={plaid.isBusy}
         />
+
+        {staleCount > 0 && <StaleBanner count={staleCount} onUpdate={() => setUpdating(true)} />}
 
         <NetWorthHero
           netWorth={netWorth}
@@ -245,6 +253,14 @@ export default function NetWorth() {
 
         <ConnectCard plaid={plaid} />
       </div>
+
+      {updating && (
+        <UpdateBalancesPanel
+          accounts={accountList}
+          hidden={hidden}
+          onClose={() => setUpdating(false)}
+        />
+      )}
 
       {form && (
         <AccountForm

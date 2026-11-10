@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import type { FinancialAccount } from '../../types';
 import type { CategoryConfig } from './accountConfig';
 import AccountRow, { StaleNote, type DetailField } from './AccountRow';
-import { isCreditType } from './accountConfig';
-import { fmtMoney, fmtPct, staleDays } from './format';
+import { accountStaleDays, isCreditType } from './accountConfig';
+import { fmtMoney, fmtPct } from './format';
 import { share } from './netWorthMath';
 
 interface AccountsCardProps {
@@ -117,7 +117,7 @@ export default function AccountsCard({
  */
 function CreditSummary({ accounts, hidden }: { accounts: FinancialAccount[]; hidden: boolean }) {
   const stale = accounts.reduce<number | null>((oldest, a) => {
-    const days = staleDays(a.last_synced);
+    const days = accountStaleDays(a);
     return days !== null && (oldest === null || days > oldest) ? days : oldest;
   }, null);
   const withLimit = accounts.filter((a) => a.credit_limit);

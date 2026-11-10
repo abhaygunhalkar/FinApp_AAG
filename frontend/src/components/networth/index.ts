@@ -9,6 +9,8 @@ export { default as NetWorthChart } from './NetWorthChart';
 export { default as NetWorthHeader } from './NetWorthHeader';
 export type { AddAction } from './NetWorthHeader';
 export { default as NetWorthHero } from './NetWorthHero';
+export { default as StaleBanner } from './StaleBanner';
+export { default as UpdateBalancesPanel } from './UpdateBalancesPanel';
 export * from './accountConfig';
 export * from './format';
 export * from './netWorthMath';

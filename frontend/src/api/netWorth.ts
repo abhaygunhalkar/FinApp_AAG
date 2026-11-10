@@ -32,6 +32,14 @@ export async function updateAccount(
   return unwrapResponse(data);
 }
 
+/** Marks a manual account's balance as still correct, without changing it. */
+export async function confirmBalance(id: number): Promise<FinancialAccount> {
+  const { data } = await apiClient.post<ApiResponse<FinancialAccount>>(
+    `/api/net-worth/accounts/${id}/confirm`,
+  );
+  return unwrapResponse(data);
+}
+
 export async function deleteAccount(id: number): Promise<null> {
   const { data } = await apiClient.delete<ApiResponse<null>>(`/api/net-worth/accounts/${id}`);
   return unwrapResponse(data);
