@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode, type Ref } from 'react';
 import { fmtMoney } from '../networth/format';
 import { EXTRA_MAX, EXTRA_STEP, REFI_TERMS, parseAmount, type PayoffInputs } from './payoffInputs';
 import { monthName, type YearMonth } from './simulatePayoff';
@@ -14,11 +14,14 @@ interface PayoffInputsPanelProps {
   /** The payment doesn't cover the interest, so the loan never ends. */
   paymentTooLow: boolean;
   hidden: boolean;
+  /** Lets the page focus the payment field when it's missing. */
+  paymentRef?: Ref<HTMLInputElement>;
 }
 
-const INPUT =
-  'h-10 w-full rounded-xl border border-ink-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm tabular-nums text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-accent-700/40 focus:border-accent-700 transition';
-const SELECT = `${INPUT} px-2.5`;
+const FIELD =
+  'h-10 rounded-xl border border-ink-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm tabular-nums text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-accent-700/40 focus:border-accent-700 transition';
+const INPUT = `${FIELD} w-full`;
+const SELECT = `${FIELD} px-2.5`;
 const LABEL = 'block text-sm font-semibold text-slate-800 dark:text-slate-100';
 const HINT = 'mt-0.5 text-[13px] text-slate-500 dark:text-slate-400';
 
@@ -30,8 +33,10 @@ function AffixInput({
   suffix,
   placeholder,
   label,
+  inputRef,
 }: {
   id: string;
+  inputRef?: Ref<HTMLInputElement>;
   value: string;
   onChange: (value: string) => void;
   prefix?: string;
@@ -47,6 +52,7 @@ function AffixInput({
         </span>
       )}
       <input
+        ref={inputRef}
         id={id}
         inputMode="decimal"
         aria-label={label}
@@ -81,6 +87,7 @@ export default function PayoffInputsPanel({
   needsPayment,
   paymentTooLow,
   hidden,
+  paymentRef,
 }: PayoffInputsPanelProps) {
   const id = useId();
   const [detailsOpen, setDetailsOpen] = useState(needsPayment);
@@ -162,7 +169,7 @@ export default function PayoffInputsPanel({
             aria-label="Lump sum month"
             value={lumpMonth}
             onChange={(e) => onChange({ lumpSumMonth: setLump(lumpYear, Number(e.target.value)) })}
-            className={`${SELECT} w-auto`}
+            className={SELECT}
           >
             {MONTHS.map((m) => (
               <option key={m} value={m}>
@@ -174,7 +181,7 @@ export default function PayoffInputsPanel({
             aria-label="Lump sum year"
             value={lumpYear}
             onChange={(e) => onChange({ lumpSumMonth: setLump(Number(e.target.value), lumpMonth) })}
-            className={`${SELECT} w-auto`}
+            className={SELECT}
           >
             {years.map((y) => (
               <option key={y} value={y}>
@@ -204,7 +211,7 @@ export default function PayoffInputsPanel({
             aria-label="Month of the yearly payment"
             value={inputs.annualExtraMonth}
             onChange={(e) => onChange({ annualExtraMonth: Number(e.target.value) })}
-            className={`${SELECT} w-auto`}
+            className={SELECT}
           >
             {MONTHS.map((m) => (
               <option key={m} value={m}>
@@ -232,7 +239,7 @@ export default function PayoffInputsPanel({
             }`}
           >
             <span
-              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+              className={`absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
                 inputs.refinance ? 'translate-x-[22px]' : 'translate-x-0.5'
               }`}
             />
@@ -259,7 +266,7 @@ export default function PayoffInputsPanel({
                 id={`${id}-term`}
                 value={inputs.refiTermYears}
                 onChange={(e) => onChange({ refiTermYears: Number(e.target.value) })}
-                className={SELECT}
+                className={`${SELECT} w-full`}
               >
                 {REFI_TERMS.map((t) => (
                   <option key={t} value={t}>
@@ -334,6 +341,7 @@ export default function PayoffInputsPanel({
               </label>
               <AffixInput
                 id={`${id}-payment`}
+                inputRef={paymentRef}
                 prefix="$"
                 value={inputs.payment}
                 onChange={(v) => onChange({ payment: v })}

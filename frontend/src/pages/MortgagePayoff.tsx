@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAccounts } from '../hooks';
 import {
@@ -121,6 +121,7 @@ function Simulator({ account, hidden }: { account: FinancialAccount; hidden: boo
   const deferred = useDeferredValue(inputs);
   const first = useMemo(() => firstPaymentMonth(account), [account]);
   const needsPayment = useMemo(() => defaultInputs(account).payment === '', [account]);
+  const paymentRef = useRef<HTMLInputElement>(null);
 
   const loan = useMemo(() => toLoan(deferred, first), [deferred, first]);
   const scenario = useMemo(() => toScenario(deferred), [deferred]);
@@ -145,6 +146,7 @@ function Simulator({ account, hidden }: { account: FinancialAccount; hidden: boo
           needsPayment={needsPayment}
           paymentTooLow={!!comparison && !comparison.baseline.summary.paidOff}
           hidden={hidden}
+          paymentRef={paymentRef}
         />
       </div>
 
@@ -170,18 +172,64 @@ function Simulator({ account, hidden }: { account: FinancialAccount; hidden: boo
             />
           </>
         ) : (
-          <section className={`${CARD} px-6 py-10 text-center`}>
-            <p className="font-semibold text-slate-900 dark:text-white">
-              {account.apr == null && !inputs.apr
-                ? 'This mortgage needs a rate to simulate'
-                : 'Add your monthly payment to see results'}
-            </p>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Open Loan details and fill in the balance, rate and monthly principal & interest.
-            </p>
-          </section>
+          <MissingDetails
+            account={account}
+            missingRate={!inputs.apr}
+            onEnterPayment={() => {
+              paymentRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+              paymentRef.current?.focus({ preventScroll: true });
+            }}
+          />
         )}
       </div>
     </div>
+  );
+}
+
+/** Why there are no results yet, and the two ways to fix it. */
+function MissingDetails({
+  account,
+  missingRate,
+  onEnterPayment,
+}: {
+  account: FinancialAccount;
+  missingRate: boolean;
+  onEnterPayment: () => void;
+}) {
+  const [title, reason] = missingRate
+    ? ['Your mortgage has no interest rate saved', 'Add the rate (APR) in Loan details.']
+    : !account.payoff_date
+      ? [
+          'Enter your monthly payment to see results',
+          'Your mortgage has no payoff date saved, so its monthly payment can’t be worked out.',
+        ]
+      : [
+          'Enter your monthly payment to see results',
+          'Your mortgage’s payoff date has already passed, so its monthly payment can’t be worked out.',
+        ];
+  return (
+    <section className={`${CARD} px-6 py-10 text-center`}>
+      <p className="font-semibold text-slate-900 dark:text-white">{title}</p>
+      <p className="mx-auto mt-1 max-w-md text-sm text-slate-500 dark:text-slate-400">
+        {reason} Use the principal &amp; interest amount from your statement, without escrow, or add
+        the {missingRate ? 'rate' : 'payoff date'} to the mortgage on Net Worth so it’s filled in
+        next time.
+      </p>
+      <div className="mt-5 flex flex-wrap justify-center gap-2">
+        <button
+          type="button"
+          onClick={onEnterPayment}
+          className="inline-flex h-10 items-center rounded-full bg-ink-900 px-5 text-sm font-semibold text-white hover:bg-ink-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-700"
+        >
+          {missingRate ? 'Enter details' : 'Enter payment'}
+        </button>
+        <Link
+          to="/net-worth"
+          className="inline-flex h-10 items-center rounded-full border border-ink-250 px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700/60 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-700"
+        >
+          Update on Net Worth
+        </Link>
+      </div>
+    </section>
   );
 }

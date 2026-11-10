@@ -70,6 +70,9 @@ function renderAt(path: string) {
 
 const tile = (label: string) => screen.getByText(label).parentElement!;
 
+// jsdom has no layout, so no scrollIntoView.
+Element.prototype.scrollIntoView = vi.fn();
+
 beforeEach(() => {
   useUIStore.setState({ hideBalances: false });
   mocks.accounts = [mortgage({})];
@@ -115,6 +118,8 @@ describe('Mortgage payoff page', () => {
 
   it('shows refinance break-even and the new payment', async () => {
     renderAt('/mortgage-payoff');
+    const toggle = screen.getByRole('switch', { name: 'Refinance' });
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
     fireEvent.click(screen.getByRole('switch', { name: 'Refinance' }));
     await waitFor(() => expect(screen.getByText('Break-even')).toBeInTheDocument());
     expect(screen.getByText('New monthly payment')).toBeInTheDocument();
@@ -133,12 +138,27 @@ describe('Mortgage payoff page', () => {
     expect(screen.getByText(/would do to Home Mortgage/)).toBeInTheDocument();
   });
 
-  it('asks for the payment when it cannot be worked out', () => {
+  it('explains a missing payoff date and takes you to the payment field', () => {
     mocks.accounts = [mortgage({ payoff_date: null })];
     renderAt('/mortgage-payoff');
-    expect(screen.getByText('Add your monthly payment to see results')).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Monthly P&I'), { target: { value: '2400' } });
-    expect(screen.queryByText('Add your monthly payment to see results')).not.toBeInTheDocument();
+    expect(screen.getByText('Enter your monthly payment to see results')).toBeInTheDocument();
+    expect(screen.getByText(/no payoff date saved/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Update on Net Worth' })).toHaveAttribute(
+      'href',
+      '/net-worth',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enter payment' }));
+    const payment = screen.getByLabelText('Monthly P&I');
+    expect(payment).toHaveFocus();
+    fireEvent.change(payment, { target: { value: '2400' } });
+    expect(screen.queryByText('Enter your monthly payment to see results')).not.toBeInTheDocument();
+  });
+
+  it('explains a payoff date that has passed', () => {
+    mocks.accounts = [mortgage({ payoff_date: '2020-01-01' })];
+    renderAt('/mortgage-payoff');
+    expect(screen.getByText(/payoff date has already passed/)).toBeInTheDocument();
   });
 
   it('hides dollar amounts with the eye toggle', () => {
