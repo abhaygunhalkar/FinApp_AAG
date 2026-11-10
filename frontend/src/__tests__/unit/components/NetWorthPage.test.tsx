@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import NetWorth from '../../../pages/NetWorth';
 import { useUIStore } from '../../../store/uiStore';
 import type { FinancialAccount, NetWorthSnapshot, NetWorthSummary } from '../../../types';
@@ -100,7 +101,7 @@ beforeEach(() => {
 
 describe('NetWorth page', () => {
   it('shows the backend net worth as the headline', async () => {
-    render(<NetWorth />);
+    render(<NetWorth />, { wrapper: MemoryRouter });
     const hero = screen.getByRole('region', { name: 'Net worth summary' });
     // The amount counts up on load, then settles on the exact value.
     await waitFor(() => expect(within(hero).getByText('$51,510')).toBeInTheDocument(), {
@@ -119,7 +120,7 @@ describe('NetWorth page', () => {
         created_at: '',
       },
     ];
-    render(<NetWorth />);
+    render(<NetWorth />, { wrapper: MemoryRouter });
     expect(screen.getByText(/check back in a week/i)).toBeInTheDocument();
   });
 
@@ -137,14 +138,14 @@ describe('NetWorth page', () => {
       ...a,
       created_at: i === 0 ? `${day(10)}T12:00:00Z` : `${day(200)}T12:00:00Z`,
     }));
-    render(<NetWorth />);
+    render(<NetWorth />, { wrapper: MemoryRouter });
     const hero = screen.getByRole('region', { name: 'Net worth summary' });
     const pill = within(hero).getByTitle('Includes accounts added this period: Chase Checking');
     expect(pill).toHaveTextContent('+$11,510');
   });
 
   it('masks every balance when hidden and persists the choice', () => {
-    render(<NetWorth />);
+    render(<NetWorth />, { wrapper: MemoryRouter });
     fireEvent.click(screen.getByRole('button', { name: 'Hide balances' }));
     expect(screen.queryByText('$12,000')).not.toBeInTheDocument();
     expect(screen.getAllByText('••••••').length).toBeGreaterThan(5);
@@ -156,14 +157,14 @@ describe('NetWorth page', () => {
   });
 
   it('shows liabilities without a minus sign', () => {
-    render(<NetWorth />);
+    render(<NetWorth />, { wrapper: MemoryRouter });
     const row = screen.getByRole('button', { name: 'Edit Home Loan' });
     expect(within(row).getByText('$300,000')).toBeInTheDocument();
     expect(screen.queryByText(/−\$300,000/)).not.toBeInTheDocument();
   });
 
   it('prompts for missing liability details', () => {
-    render(<NetWorth />);
+    render(<NetWorth />, { wrapper: MemoryRouter });
     expect(screen.getByRole('button', { name: 'Add credit limit' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add original amount' })).toBeInTheDocument();
   });
@@ -186,7 +187,7 @@ describe('NetWorth page', () => {
         apr: 19.5,
       }),
     );
-    render(<NetWorth />);
+    render(<NetWorth />, { wrapper: MemoryRouter });
     expect(screen.getByText(/\$2,000 of \$10,000 limit · 20%\s+utilization/)).toBeInTheDocument();
     const visa = screen.getByRole('button', { name: 'Edit Visa' });
     expect(visa).toHaveTextContent('24.99% APR · due Nov 5');
@@ -213,7 +214,7 @@ describe('NetWorth page', () => {
         last_synced: ago(8),
       }),
     );
-    render(<NetWorth />);
+    render(<NetWorth />, { wrapper: MemoryRouter });
     expect(screen.getByText(/limit · 20%\s+utilization/)).toHaveTextContent('updated 8 days ago');
     expect(screen.getByRole('button', { name: 'Edit Visa' })).not.toHaveTextContent('updated');
     expect(screen.getByRole('button', { name: 'Edit Amex' })).not.toHaveTextContent('updated');
@@ -231,7 +232,7 @@ describe('NetWorth page', () => {
         apr: 19,
       }),
     );
-    render(<NetWorth />);
+    render(<NetWorth />, { wrapper: MemoryRouter });
     expect(screen.queryByText('highest APR')).not.toBeInTheDocument();
   });
 
@@ -241,7 +242,7 @@ describe('NetWorth page', () => {
     mocks.accounts = mocks.accounts.slice(0, 2);
     mocks.accounts[0] = { ...mocks.accounts[0], last_synced: ago(5) };
     mocks.accounts[1] = { ...mocks.accounts[1], last_synced: ago(20) };
-    const { unmount } = render(<NetWorth />);
+    const { unmount } = render(<NetWorth />, { wrapper: MemoryRouter });
     expect(screen.getByRole('button', { name: 'Edit Chase Checking' })).not.toHaveTextContent(
       /updated|synced/,
     );
@@ -253,7 +254,7 @@ describe('NetWorth page', () => {
 
     mocks.accounts[0] = { ...mocks.accounts[0], last_synced: ago(9) };
     mocks.accounts[1] = { ...mocks.accounts[1], last_synced: ago(40) };
-    render(<NetWorth />);
+    render(<NetWorth />, { wrapper: MemoryRouter });
     expect(screen.getByRole('button', { name: 'Edit Chase Checking' })).toHaveTextContent(
       'updated 9 days ago',
     );
@@ -266,27 +267,37 @@ describe('NetWorth page', () => {
   it('opens the update panel from the stale banner', () => {
     const ago = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
     mocks.accounts = [{ ...mocks.accounts[0], last_synced: ago(10), updated_at: ago(10) }];
-    render(<NetWorth />);
+    render(<NetWorth />, { wrapper: MemoryRouter });
     fireEvent.click(screen.getByRole('button', { name: 'Update balances' }));
     const panel = screen.getByRole('dialog', { name: 'Update balances' });
     expect(within(panel).getByText('Chase Checking')).toBeInTheDocument();
     expect(within(panel).getByRole('button', { name: 'Still right' })).toBeInTheDocument();
   });
 
+  it('links each mortgage, and only mortgages, to the payoff simulator', () => {
+    mocks.accounts.push(
+      account({ id: 7, name: 'Auto Loan', account_type: 'loan', balance: 18_000, is_asset: false }),
+    );
+    render(<NetWorth />, { wrapper: MemoryRouter });
+    const links = screen.getAllByRole('link', { name: 'Simulate payoff →' });
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute('href', '/mortgage-payoff?account=2');
+  });
+
   it('offers home equity only while no property is tracked', () => {
-    const { unmount } = render(<NetWorth />);
+    const { unmount } = render(<NetWorth />, { wrapper: MemoryRouter });
     expect(screen.getByText('See your home equity')).toBeInTheDocument();
     unmount();
 
     mocks.accounts.push(
       account({ id: 4, name: 'Home', account_type: 'real_estate', balance: 450_000 }),
     );
-    render(<NetWorth />);
+    render(<NetWorth />, { wrapper: MemoryRouter });
     expect(screen.queryByText('See your home equity')).not.toBeInTheDocument();
   });
 
   it('merges connect and manual actions into the Add menu', () => {
-    render(<NetWorth />);
+    render(<NetWorth />, { wrapper: MemoryRouter });
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
     const menu = screen.getByRole('menu');
     expect(

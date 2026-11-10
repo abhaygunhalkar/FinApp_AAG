@@ -165,7 +165,7 @@ const iconProps = {
   'aria-hidden': true,
 };
 
-function EyeIcon() {
+export function EyeIcon() {
   return (
     <svg {...iconProps} className="h-5 w-5">
       <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
@@ -174,7 +174,7 @@ function EyeIcon() {
   );
 }
 
-function EyeOffIcon() {
+export function EyeOffIcon() {
   return (
     <svg {...iconProps} className="h-5 w-5">
       <path d="M3 3l18 18M10.6 5.6A9.7 9.7 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-3.1 3.9M6.6 6.7C3.9 8.5 2.5 12 2.5 12S6 18.5 12 18.5c1.6 0 3-.4 4.2-1.1M9.9 9.9a3 3 0 0 0 4.2 4.2" />

@@ -6,7 +6,7 @@ export { default as AccountsCard } from './AccountsCard';
 export { default as BreakdownCard, HomeEquityCard } from './BreakdownCard';
 export { default as ConnectCard } from './ConnectCard';
 export { default as NetWorthChart } from './NetWorthChart';
-export { default as NetWorthHeader } from './NetWorthHeader';
+export { default as NetWorthHeader, EyeIcon, EyeOffIcon } from './NetWorthHeader';
 export type { AddAction } from './NetWorthHeader';
 export { default as NetWorthHero } from './NetWorthHero';
 export { default as StaleBanner } from './StaleBanner';

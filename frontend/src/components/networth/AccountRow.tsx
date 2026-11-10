@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import type { FinancialAccount } from '../../types';
 import IssuerBadge from '../shared/IssuerBadge';
 import { findIssuer } from '../shared/issuers';
@@ -281,6 +282,14 @@ function LiabilityDetail({
         {paid === null && addLink('original_amount', 'Add original amount')}
         {account.apr == null && addLink('apr', 'Add APR')}
       </div>
+      {account.account_type === 'mortgage' && (
+        <Link
+          to={`/mortgage-payoff?account=${account.id}`}
+          className="mt-1 inline-block text-[13px] font-medium text-accent-700 dark:text-blue-300 hover:underline focus-visible:outline-2 focus-visible:outline-accent-700 rounded"
+        >
+          Simulate payoff →
+        </Link>
+      )}
     </div>
   );
 }

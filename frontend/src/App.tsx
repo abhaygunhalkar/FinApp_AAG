@@ -13,6 +13,7 @@ import TradeHistory from './pages/TradeHistory';
 import EarningsCalendar from './pages/EarningsCalendar';
 import Settings from './pages/Settings';
 import OptionsStrategy from './pages/OptionsStrategy';
+import MortgagePayoff from './pages/MortgagePayoff';
 import OptionsTradesPage from './pages/OptionsTradesPage';
 import Utilities from './pages/Utilities';
 import PortfolioAnalysisPage from './pages/PortfolioAnalysisPage';
@@ -35,6 +36,7 @@ const router = createBrowserRouter([
       { path: '/trades', element: <TradeHistory /> },
       { path: '/earnings', element: <EarningsCalendar /> },
       { path: '/options-strategy', element: <OptionsStrategy /> },
+      { path: '/mortgage-payoff', element: <MortgagePayoff /> },
       { path: '/options', element: <OptionsTradesPage /> },
       { path: '/settings', element: <Settings /> },
       { path: '/utilities', element: <Utilities /> },
