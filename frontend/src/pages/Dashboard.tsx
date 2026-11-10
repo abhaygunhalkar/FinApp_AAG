@@ -95,7 +95,9 @@ export default function Dashboard() {
     <div>
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
+            Investment Dashboard
+          </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Your portfolio overview at a glance
           </p>

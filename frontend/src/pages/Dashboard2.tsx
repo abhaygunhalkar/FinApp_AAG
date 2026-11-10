@@ -93,7 +93,7 @@ export default function Dashboard2() {
       <header className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1 pt-1">
           <h1 className="text-xl font-bold tracking-tight text-ink-900 dark:text-white">
-            Dashboard
+            Investment Dashboard
           </h1>
           {summary && (
             <span className="text-[13px] text-ink-500 dark:text-slate-400">
