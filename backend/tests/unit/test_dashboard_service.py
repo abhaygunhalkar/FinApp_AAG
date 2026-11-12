@@ -29,9 +29,7 @@ class TestGetSummary:
         assert result.number_of_holdings == 0
         assert result.stale_data is False
 
-    def test_calculates_portfolio_value_and_invested(
-        self, db_session: Session
-    ) -> None:
+    def test_calculates_portfolio_value_and_invested(self, db_session: Session) -> None:
         h1 = Holding(
             ticker="AAPL",
             quantity=10.0,
@@ -57,9 +55,7 @@ class TestGetSummary:
         assert result.unrealized_gain == 350.0
         assert result.number_of_holdings == 2
 
-    def test_calculates_annual_dividend_income(
-        self, db_session: Session
-    ) -> None:
+    def test_calculates_annual_dividend_income(self, db_session: Session) -> None:
         holding = Holding(
             ticker="AAPL",
             quantity=10.0,
@@ -341,9 +337,7 @@ class TestGetBrokerSummary:
 class TestGetActivityFeed:
     """Tests for DashboardService.get_activity_feed."""
 
-    def test_returns_empty_list_when_no_events(
-        self, db_session: Session
-    ) -> None:
+    def test_returns_empty_list_when_no_events(self, db_session: Session) -> None:
         result = DashboardService.get_activity_feed(db_session)
         assert result == []
 
@@ -397,9 +391,7 @@ class TestGetActivityFeed:
         assert sold_events[0].details["quantity"] == 3.0
         assert sold_events[0].details["sell_price"] == 150.0
 
-    def test_includes_watchlist_added_events(
-        self, db_session: Session
-    ) -> None:
+    def test_includes_watchlist_added_events(self, db_session: Session) -> None:
         item = WatchlistItem(
             ticker="GOOG",
             current_price=140.0,
@@ -409,15 +401,11 @@ class TestGetActivityFeed:
 
         result = DashboardService.get_activity_feed(db_session)
 
-        watchlist_events = [
-            e for e in result if e.event_type == "watchlist_added"
-        ]
+        watchlist_events = [e for e in result if e.event_type == "watchlist_added"]
         assert len(watchlist_events) == 1
         assert watchlist_events[0].ticker == "GOOG"
 
-    def test_events_sorted_by_timestamp_descending(
-        self, db_session: Session
-    ) -> None:
+    def test_events_sorted_by_timestamp_descending(self, db_session: Session) -> None:
         # Create holdings with different timestamps
         h1 = Holding(
             ticker="AAPL",
@@ -479,156 +467,140 @@ class TestGetActivityFeed:
 class TestGetPortfolioHistory:
     """Tests for DashboardService.get_portfolio_history."""
 
-    def test_returns_empty_list_when_no_holdings(
-        self, db_session: Session
+    @staticmethod
+    def _holding(
+        db: Session, ticker: str, quantity: float, price: float, broker: str = "Schwab"
     ) -> None:
-        result = DashboardService.get_portfolio_history(db_session)
-        assert result == []
+        db.add(
+            Holding(
+                ticker=ticker,
+                quantity=quantity,
+                average_buy_price=price,
+                current_price=price,
+                broker=broker,
+            )
+        )
+        db.commit()
+
+    @staticmethod
+    def _close(db: Session, ticker: str, days_ago: int, price: float) -> None:
+        db.add(
+            PriceHistory(
+                ticker=ticker,
+                close_price=price,
+                date=date.today() - timedelta(days=days_ago),
+                fetched_at=datetime.now(),
+            )
+        )
+        db.commit()
+
+    def test_returns_empty_list_when_no_holdings(self, db_session: Session) -> None:
+        assert DashboardService.get_portfolio_history(db_session) == []
 
     def test_returns_empty_list_when_no_price_history(
         self, db_session: Session
     ) -> None:
-        holding = Holding(
-            ticker="AAPL",
-            quantity=10.0,
-            average_buy_price=150.0,
-            current_price=175.0,
-        )
-        db_session.add(holding)
-        db_session.commit()
+        self._holding(db_session, "AAPL", 10, 175.0)
+        assert DashboardService.get_portfolio_history(db_session) == []
 
-        result = DashboardService.get_portfolio_history(db_session)
-        assert result == []
-
-    def test_calculates_daily_portfolio_value(
+    def test_values_past_days_at_their_close_and_today_live(
         self, db_session: Session
     ) -> None:
-        holding = Holding(
-            ticker="AAPL",
-            quantity=10.0,
-            average_buy_price=150.0,
-            current_price=175.0,
-        )
-        db_session.add(holding)
-        db_session.commit()
-
-        # Add price history for 3 days
-        today = date.today()
-        for i in range(3):
-            d = today - timedelta(days=2 - i)
-            price = PriceHistory(
-                ticker="AAPL",
-                close_price=170.0 + i,
-                date=d,
-                fetched_at=datetime.now(),
-            )
-            db_session.add(price)
-        db_session.commit()
+        self._holding(db_session, "AAPL", 10, 175.0)
+        for days_ago, price in [(2, 170.0), (1, 171.0), (0, 172.0)]:
+            self._close(db_session, "AAPL", days_ago, price)
 
         result = DashboardService.get_portfolio_history(db_session, days=30)
 
-        assert len(result) == 3
-        # Values: 170*10=1700, 171*10=1710, 172*10=1720
-        assert result[0].total_value == 1700.0
-        assert result[1].total_value == 1710.0
-        assert result[2].total_value == 1720.0
+        assert [r.total_value for r in result] == [1700.0, 1710.0, 1750.0]
+        assert result[-1].date == date.today()
 
     def test_aggregates_multiple_holdings(self, db_session: Session) -> None:
-        h1 = Holding(
-            ticker="AAPL",
-            quantity=10.0,
-            average_buy_price=150.0,
-            current_price=175.0,
-        )
-        h2 = Holding(
-            ticker="MSFT",
-            quantity=5.0,
-            average_buy_price=200.0,
-            current_price=220.0,
-        )
-        db_session.add_all([h1, h2])
-        db_session.commit()
-
-        today = date.today()
-        d = today - timedelta(days=1)
-        p1 = PriceHistory(
-            ticker="AAPL", close_price=170.0, date=d, fetched_at=datetime.now()
-        )
-        p2 = PriceHistory(
-            ticker="MSFT", close_price=215.0, date=d, fetched_at=datetime.now()
-        )
-        db_session.add_all([p1, p2])
-        db_session.commit()
+        self._holding(db_session, "AAPL", 10, 175.0)
+        self._holding(db_session, "MSFT", 5, 220.0)
+        self._close(db_session, "AAPL", 1, 170.0)
+        self._close(db_session, "MSFT", 1, 215.0)
 
         result = DashboardService.get_portfolio_history(db_session, days=30)
 
-        assert len(result) == 1
-        # total_value = (170*10) + (215*5) = 1700 + 1075 = 2775
-        assert result[0].total_value == 2775.0
-        assert result[0].date == d
+        assert result[0].date == date.today() - timedelta(days=1)
+        assert result[0].total_value == 170.0 * 10 + 215.0 * 5
 
-    def test_respects_days_parameter(self, db_session: Session) -> None:
-        holding = Holding(
-            ticker="AAPL",
-            quantity=10.0,
-            average_buy_price=150.0,
-            current_price=175.0,
-        )
-        db_session.add(holding)
-        db_session.commit()
+    def test_counts_a_ticker_held_at_several_brokers_in_full(
+        self, db_session: Session
+    ) -> None:
+        # Past days used to count only one broker's shares, so the chart
+        # jumped up on the live "today" point.
+        self._holding(db_session, "NVDA", 65, 160.0, broker="Robinhood")
+        self._holding(db_session, "NVDA", 25.5, 160.0, broker="Schwab")
+        self._close(db_session, "NVDA", 1, 150.0)
 
-        today = date.today()
-        # Add price history: one within 7 days, one outside
-        recent = PriceHistory(
-            ticker="AAPL",
-            close_price=170.0,
-            date=today - timedelta(days=3),
-            fetched_at=datetime.now(),
-        )
-        old = PriceHistory(
-            ticker="AAPL",
-            close_price=160.0,
-            date=today - timedelta(days=10),
-            fetched_at=datetime.now(),
-        )
-        db_session.add_all([recent, old])
-        db_session.commit()
+        result = DashboardService.get_portfolio_history(db_session, days=30)
+
+        assert result[0].total_value == 150.0 * 90.5
+        assert result[-1].total_value == 160.0 * 90.5
+
+    def test_carries_the_last_close_over_a_missing_day(
+        self, db_session: Session
+    ) -> None:
+        self._holding(db_session, "AAPL", 10, 175.0)
+        self._holding(db_session, "MSFT", 5, 220.0)
+        self._close(db_session, "AAPL", 3, 170.0)
+        self._close(db_session, "MSFT", 3, 215.0)
+        # Day 2: MSFT's quote failed. Day 1: nothing saved at all.
+        self._close(db_session, "AAPL", 2, 172.0)
+
+        result = DashboardService.get_portfolio_history(db_session, days=30)
+
+        assert [r.date for r in result[:-1]] == [
+            date.today() - timedelta(days=3),
+            date.today() - timedelta(days=2),
+        ]
+        assert result[1].total_value == 172.0 * 10 + 215.0 * 5
+
+    def test_prices_the_first_days_from_closes_before_the_range(
+        self, db_session: Session
+    ) -> None:
+        self._holding(db_session, "AAPL", 10, 175.0)
+        self._holding(db_session, "MSFT", 5, 220.0)
+        self._close(db_session, "MSFT", 10, 200.0)  # before the 7-day range
+        self._close(db_session, "AAPL", 3, 170.0)
 
         result = DashboardService.get_portfolio_history(db_session, days=7)
 
-        # Only the recent record should be included
-        assert len(result) == 1
-        assert result[0].total_value == 1700.0  # 170 * 10
+        assert len(result) == 2
+        assert result[0].total_value == 170.0 * 10 + 200.0 * 5
 
-    def test_results_ordered_by_date_ascending(
+    def test_values_a_ticker_before_its_first_close_at_that_close(
         self, db_session: Session
     ) -> None:
-        holding = Holding(
-            ticker="AAPL",
-            quantity=10.0,
-            average_buy_price=150.0,
-            current_price=175.0,
-        )
-        db_session.add(holding)
-        db_session.commit()
-
-        today = date.today()
-        for i in range(5):
-            d = today - timedelta(days=4 - i)
-            price = PriceHistory(
-                ticker="AAPL",
-                close_price=170.0 + i,
-                date=d,
-                fetched_at=datetime.now(),
-            )
-            db_session.add(price)
-        db_session.commit()
+        self._holding(db_session, "AAPL", 10, 175.0)
+        self._holding(db_session, "NEW", 4, 60.0)
+        self._close(db_session, "AAPL", 3, 170.0)
+        self._close(db_session, "NEW", 1, 50.0)
 
         result = DashboardService.get_portfolio_history(db_session, days=30)
 
-        # Verify ascending date order
-        for i in range(len(result) - 1):
-            assert result[i].date < result[i + 1].date
+        assert result[0].total_value == 170.0 * 10 + 50.0 * 4
+
+    def test_respects_days_parameter(self, db_session: Session) -> None:
+        self._holding(db_session, "AAPL", 10, 175.0)
+        self._close(db_session, "AAPL", 3, 170.0)
+        self._close(db_session, "AAPL", 10, 160.0)
+
+        result = DashboardService.get_portfolio_history(db_session, days=7)
+
+        assert [r.total_value for r in result] == [1700.0, 1750.0]
+
+    def test_results_ordered_by_date_ascending(self, db_session: Session) -> None:
+        self._holding(db_session, "AAPL", 10, 175.0)
+        for i in range(5):
+            self._close(db_session, "AAPL", 4 - i, 170.0 + i)
+
+        result = DashboardService.get_portfolio_history(db_session, days=30)
+
+        assert [r.date for r in result] == sorted(r.date for r in result)
+        assert len({r.date for r in result}) == len(result)
 
 
 class TestGetIntraday:

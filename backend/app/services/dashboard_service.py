@@ -27,6 +27,9 @@ from app.schemas.dashboard import (
 from app.services.lot_service import LotService
 from app.services.market_data_service import MarketDataService
 
+# Days of history before the chart's range used to price its first days.
+HISTORY_LOOKBACK_DAYS = 14
+
 
 class DashboardService:
     """Business logic for dashboard metrics, activity feed, and portfolio history."""
@@ -51,12 +54,8 @@ class DashboardService:
         holdings = HoldingsRepository.get_all(db)
 
         # Calculate portfolio value metrics
-        total_portfolio_value = sum(
-            h.current_price * h.quantity for h in holdings
-        )
-        total_invested = sum(
-            h.average_buy_price * h.quantity for h in holdings
-        )
+        total_portfolio_value = sum(h.current_price * h.quantity for h in holdings)
+        total_invested = sum(h.average_buy_price * h.quantity for h in holdings)
         unrealized_gain = total_portfolio_value - total_invested
 
         # Calculate realized gain from sell transactions
@@ -86,10 +85,9 @@ class DashboardService:
             if time_since_fetch > stale_threshold:
                 stale_data = True
 
-        etf_holdings = HoldingsRepository.get_all_by_type(db, 'etf')
+        etf_holdings = HoldingsRepository.get_all_by_type(db, "etf")
         etf_unrealized_gain = sum(
-            (h.current_price - h.average_buy_price) * h.quantity
-            for h in etf_holdings
+            (h.current_price - h.average_buy_price) * h.quantity for h in etf_holdings
         )
 
         return DashboardSummary(
@@ -233,50 +231,62 @@ class DashboardService:
         return events[:limit]
 
     @staticmethod
-    def get_portfolio_history(
-        db: Session, days: int = 30
-    ) -> list[PortfolioSnapshot]:
-        """Build portfolio history from price_history data.
+    def get_portfolio_history(db: Session, days: int = 30) -> list[PortfolioSnapshot]:
+        """Daily value of today's holdings over the last `days` days, from
+        price_history closes, with today's live value as the last point.
 
-        For each date in the range, sums (close_price * quantity) across all
-        holdings to produce a daily total portfolio value snapshot.
-        Always includes today's live portfolio value as the latest data point.
-
-        Args:
-            db: Database session.
-            days: Number of days of history to return (default 30).
-
-        Returns:
-            List of PortfolioSnapshot ordered by date ascending.
+        A ticker held at several brokers counts its total quantity. A day with
+        no saved price for a ticker (the refresh job didn't run, or the quote
+        failed) uses its last earlier close, so a gap doesn't look like a drop.
+        Empty when there is no saved history in the range.
         """
         holdings = HoldingsRepository.get_all(db)
         if not holdings:
             return []
 
-        # Build a map of ticker -> quantity for current holdings
-        ticker_quantities: dict[str, float] = {
-            h.ticker: h.quantity for h in holdings
-        }
+        quantities: defaultdict[str, float] = defaultdict(float)
+        for h in holdings:
+            quantities[h.ticker] += h.quantity
+        current_prices = {h.ticker: h.current_price for h in holdings}
 
-        # Collect price history for all tickers
-        daily_values: defaultdict[date, float] = defaultdict(float)
-
-        for ticker, quantity in ticker_quantities.items():
-            history = PriceHistoryRepository.get_history(db, ticker, days)
-            for record in history:
-                daily_values[record.date] += record.close_price * quantity
-
-        # Always include today's live portfolio value from current_price
         today = date.today()
-        today_value = sum(h.current_price * h.quantity for h in holdings)
-        daily_values[today] = today_value
+        cutoff = today - timedelta(days=days)
+        # Earlier closes seed each ticker's price on the first days of the range.
+        closes: dict[str, list[tuple[date, float]]] = {
+            ticker: [
+                (r.date, r.close_price)
+                for r in PriceHistoryRepository.get_history(
+                    db, ticker, days + HISTORY_LOOKBACK_DAYS
+                )
+            ]
+            for ticker in quantities
+        }
+        dates = sorted(
+            {d for series in closes.values() for d, _ in series if cutoff <= d < today}
+        )
+        if not dates:
+            return []
 
-        # Sort by date and return snapshots
-        sorted_dates = sorted(daily_values.keys())
-        return [
-            PortfolioSnapshot(date=d, total_value=daily_values[d])
-            for d in sorted_dates
+        totals = [0.0] * len(dates)
+        for ticker, quantity in quantities.items():
+            series = closes[ticker]
+            # Before its first saved close, a ticker is valued at that close
+            # (or today's price if it has none), not left out.
+            price = series[0][1] if series else current_prices[ticker]
+            i = 0
+            for n, d in enumerate(dates):
+                while i < len(series) and series[i][0] <= d:
+                    price = series[i][1]
+                    i += 1
+                totals[n] += price * quantity
+
+        snapshots = [
+            PortfolioSnapshot(date=d, total_value=total)
+            for d, total in zip(dates, totals, strict=True)
         ]
+        live = sum(h.current_price * h.quantity for h in holdings)
+        snapshots.append(PortfolioSnapshot(date=today, total_value=live))
+        return snapshots
 
     @staticmethod
     def get_intraday(db: Session, today: date | None = None) -> IntradaySeries:
@@ -372,9 +382,7 @@ class DashboardService:
         return round(total_realized, 2)
 
     @staticmethod
-    def _calculate_daily_change(
-        db: Session, holdings: list[Holding]
-    ) -> float:
+    def _calculate_daily_change(db: Session, holdings: list[Holding]) -> float:
         """Calculate daily change using previous close from price_history.
 
         daily_change = sum((current_price - previous_close) * quantity)
@@ -383,9 +391,7 @@ class DashboardService:
         daily_change = 0.0
 
         for holding in holdings:
-            previous_close = DashboardService._get_previous_close(
-                db, holding.ticker
-            )
+            previous_close = DashboardService._get_previous_close(db, holding.ticker)
             if previous_close is not None:
                 daily_change += (
                     holding.current_price - previous_close
@@ -417,9 +423,5 @@ class DashboardService:
     @staticmethod
     def _get_last_successful_fetch(db: Session) -> datetime | None:
         """Get the most recent fetched_at timestamp from price_history."""
-        record = (
-            db.query(PriceHistory)
-            .order_by(PriceHistory.fetched_at.desc())
-            .first()
-        )
+        record = db.query(PriceHistory).order_by(PriceHistory.fetched_at.desc()).first()
         return record.fetched_at if record else None
