@@ -16,6 +16,7 @@ const mockSummary: DashboardSummary = {
   total_portfolio_value: 125000.5,
   total_invested: 100000,
   unrealized_gain: 25000.5,
+  etf_unrealized_gain: 800,
   realized_gain: -3500.25,
   daily_change: 1250.75,
   annual_dividend_income: 4200,
@@ -29,6 +30,7 @@ const emptySummary: DashboardSummary = {
   total_portfolio_value: 0,
   total_invested: 0,
   unrealized_gain: 0,
+  etf_unrealized_gain: 0,
   realized_gain: 0,
   daily_change: 0,
   annual_dividend_income: 0,
@@ -39,17 +41,21 @@ const emptySummary: DashboardSummary = {
 };
 
 describe('MetricsCards', () => {
-  it('renders all 8 metric cards with correct labels', () => {
+  it('renders every metric card with its label', () => {
     render(<MetricsCards data={mockSummary} />);
 
-    expect(screen.getByText('Total Portfolio Value')).toBeInTheDocument();
-    expect(screen.getByText('Total Invested')).toBeInTheDocument();
-    expect(screen.getByText('Unrealized Gain/Loss')).toBeInTheDocument();
-    expect(screen.getByText('Realized Gain/Loss')).toBeInTheDocument();
-    expect(screen.getByText('Daily Change')).toBeInTheDocument();
-    expect(screen.getByText('Annual Dividend Income')).toBeInTheDocument();
-    expect(screen.getByText('Cash Position')).toBeInTheDocument();
-    expect(screen.getByText('Number of Holdings')).toBeInTheDocument();
+    for (const label of [
+      'Total Portfolio Value',
+      'Total Invested',
+      'Unrealized Gain/Loss',
+      'ETF Unrealized Gain/Loss',
+      'Realized Gain/Loss',
+      'Daily Change',
+      'Cash Position',
+      'Number of Holdings',
+    ]) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
   });
 
   it('formats currency values correctly', () => {
@@ -66,27 +72,22 @@ describe('MetricsCards', () => {
     expect(screen.getByText('12')).toBeInTheDocument();
   });
 
-  it('shows positive gain values with green color', () => {
+  it('shows a gain with an up arrow in green, and a positive day on a green card', () => {
     render(<MetricsCards data={mockSummary} />);
 
-    const positiveChanges = screen.getAllByText(/^\+\$/);
-    expect(positiveChanges.length).toBeGreaterThan(0);
-    positiveChanges.forEach((el) => {
-      expect(el.className).toContain('text-green-600');
-    });
+    const unrealized = screen.getByText('↑ +$25,000.50');
+    expect(unrealized.className).toContain('text-green-600');
+    const daily = screen.getByText('+$1,250.75');
+    expect(daily.parentElement?.className).toContain('from-green-500');
   });
 
-  it('shows negative gain values with red color', () => {
-    render(<MetricsCards data={mockSummary} />);
+  it('shows a loss with a down arrow in red, and a negative day on a red card', () => {
+    render(<MetricsCards data={{ ...mockSummary, daily_change: -400 }} />);
 
-    // The change indicator for negative values should have red text
-    const negativeChangeIndicators = screen.getAllByText(/^-\$/).filter(
-      (el) => el.className.includes('text-sm')
-    );
-    expect(negativeChangeIndicators.length).toBeGreaterThan(0);
-    negativeChangeIndicators.forEach((el) => {
-      expect(el.className).toContain('text-red-600');
-    });
+    const realized = screen.getByText(/^↓ -\$3,500\.25$/);
+    expect(realized.className).toContain('text-red-600');
+    const daily = screen.getByText('-$400.00');
+    expect(daily.parentElement?.className).toContain('from-red-500');
   });
 
   it('shows empty state with all zeros when no holdings exist', () => {

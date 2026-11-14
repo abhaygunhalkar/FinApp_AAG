@@ -26,6 +26,8 @@ function createHolding(overrides: Partial<Holding> = {}): Holding {
     current_price: 175.5,
     total_invested: 1500.0,
     current_value: 1755.0,
+    daily_change: 12.5,
+    daily_change_pct: 0.72,
     unrealized_gain: 255.0,
     unrealized_gain_pct: 17.0,
     allocation_pct: 45.5,
@@ -120,8 +122,8 @@ describe('HoldingsTable - data display', () => {
     });
     renderWithQueryClient(<HoldingsTable holdings={[gainer, loser]} />);
 
-    // Gain values should be present
-    expect(screen.getByText('$255.00')).toBeInTheDocument();
+    // Gains carry a + sign
+    expect(screen.getByText('+$255.00')).toBeInTheDocument();
     expect(screen.getByText('17.00%')).toBeInTheDocument();
 
     // Loss values should be present
@@ -129,43 +131,32 @@ describe('HoldingsTable - data display', () => {
     expect(screen.getByText('-8.03%')).toBeInTheDocument();
   });
 
-  it('displays allocation percentage and dividend yield as percentages', () => {
-    const holding = createHolding({
-      allocation_pct: 45.5,
-      dividend_yield: 0.55,
-    });
+  it('displays allocation percentage', () => {
+    const holding = createHolding({ allocation_pct: 45.5 });
     renderWithQueryClient(<HoldingsTable holdings={[holding]} />);
 
     expect(screen.getByText('45.50%')).toBeInTheDocument();
-    expect(screen.getByText('0.55%')).toBeInTheDocument();
   });
 
-  it('displays annual dividend income as currency', () => {
-    const holding = createHolding({ annual_dividend_income: 9.63 });
-    renderWithQueryClient(<HoldingsTable holdings={[holding]} />);
-
-    expect(screen.getByText('$9.63')).toBeInTheDocument();
-  });
-
-  it('displays quantity as a number', () => {
+  it('displays quantity to two decimal places', () => {
     const holding = createHolding({ quantity: 10 });
     renderWithQueryClient(<HoldingsTable holdings={[holding]} />);
 
-    expect(screen.getByText('10')).toBeInTheDocument();
+    expect(screen.getByText('10.00')).toBeInTheDocument();
   });
 
   it('displays dash for null company name', () => {
-    const holding = createHolding({ company_name: null });
+    const holding = createHolding({ company_name: null, broker: 'Schwab' });
     renderWithQueryClient(<HoldingsTable holdings={[holding]} />);
 
     expect(screen.getByText('—')).toBeInTheDocument();
   });
 
-  it('renders 15 column headers', () => {
+  it('renders 14 column headers', () => {
     renderWithQueryClient(<HoldingsTable holdings={[createHolding()]} />);
 
     const headers = screen.getAllByRole('columnheader');
-    expect(headers).toHaveLength(15);
+    expect(headers).toHaveLength(14);
   });
 });
 
@@ -174,7 +165,7 @@ describe('HoldingsTable - data display', () => {
 describe('WatchlistTable - data display', () => {
   it('displays formatted current price as currency', () => {
     const item = createWatchlistItem({ current_price: 178.25 });
-    render(<WatchlistTable items={[item]} />);
+    renderWithQueryClient(<WatchlistTable items={[item]} />);
 
     expect(screen.getByText('$178.25')).toBeInTheDocument();
   });
@@ -184,7 +175,7 @@ describe('WatchlistTable - data display', () => {
       week_52_high: 191.75,
       week_52_low: 120.21,
     });
-    render(<WatchlistTable items={[item]} />);
+    renderWithQueryClient(<WatchlistTable items={[item]} />);
 
     expect(screen.getByText('$191.75')).toBeInTheDocument();
     expect(screen.getByText('$120.21')).toBeInTheDocument();
@@ -192,48 +183,44 @@ describe('WatchlistTable - data display', () => {
 
   it('displays target buy price as currency', () => {
     const item = createWatchlistItem({ target_buy_price: 160.0 });
-    render(<WatchlistTable items={[item]} />);
+    renderWithQueryClient(<WatchlistTable items={[item]} />);
 
     expect(screen.getByText('$160.00')).toBeInTheDocument();
   });
 
   it('displays analyst rating text', () => {
     const item = createWatchlistItem({ analyst_rating: 'Strong Buy' });
-    render(<WatchlistTable items={[item]} />);
+    renderWithQueryClient(<WatchlistTable items={[item]} />);
 
     expect(screen.getByText('Strong Buy')).toBeInTheDocument();
   });
 
   it('displays PE ratio formatted to 2 decimal places', () => {
     const item = createWatchlistItem({ pe_ratio: 25.4 });
-    render(<WatchlistTable items={[item]} />);
+    renderWithQueryClient(<WatchlistTable items={[item]} />);
 
     expect(screen.getByText('25.40')).toBeInTheDocument();
   });
 
-  it('displays sector and notes', () => {
-    const item = createWatchlistItem({
-      sector: 'Technology',
-      notes: 'Good long-term hold',
-    });
-    render(<WatchlistTable items={[item]} />);
+  it('displays the sector', () => {
+    const item = createWatchlistItem({ sector: 'Technology' });
+    renderWithQueryClient(<WatchlistTable items={[item]} />);
 
     expect(screen.getByText('Technology')).toBeInTheDocument();
-    expect(screen.getByText('Good long-term hold')).toBeInTheDocument();
   });
 
-  it('renders 13 column headers', () => {
-    render(<WatchlistTable items={[createWatchlistItem()]} />);
+  it('renders 15 column headers', () => {
+    renderWithQueryClient(<WatchlistTable items={[createWatchlistItem()]} />);
 
     const headers = screen.getAllByRole('columnheader');
-    expect(headers).toHaveLength(13);
+    expect(headers).toHaveLength(15);
   });
 
   it('renders empty table with no rows when items array is empty', () => {
-    render(<WatchlistTable items={[]} />);
+    renderWithQueryClient(<WatchlistTable items={[]} />);
 
     // Headers should still be present
-    expect(screen.getByText('Ticker')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /^Ticker/ })).toBeInTheDocument();
     // No data rows - only header row
     const rows = screen.getAllByRole('row');
     expect(rows).toHaveLength(1); // Only header row
@@ -247,6 +234,7 @@ describe('MetricsCards - value display', () => {
     total_portfolio_value: 250750.99,
     total_invested: 200000.0,
     unrealized_gain: 50750.99,
+    etf_unrealized_gain: 0,
     realized_gain: 12500.0,
     daily_change: -1250.5,
     annual_dividend_income: 8400.0,
@@ -276,11 +264,6 @@ describe('MetricsCards - value display', () => {
     expect(screen.getByText('$12,500.00')).toBeInTheDocument();
   });
 
-  it('displays annual dividend income formatted as currency', () => {
-    render(<MetricsCards data={mockData} />);
-    expect(screen.getByText('$8,400.00')).toBeInTheDocument();
-  });
-
   it('displays cash position formatted as currency', () => {
     render(<MetricsCards data={mockData} />);
     expect(screen.getByText('$25,000.00')).toBeInTheDocument();
@@ -291,18 +274,10 @@ describe('MetricsCards - value display', () => {
     expect(screen.getByText('15')).toBeInTheDocument();
   });
 
-  it('displays negative daily change with red color indicator', () => {
+  it('displays a negative daily change on a red card', () => {
     render(<MetricsCards data={mockData} />);
-    // The change indicator for daily change should show negative value
-    // There are two elements with this text (main value + change indicator)
-    const negativeElements = screen.getAllByText('-$1,250.50');
-    expect(negativeElements.length).toBeGreaterThanOrEqual(1);
-    // The change indicator (text-sm) should have red color
-    const changeIndicator = negativeElements.find((el) =>
-      el.className.includes('text-sm')
-    );
-    expect(changeIndicator).toBeDefined();
-    expect(changeIndicator!.className).toContain('text-red-600');
+    const daily = screen.getByText('-$1,250.50');
+    expect(daily.parentElement?.className).toContain('from-red-500');
   });
 
   it('displays all zero values when portfolio is empty', () => {
@@ -310,6 +285,7 @@ describe('MetricsCards - value display', () => {
       total_portfolio_value: 0,
       total_invested: 0,
       unrealized_gain: 0,
+      etf_unrealized_gain: 0,
       realized_gain: 0,
       daily_change: 0,
       annual_dividend_income: 0,

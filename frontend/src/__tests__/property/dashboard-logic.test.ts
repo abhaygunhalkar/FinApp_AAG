@@ -54,6 +54,8 @@ const watchlistItemArbitrary: fc.Arbitrary<WatchlistItem> = fc.record({
   analyst_rating: fc.oneof(fc.constant(null), fc.constantFrom('Buy', 'Hold', 'Sell')),
   pe_ratio: fc.oneof(fc.constant(null), fc.double({ min: 0, max: 500, noNaN: true })),
   market_cap: fc.oneof(fc.constant(null), fc.double({ min: 0, max: 1e12, noNaN: true })),
+  rsi_daily: fc.oneof(fc.constant(null), fc.double({ min: 0, max: 100, noNaN: true })),
+  rsi_weekly: fc.oneof(fc.constant(null), fc.double({ min: 0, max: 100, noNaN: true })),
   sector: fc.oneof(
     fc.constant(null),
     fc.constantFrom('Technology', 'Healthcare', 'Finance', 'Energy'),
@@ -87,6 +89,8 @@ const activityEventArbitrary: fc.Arbitrary<ActivityEvent> = fc.record({
     .date({
       min: new Date('2020-01-01T00:00:00Z'),
       max: new Date('2025-12-31T23:59:59Z'),
+      // fast-check also generates "Invalid Date" unless told not to.
+      noInvalidDate: true,
     })
     .map((d) => d.toISOString()),
 });

@@ -18,7 +18,6 @@ What's still to do on FinApp, so nothing gets forgotten. Newest decisions at the
 
 ## Standardization pass (after the initial features)
 
-- [ ] **Fix the frontend tests that already fail on `main`:** about 30 failures, mostly old fixtures in `FrontendComponents`, `MetricsCards` and `WatchlistTable`. The property test "Activity feed ordering and limit" (`dashboard-logic.test.ts`) fails now and then. Also `tsc -b` errors in old test files.
 - [ ] **Format dates the same way everywhere**, with the browser's built-in date formatting (`Intl.DateTimeFormat`).
 - [ ] **Bring older code up to the current conventions:**
   - `transactions.py` `/sells` and `income.py` routers still hold logic and build response dicts by hand;
@@ -42,6 +41,8 @@ One copy per person on their own cloud, not a multi-user service.
 - **Chat feature flag, metrics dashboards, Playwright end-to-end tests:** not needed for one user.
 
 ## Done
+
+- 2026-11-14: frontend tests that failed on `main` all pass (379), and `tsc -b` is clean. They were out of date: tables gained a query hook and renamed columns, dividend and notes columns were removed, gains gained a + sign. The flaky "Activity feed ordering" property test generated invalid dates (`noInvalidDate`). Also fixed an unused import and a `JSX` type in app code.
 
 - 2026-11-14: backend tests that failed on `main` all pass. Four were tests calling live Yahoo Finance (now an `offline_market` fixture) or outdated setup. One was a real rounding bug: selling part of a position nudged the average cost of the shares kept.
 - 2026-11-14: unknown routes and wrong methods (404/405) return the usual `{success, data, error}` envelope.

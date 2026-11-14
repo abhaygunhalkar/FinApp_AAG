@@ -1,8 +1,9 @@
+import type { ReactElement } from 'react';
 import { useActivity } from '../../hooks/useDashboard';
 import { LoadingSpinner } from '../shared';
 import type { ActivityEvent } from '../../types';
 
-function getEventIcon(eventType: ActivityEvent['event_type']): JSX.Element {
+function getEventIcon(eventType: ActivityEvent['event_type']): ReactElement {
   switch (eventType) {
     case 'holding_added':
       return (

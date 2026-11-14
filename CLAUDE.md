@@ -129,7 +129,7 @@ The app has its own sign-in page and one account, the owner's, created on the se
 - Backend tests use an in-memory SQLite DB (`tests/conftest.py`) with the `get_db` dependency overridden; `setup_database` autouse fixture creates/drops all tables per test for isolation. Tests are split into `tests/unit/`, `tests/integration/` (router-level via `httpx.AsyncClient`), and `tests/property/` (Hypothesis-based).
 - Frontend tests live in `src/__tests__/unit/` and `src/__tests__/property/` (fast-check), plus some co-located `*.test.tsx` next to components (e.g. `components/holdings/`). Page tests usually `vi.mock` the hooks module rather than mocking HTTP; `msw` is available for API mocking. Use dates relative to today in tests, not hard-coded ones that go stale.
 - Backend tests all pass; a new failure is a real one. Tests must not call live market data: use the `offline_market` fixture (`tests/conftest.py`) or patch `MarketDataService`. `tests/unit/test_migrations.py` checks every migration runs on an empty database.
-- Some frontend tests already fail on `main` (`FrontendComponents`, `MetricsCards` and others with out-of-date fixtures), and `tsc -b` reports errors in old test files. Compare against `main` before assuming a frontend failure is new.
+- Frontend tests all pass and `tsc -b` is clean. Tests that render a component using a query or mutation hook need a `QueryClientProvider` (or mock the hook); fast-check `fc.date` needs `noInvalidDate: true`.
 
 ## Backlog
 

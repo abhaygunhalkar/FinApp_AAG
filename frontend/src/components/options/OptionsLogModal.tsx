@@ -1,4 +1,3 @@
-import React from 'react';
 import OptionsLogForm from './OptionsLogForm';
 
 export default function OptionsLogModal({ open, onClose, editing }: { open: boolean; onClose: () => void; editing?: any }) {

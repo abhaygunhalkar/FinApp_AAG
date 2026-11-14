@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render as rtlRender, screen } from '@testing-library/react';
+import type { ReactElement } from 'react';
 import { describe, it, expect } from 'vitest';
 import WatchlistTable from './WatchlistTable';
 import type { WatchlistItem } from '../../types';
 
-function createWatchlistItem(
-  overrides: Partial<WatchlistItem> = {}
-): WatchlistItem {
+function createWatchlistItem(overrides: Partial<WatchlistItem> = {}): WatchlistItem {
   return {
     id: 1,
     ticker: 'AAPL',
@@ -21,10 +21,17 @@ function createWatchlistItem(
     sector: 'Technology',
     notes: 'Strong fundamentals',
     priority: 1,
+    rsi_daily: null,
+    rsi_weekly: null,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-06-01T00:00:00Z',
     ...overrides,
   };
+}
+
+/** The table deletes items through a query hook, so it needs a QueryClient. */
+function render(ui: ReactElement) {
+  return rtlRender(<QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>);
 }
 
 const mockItems: WatchlistItem[] = [
@@ -54,19 +61,29 @@ const mockItems: WatchlistItem[] = [
 describe('WatchlistTable', () => {
   it('renders all column headers', () => {
     render(<WatchlistTable items={mockItems} />);
-    expect(screen.getByText('Ticker')).toBeInTheDocument();
-    expect(screen.getByText('Company Name')).toBeInTheDocument();
-    expect(screen.getByText('Current Price')).toBeInTheDocument();
-    expect(screen.getByText('Daily Change %')).toBeInTheDocument();
-    expect(screen.getByText('52 Week High')).toBeInTheDocument();
-    expect(screen.getByText('52 Week Low')).toBeInTheDocument();
-    expect(screen.getByText('Target Buy Price')).toBeInTheDocument();
-    expect(screen.getByText('Analyst Rating')).toBeInTheDocument();
-    expect(screen.getByText('PE Ratio')).toBeInTheDocument();
-    expect(screen.getByText('Market Cap')).toBeInTheDocument();
-    expect(screen.getByText('Sector')).toBeInTheDocument();
-    expect(screen.getByText('Notes')).toBeInTheDocument();
-    expect(screen.getByText('Watch Priority')).toBeInTheDocument();
+    for (const header of [
+      'Ticker',
+      'Company Name',
+      'Current Price',
+      'Daily Change %',
+      '52W High',
+      '52W Low',
+      'Target Price',
+      'Rating',
+      'PE Ratio',
+      'Market Cap',
+      'Sector',
+      'RSI(D)',
+      'RSI(W)',
+      'Priority',
+      'Actions',
+    ]) {
+      expect(
+        screen.getByRole('columnheader', {
+          name: new RegExp(`^${header.replace(/[()%]/g, '\\$&')}`),
+        }),
+      ).toBeInTheDocument();
+    }
   });
 
   it('renders all watchlist item rows', () => {
@@ -85,35 +102,24 @@ describe('WatchlistTable', () => {
 
   it('color-codes positive daily change in green', () => {
     render(<WatchlistTable items={[createWatchlistItem({ daily_change_pct: 2.35 })]} />);
-    const changeEl = screen.getByText('2.35%');
+    // Gains carry a + sign.
+    const changeEl = screen.getByText('+2.35%');
     expect(changeEl).toHaveClass('text-green-600');
   });
 
   it('color-codes negative daily change in red', () => {
-    render(
-      <WatchlistTable
-        items={[createWatchlistItem({ id: 2, daily_change_pct: -1.5 })]}
-      />
-    );
+    render(<WatchlistTable items={[createWatchlistItem({ id: 2, daily_change_pct: -1.5 })]} />);
     const changeEl = screen.getByText('-1.50%');
     expect(changeEl).toHaveClass('text-red-600');
   });
 
   it('formats market cap with B abbreviation for billions', () => {
-    render(
-      <WatchlistTable
-        items={[createWatchlistItem({ market_cap: 2750000000000 })]}
-      />
-    );
+    render(<WatchlistTable items={[createWatchlistItem({ market_cap: 2750000000000 })]} />);
     expect(screen.getByText('$2.75T')).toBeInTheDocument();
   });
 
   it('formats market cap with M abbreviation for millions', () => {
-    render(
-      <WatchlistTable
-        items={[createWatchlistItem({ id: 4, market_cap: 500000000 })]}
-      />
-    );
+    render(<WatchlistTable items={[createWatchlistItem({ id: 4, market_cap: 500000000 })]} />);
     expect(screen.getByText('$500.00M')).toBeInTheDocument();
   });
 
@@ -128,7 +134,7 @@ describe('WatchlistTable', () => {
             market_cap: null,
           }),
         ]}
-      />
+      />,
     );
     // Should show dashes for null fields
     const dashes = screen.getAllByText('—');

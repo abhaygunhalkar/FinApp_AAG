@@ -20,10 +20,12 @@ function createHolding(overrides: Partial<Holding> = {}): Holding {
     unrealized_gain: 250,
     unrealized_gain_pct: 16.67,
     allocation_pct: 50,
+    holding_type: 'stock',
     sector: 'Technology',
     industry: 'Consumer Electronics',
     dividend_yield: 0.5,
     annual_dividend_income: 8.75,
+    broker: null,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-06-01T00:00:00Z',
     ...overrides,
@@ -31,18 +33,39 @@ function createHolding(overrides: Partial<Holding> = {}): Holding {
 }
 
 const mockHoldings: Holding[] = [
-  createHolding({ id: 1, ticker: 'AAPL', company_name: 'Apple Inc.', sector: 'Technology', unrealized_gain: 250, unrealized_gain_pct: 16.67 }),
-  createHolding({ id: 2, ticker: 'MSFT', company_name: 'Microsoft Corp', sector: 'Technology', unrealized_gain: 100, unrealized_gain_pct: 10, allocation_pct: 30 }),
-  createHolding({ id: 3, ticker: 'JPM', company_name: 'JPMorgan Chase', sector: 'Financials', unrealized_gain: -50, unrealized_gain_pct: -5, allocation_pct: 20 }),
+  createHolding({
+    id: 1,
+    ticker: 'AAPL',
+    company_name: 'Apple Inc.',
+    sector: 'Technology',
+    unrealized_gain: 250,
+    unrealized_gain_pct: 16.67,
+  }),
+  createHolding({
+    id: 2,
+    ticker: 'MSFT',
+    company_name: 'Microsoft Corp',
+    sector: 'Technology',
+    unrealized_gain: 100,
+    unrealized_gain_pct: 10,
+    allocation_pct: 30,
+  }),
+  createHolding({
+    id: 3,
+    ticker: 'JPM',
+    company_name: 'JPMorgan Chase',
+    sector: 'Financials',
+    unrealized_gain: -50,
+    unrealized_gain_pct: -5,
+    allocation_pct: 20,
+  }),
 ];
 
 function renderWithProviders(ui: React.ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }
 
 describe('HoldingsTable', () => {
@@ -78,21 +101,27 @@ describe('HoldingsTable', () => {
 
   it('renders all column headers', () => {
     renderWithProviders(<HoldingsTable holdings={mockHoldings} />);
-    expect(screen.getByText(/^Ticker/)).toBeInTheDocument();
-    expect(screen.getByText(/^Company Name/)).toBeInTheDocument();
-    expect(screen.getByText(/^Quantity/)).toBeInTheDocument();
-    expect(screen.getByText(/^Avg Buy Price/)).toBeInTheDocument();
-    expect(screen.getByText(/^Current Price/)).toBeInTheDocument();
-    expect(screen.getByText(/^Day Change$/)).toBeInTheDocument();
-    expect(screen.getByText(/^Day Change %$/)).toBeInTheDocument();
-    expect(screen.getByText(/^Total Invested/)).toBeInTheDocument();
-    expect(screen.getByText(/^Current Value/)).toBeInTheDocument();
-    expect(screen.getByText(/^Gain\/Loss/)).toBeInTheDocument();
-    expect(screen.getByText(/^Gain %/)).toBeInTheDocument();
-    expect(screen.getByText(/^Sector/)).toBeInTheDocument();
-    expect(screen.getByText(/^Broker/)).toBeInTheDocument();
-    expect(screen.getByText(/^Allocation %/)).toBeInTheDocument();
-    expect(screen.getByText(/^Last Updated/)).toBeInTheDocument();
+    // Short labels, as the table shows them today.
+    for (const header of [
+      'Ticker',
+      'Company',
+      'Qty',
+      'Avg Cost',
+      'Price',
+      'Day %',
+      'Invested',
+      'Value',
+      'Gain/Loss',
+      'Gain %',
+      'Sector',
+      'Broker',
+      'Alloc %',
+      'Updated',
+    ]) {
+      expect(
+        screen.getByRole('columnheader', { name: new RegExp(`^${header}`) }),
+      ).toBeInTheDocument();
+    }
   });
 
   it('filters by search text (case-insensitive partial match on ticker)', () => {

@@ -90,6 +90,8 @@ const holdingArbitrary: fc.Arbitrary<Holding> = fc.record({
   current_price: fc.double({ min: 0, max: 10000, noNaN: true }),
   total_invested: fc.double({ min: 0, max: 100000, noNaN: true }),
   current_value: fc.double({ min: 0, max: 100000, noNaN: true }),
+  daily_change: fc.double({ min: -1000, max: 1000, noNaN: true }),
+  daily_change_pct: fc.double({ min: -50, max: 50, noNaN: true }),
   unrealized_gain: fc.double({ min: -50000, max: 50000, noNaN: true }),
   unrealized_gain_pct: fc.double({ min: -100, max: 1000, noNaN: true }),
   allocation_pct: fc.double({ min: 0, max: 100, noNaN: true }),
@@ -129,12 +131,6 @@ const sortColumnArbitrary = fc.constantFrom<keyof Holding>(
 const sortDirectionArbitrary = fc.constantFrom<'asc' | 'desc'>('asc', 'desc');
 
 const sectorFilterArbitrary = fc.oneof(fc.constant(null), fc.constantFrom(...SECTORS));
-
-const performanceFilterArbitrary = fc.constantFrom<'all' | 'gainers' | 'losers'>(
-  'all',
-  'gainers',
-  'losers',
-);
 
 // --- Property Tests ---
 
