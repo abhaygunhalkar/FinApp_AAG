@@ -9,6 +9,16 @@ import { RequireAuth, loginUrl, safeNext } from '../../../components/auth';
 import Sidebar from '../../../components/layout/Sidebar';
 import Login from '../../../pages/Login';
 
+const USER = { username: 'abhay', two_step_enabled: false, backup_codes_left: 0 };
+
+/** The server accepts the sign-in: from then on, "who's signed in" is the user. */
+function acceptSignIn(codeRequired = false) {
+  return async () => {
+    if (!codeRequired) api.getMe.mockResolvedValue(USER);
+    return { username: 'abhay', code_required: codeRequired };
+  };
+}
+
 const api = vi.hoisted(() => ({ getMe: vi.fn(), login: vi.fn(), logout: vi.fn() }));
 vi.mock('../../../api/auth', () => api);
 
@@ -76,7 +86,7 @@ describe('RequireAuth', () => {
   });
 
   it('shows the page to a signed-in user', async () => {
-    api.getMe.mockResolvedValue({ username: 'abhay' });
+    api.getMe.mockResolvedValue(USER);
     renderAt('/net-worth');
     expect(await screen.findByText('Net worth page')).toBeInTheDocument();
   });
@@ -85,7 +95,7 @@ describe('RequireAuth', () => {
     api.getMe.mockRejectedValue(httpError(null));
     renderAt('/net-worth');
     expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't reach the server");
-    api.getMe.mockResolvedValue({ username: 'abhay' });
+    api.getMe.mockResolvedValue(USER);
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('Net worth page')).toBeInTheDocument();
   });
@@ -98,7 +108,7 @@ describe('Login page', () => {
   }
 
   it('signs in and goes back to the page that asked', async () => {
-    api.login.mockResolvedValue({ username: 'abhay' });
+    api.login.mockImplementation(acceptSignIn());
     renderAt('/login?next=%2Fnet-worth');
     const button = await screen.findByRole('button', { name: 'Sign in' });
     expect(button).toBeDisabled();
@@ -136,15 +146,80 @@ describe('Login page', () => {
   });
 
   it('skips the form when already signed in', async () => {
-    api.getMe.mockResolvedValue({ username: 'abhay' });
+    api.getMe.mockResolvedValue(USER);
     renderAt('/login');
     expect(await screen.findByText('Investment Dashboard')).toBeInTheDocument();
   });
 });
 
+describe('Two-step sign-in', () => {
+  async function passPasswordStep() {
+    fireEvent.change(await screen.findByLabelText('Username'), { target: { value: 'abhay' } });
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'correct horse battery' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    return screen.findByRole('heading', { name: 'Two-step verification' });
+  }
+
+  it('asks for a code after the password, then signs in with both', async () => {
+    api.login.mockImplementationOnce(acceptSignIn(true)).mockImplementationOnce(acceptSignIn());
+    renderAt('/login?next=%2Fnet-worth');
+    await passPasswordStep();
+
+    const code = screen.getByLabelText('Code');
+    const verify = screen.getByRole('button', { name: 'Verify' });
+    fireEvent.change(code, { target: { value: '12a34' } });
+    expect(code).toHaveValue('1234');
+    expect(verify).toBeDisabled();
+    fireEvent.change(code, { target: { value: '123456' } });
+    fireEvent.click(verify);
+
+    expect(await screen.findByText('Net worth page')).toBeInTheDocument();
+    expect(api.login.mock.calls[1][0]).toEqual({
+      username: 'abhay',
+      password: 'correct horse battery',
+      code: '123456',
+    });
+  });
+
+  it('shows a wrong code and clears it, keeping the step', async () => {
+    api.login
+      .mockImplementationOnce(acceptSignIn(true))
+      .mockRejectedValueOnce(new Error("That code didn't work."));
+    renderAt('/login');
+    await passPasswordStep();
+    fireEvent.change(screen.getByLabelText('Code'), { target: { value: '000000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Verify' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent("That code didn't work.");
+    expect(screen.getByLabelText('Code')).toHaveValue('');
+    expect(screen.getByRole('heading', { name: 'Two-step verification' })).toBeInTheDocument();
+  });
+
+  it('takes a backup code instead', async () => {
+    api.login.mockImplementationOnce(acceptSignIn(true)).mockImplementationOnce(acceptSignIn());
+    renderAt('/login');
+    await passPasswordStep();
+    fireEvent.click(screen.getByRole('button', { name: 'Use a backup code' }));
+    fireEvent.change(screen.getByLabelText('Backup code'), { target: { value: 'k7mp-q2xa' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Verify' }));
+    expect(await screen.findByText('Investment Dashboard')).toBeInTheDocument();
+    expect(api.login.mock.calls[1][0].code).toBe('k7mp-q2xa');
+  });
+
+  it('goes back to the password step and forgets the password', async () => {
+    api.login.mockImplementationOnce(acceptSignIn(true));
+    renderAt('/login');
+    await passPasswordStep();
+    fireEvent.click(screen.getByRole('button', { name: '← Back' }));
+    expect(screen.getByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Password')).toHaveValue('');
+  });
+});
+
 describe('Sign out', () => {
   it('ends the session, forgets cached data and shows the sign-in page', async () => {
-    api.getMe.mockResolvedValue({ username: 'abhay' });
+    api.getMe.mockResolvedValue(USER);
     const queryClient = renderAt('/', <Sidebar />);
     await screen.findByText('Investment Dashboard');
     queryClient.setQueryData(['holdings'], [{ ticker: 'NVDA' }]);

@@ -1,6 +1,6 @@
 import { isAxiosError } from 'axios';
 import apiClient, { unwrapResponse } from './client';
-import type { ApiResponse, AuthUser, LoginRequest } from '../types';
+import type { ApiResponse, AuthUser, LoginRequest, LoginResult } from '../types';
 
 /** The server's own message for a failed request, or a fallback. */
 function messageOf(err: unknown): string {
@@ -20,10 +20,13 @@ export async function getMe(): Promise<AuthUser> {
   return unwrapResponse(data);
 }
 
-/** Signs in. Throws an Error whose message is fit to show on the form. */
-export async function login(credentials: LoginRequest): Promise<AuthUser> {
+/**
+ * Signs in. With two-step sign-in on, the first call (no code) only answers
+ * `code_required: true`. Throws an Error whose message is fit to show on the form.
+ */
+export async function login(credentials: LoginRequest): Promise<LoginResult> {
   try {
-    const { data } = await apiClient.post<ApiResponse<AuthUser>>('/api/auth/login', credentials);
+    const { data } = await apiClient.post<ApiResponse<LoginResult>>('/api/auth/login', credentials);
     return unwrapResponse(data);
   } catch (err) {
     throw new Error(messageOf(err), { cause: err });

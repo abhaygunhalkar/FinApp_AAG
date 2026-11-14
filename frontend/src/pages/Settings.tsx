@@ -1,3 +1,4 @@
+import { useMe } from '../hooks/useAuth';
 import { PALETTES, useUIStore, type Palette } from '../store/uiStore';
 
 /** Fixed preview colours (background, surface, accent, gain, loss), so each
@@ -12,6 +13,8 @@ export default function Settings() {
   const setTheme = useUIStore((state) => state.setTheme);
   const palette = useUIStore((state) => state.palette);
   const setPalette = useUIStore((state) => state.setPalette);
+
+  const { data: me } = useMe();
 
   const refreshIntervalMinutes = 15;
 
@@ -96,6 +99,59 @@ export default function Settings() {
           </div>
         </fieldset>
       </section>
+
+      {/* Sign-in Section */}
+      {me && (
+        <section className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Sign-in &amp; security
+          </h2>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+            <dt className="text-gray-600 dark:text-gray-400">Signed in as</dt>
+            <dd className="font-medium text-gray-900 dark:text-gray-100">{me.username}</dd>
+            <dt className="text-gray-600 dark:text-gray-400">Two-step verification</dt>
+            <dd
+              className={`font-medium ${
+                me.two_step_enabled
+                  ? 'text-emerald-700 dark:text-emerald-300'
+                  : 'text-amber-700 dark:text-amber-300'
+              }`}
+            >
+              {me.two_step_enabled ? 'On' : 'Off'}
+            </dd>
+            {me.two_step_enabled && (
+              <>
+                <dt className="text-gray-600 dark:text-gray-400">Backup codes left</dt>
+                <dd className="font-medium tabular-nums text-gray-900 dark:text-gray-100">
+                  {me.backup_codes_left}
+                </dd>
+              </>
+            )}
+          </dl>
+          {me.two_step_enabled && me.backup_codes_left <= 2 && (
+            <p role="alert" className="mt-3 text-sm text-amber-700 dark:text-amber-300">
+              {me.backup_codes_left === 0
+                ? 'No backup codes left. '
+                : 'Running low on backup codes. '}
+              Make new ones on the server before you need one.
+            </p>
+          )}
+          <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
+            These are changed on the server, in <code>backend/</code>:{' '}
+            {me.two_step_enabled ? (
+              <>
+                <code>python scripts/create_owner.py --backup-codes</code> for new backup codes,{' '}
+                <code>--disable-2fa</code> to turn it off.
+              </>
+            ) : (
+              <>
+                <code>python scripts/create_owner.py --enable-2fa</code> turns it on.
+              </>
+            )}{' '}
+            <code>--reset</code> changes the password.
+          </p>
+        </section>
+      )}
 
       {/* Refresh Interval Section */}
       <section className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">

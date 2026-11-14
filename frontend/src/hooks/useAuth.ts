@@ -21,7 +21,13 @@ export function useLogin() {
     mutationFn: (credentials: LoginRequest) => login(credentials),
     // Never retried: each try counts toward the lockout.
     retry: false,
-    onSuccess: (user) => queryClient.setQueryData(AUTH_ME_KEY, user),
+    // Load who's signed in before the caller moves on, so the page guard
+    // doesn't see the old "not signed in" answer.
+    onSuccess: async (result) => {
+      if (!result.code_required) {
+        await queryClient.fetchQuery({ queryKey: AUTH_ME_KEY, queryFn: getMe });
+      }
+    },
   });
 }
 
