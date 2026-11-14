@@ -43,7 +43,7 @@ class OptionsService:
         result = []
         for t in trades:
             pnl = OptionsService._calculate_pnl_for_trade(t)
-            obj = OptionsTradeResponse.from_orm(t)
+            obj = OptionsTradeResponse.model_validate(t)
             obj.pnl = pnl
             result.append(obj)
         return result
@@ -69,14 +69,14 @@ class OptionsService:
         t = OptionsRepository.get_by_id(db, id)
         if not t:
             return None
-        obj = OptionsTradeResponse.from_orm(t)
+        obj = OptionsTradeResponse.model_validate(t)
         obj.pnl = OptionsService._calculate_pnl_for_trade(t)
         return obj
 
     @staticmethod
     def create_trade(db: Session, payload: dict) -> OptionsTradeResponse:
         obj = OptionsRepository.create(db, payload)
-        resp = OptionsTradeResponse.from_orm(obj)
+        resp = OptionsTradeResponse.model_validate(obj)
         resp.pnl = OptionsService._calculate_pnl_for_trade(obj)
         return resp
 
@@ -85,7 +85,7 @@ class OptionsService:
         obj = OptionsRepository.update(db, id, payload)
         if not obj:
             return None
-        resp = OptionsTradeResponse.from_orm(obj)
+        resp = OptionsTradeResponse.model_validate(obj)
         resp.pnl = OptionsService._calculate_pnl_for_trade(obj)
         return resp
 

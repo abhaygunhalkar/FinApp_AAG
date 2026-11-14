@@ -110,6 +110,7 @@ class TestGetHolding:
 class TestCreateHolding:
     """Tests for HoldingsService.create_holding."""
 
+    @pytest.mark.usefixtures("offline_market")
     def test_creates_holding_and_transaction(self, db_session: Session) -> None:
         # Set up initial cash balance
         cash = CashBalance(balance=10000.0)
@@ -129,6 +130,7 @@ class TestCreateHolding:
         assert result.ticker == "AAPL"
         assert result.quantity == 10.0
         assert result.average_buy_price == 150.0
+        # No quote available, so the buy price stands in as the current price.
         assert result.current_price == 150.0
         assert result.total_invested == 1500.0
 

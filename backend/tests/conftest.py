@@ -58,6 +58,17 @@ def real_auth() -> None:
 
 
 @pytest.fixture()
+def offline_market(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No live Yahoo Finance lookups: quotes and RSI come back empty."""
+    from app.services.market_data_service import MarketDataService
+
+    monkeypatch.setattr(MarketDataService, "fetch_quote", staticmethod(lambda t: None))
+    monkeypatch.setattr(
+        MarketDataService, "fetch_rsi", staticmethod(lambda t: (None, None))
+    )
+
+
+@pytest.fixture()
 def db_session() -> Generator[Session, None, None]:
     """Provide a transactional database session for tests.
 

@@ -385,9 +385,12 @@ class TransactionService:
                 - planned_cost
                 - unplanned_cost
             )
+            # Divide by the unrounded share count: the rounded one would nudge
+            # the average cost of the shares kept.
+            shares_left = holding.quantity - data.quantity
             holding.quantity = new_quantity
             if cost_left > 0:
-                holding.average_buy_price = cost_left / new_quantity
+                holding.average_buy_price = cost_left / shares_left
             HoldingsRepository.update(db, holding)
 
         return TransactionService._with_lots(db, [transaction])[0]

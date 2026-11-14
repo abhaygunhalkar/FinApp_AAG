@@ -76,7 +76,8 @@ def test_create_etf_holding_returns_201(test_client: TestClient) -> None:
     assert body["data"]["holding_type"] == "etf"
 
 
-@pytest.mark.usefixtures("_seed_cash", "_seed_holding")
+# _seed_holding already adds the cash balance.
+@pytest.mark.usefixtures("_seed_holding", "offline_market")
 def test_get_etf_holdings_filters_by_type(test_client: TestClient) -> None:
     # Create one ETF holding in addition to the seeded stock holding.
     payload = {

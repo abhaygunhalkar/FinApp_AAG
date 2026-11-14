@@ -29,6 +29,7 @@ class TestGetAllItems:
         tickers = {r.ticker for r in result}
         assert tickers == {"AAPL", "MSFT"}
 
+    @pytest.mark.usefixtures("offline_market")
     def test_response_includes_computed_defaults(self, db_session: Session) -> None:
         item = WatchlistItem(
             ticker="GOOG",

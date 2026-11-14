@@ -5,10 +5,11 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.auth import require_csrf_header, require_session
 from app.config import get_settings
@@ -170,11 +171,16 @@ async def validation_exception_handler(
     )
 
 
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-    """Wrap FastAPI HTTPExceptions in the standard API envelope format."""
+# Starlette's class also covers FastAPI's HTTPException and the router's own
+# 404 (unknown path) and 405 (wrong method), so those get the envelope too.
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(
+    request: Request, exc: StarletteHTTPException
+) -> JSONResponse:
+    """Wrap HTTP errors in the standard API envelope format."""
     return JSONResponse(
         status_code=exc.status_code,
+        headers=exc.headers,
         content={
             "success": False,
             "data": None,

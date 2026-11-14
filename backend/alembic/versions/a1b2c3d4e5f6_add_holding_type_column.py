@@ -16,11 +16,16 @@ depend_on = None
 
 
 def upgrade() -> None:
+    # The app's startup check may have added it already (app/database.py).
+    columns = {c["name"] for c in sa.inspect(op.get_bind()).get_columns("holdings")}
+    if 'holding_type' in columns:
+        return
+    # The default stays: SQLite can't drop a column default, so removing it
+    # broke fresh installs.
     op.add_column(
         'holdings',
         sa.Column('holding_type', sa.String(length=20), nullable=False, server_default='stock'),
     )
-    op.alter_column('holdings', 'holding_type', server_default=None)
 
 
 def downgrade() -> None:

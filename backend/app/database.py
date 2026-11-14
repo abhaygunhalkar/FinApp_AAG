@@ -69,6 +69,25 @@ def _patch_financial_account_columns() -> None:
         conn.execute(text("DELETE FROM net_worth_snapshots"))
 
 
+def _stamp_latest_migration() -> None:
+    """Mark a database made from the models as already at the newest migration.
+
+    Otherwise `alembic upgrade head` would replay every migration on tables
+    that already exist and fail at the first one.
+    """
+    ini = Path(__file__).resolve().parents[1] / "alembic.ini"
+    if not ini.exists():
+        logger.warning("alembic.ini not found; new database not stamped.")
+        return
+    from alembic import command
+    from alembic.config import Config
+
+    config = Config(str(ini))
+    config.set_main_option("script_location", str(ini.parent / "alembic"))
+    config.attributes["configure_logger"] = False
+    command.stamp(config, "head")
+
+
 def verify_database() -> None:
     """Verify the database file exists and is accessible.
 
@@ -95,12 +114,11 @@ def verify_database() -> None:
         return
 
     if not db_path.exists():
-        logger.info(
-            "Database file '%s' not found. Creating with all tables.", db_path
-        )
+        logger.info("Database file '%s' not found. Creating with all tables.", db_path)
         # Ensure parent directory exists
         db_path.parent.mkdir(parents=True, exist_ok=True)
         Base.metadata.create_all(bind=engine)
+        _stamp_latest_migration()
         logger.info("Database created successfully.")
         return
 
@@ -120,7 +138,7 @@ def verify_database() -> None:
             # Ensure the holdings table has the new holding_type column.
             pragma_result = conn.execute(text("PRAGMA table_info('holdings')"))
             columns = [row[1] for row in pragma_result.fetchall()]
-            if 'holding_type' not in columns:
+            if "holding_type" not in columns:
                 logger.info(
                     "Existing database is missing holdings.holding_type; applying compatibility patch."
                 )

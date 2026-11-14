@@ -218,8 +218,8 @@ class TestGetSummary:
         db_session.add(holding)
         db_session.commit()
 
-        # Add a price history record fetched long ago (> 2x refresh interval)
-        old_fetch_time = datetime.now() - timedelta(minutes=60)
+        # Prices are flagged stale only after 24 hours without a fetch.
+        old_fetch_time = datetime.now() - timedelta(hours=25)
         price_record = PriceHistory(
             ticker="AAPL",
             close_price=170.0,
@@ -230,8 +230,6 @@ class TestGetSummary:
         db_session.commit()
 
         result = DashboardService.get_summary(db_session)
-        # Default REFRESH_INTERVAL_MINUTES=15, so stale threshold = 30 min
-        # 60 min > 30 min => stale_data = True
         assert result.stale_data is True
 
     def test_last_successful_fetch(self, db_session: Session) -> None:

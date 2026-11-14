@@ -167,3 +167,22 @@ class TestRefreshInterval:
         get_settings.cache_clear()
         interval = _get_refresh_interval()
         assert interval == 30
+
+
+class TestRouterErrorsUseTheEnvelope:
+    """404s and 405s raised by the router itself get the standard envelope."""
+
+    @pytest.mark.asyncio
+    async def test_unknown_path(self, test_client: AsyncClient) -> None:
+        response = await test_client.get("/api/no-such-thing")
+        assert response.status_code == 404
+        assert response.json() == {"success": False, "data": None, "error": "Not Found"}
+
+    @pytest.mark.asyncio
+    async def test_wrong_method_keeps_the_allow_header(
+        self, test_client: AsyncClient
+    ) -> None:
+        response = await test_client.delete("/health")
+        assert response.status_code == 405
+        assert response.headers["allow"] == "GET"
+        assert response.json()["error"] == "Method Not Allowed"

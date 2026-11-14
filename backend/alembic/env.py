@@ -18,8 +18,11 @@ config = context.config
 settings = get_settings()
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
-# Interpret the config file for Python logging.
-if config.config_file_name is not None:
+# Interpret the config file for Python logging, except when the app runs
+# Alembic itself (app/database.py): that would switch off the app's loggers.
+if config.config_file_name is not None and config.attributes.get(
+    "configure_logger", True
+):
     fileConfig(config.config_file_name)
 
 # Use our Base metadata for autogenerate support

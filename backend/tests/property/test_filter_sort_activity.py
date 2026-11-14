@@ -9,6 +9,7 @@ service layer.
 
 from datetime import date, timedelta
 
+import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from sqlalchemy import create_engine
@@ -156,6 +157,8 @@ class TestProperty5CreateHoldingProducesConsistentRecords:
     **Validates: Requirements 3.1, 3.5**
     """
 
+    # Offline: with no quote, the buy price stands in as the current price.
+    @pytest.mark.usefixtures("offline_market")
     @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
     @given(
         ticker=ticker_st,
