@@ -12,10 +12,6 @@ What's still to do on FinApp, so nothing gets forgotten. Newest decisions at the
   The VM has about 1 GB of memory. If it ran out, add a 2 GB swap file.
 - [ ] *Optional:* an nginx rate limit on `/api/auth/login`, on top of the app's own (snippet at the end of [auth.md](auth.md)).
 
-## My data
-
-- [ ] **Add the payoff date to the real mortgage** on Net Worth, so Mortgage Payoff works out the monthly payment instead of asking for it.
-
 ## Standardization pass
 
 Done; see 2026-11-14 below.
@@ -38,6 +34,8 @@ One copy per person on their own cloud, not a multi-user service.
 - **Chat feature flag, metrics dashboards, Playwright end-to-end tests:** not needed for one user.
 
 ## Done
+
+- 2026-11-14: payoff date added to the real mortgage on Net Worth (owner), so Mortgage Payoff works out the payment.
 
 - 2026-11-14: nightly database backups on the VM (03:15 UTC, newest 14 kept in `~/finapp-backups`; local copies only). See [backup.md](backup.md).
 
