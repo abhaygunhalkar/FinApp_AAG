@@ -12,6 +12,7 @@ from app.repositories.lot_allocation_repository import LotAllocationRepository
 from app.repositories.transaction_repository import TransactionRepository
 from app.schemas.transaction import (
     LotAllocationResponse,
+    SellHistoryItem,
     TransactionCreate,
     TransactionResponse,
 )
@@ -20,6 +21,48 @@ from app.services.lot_service import EPSILON, LotService, lot_order
 
 class TransactionService:
     """Business logic for transaction operations including buy/sell processing."""
+
+    @staticmethod
+    def get_sell_history(db: Session) -> list[SellHistoryItem]:
+        """Every sell with its cost basis and realized gain, newest first."""
+        sells = sorted(
+            (
+                t
+                for t in TransactionRepository.get_all_ordered(db)
+                if t.transaction_type == "sell"
+            ),
+            key=lambda t: t.transaction_date,
+        )
+        # Average cost of the buy lots each sell took its shares from
+        cost_basis = LotService.cost_basis_by_sell(db)
+        # Fallback: the current holding's average buy price for the ticker
+        holdings = HoldingsRepository.get_all(db)
+        brokers = LotService.broker_by_sell(db, holdings)
+        holding_avg_prices = {h.ticker: h.average_buy_price for h in holdings}
+
+        items = []
+        for txn in sells:
+            avg_cost = cost_basis.get(txn.id, holding_avg_prices.get(txn.ticker, 0.0))
+            items.append(
+                SellHistoryItem(
+                    id=txn.id,
+                    holding_id=txn.holding_id,
+                    ticker=txn.ticker,
+                    transaction_type="sell",
+                    quantity=txn.quantity,
+                    price=txn.price,
+                    fees=txn.fees,
+                    transaction_date=txn.transaction_date,
+                    broker=brokers.get(txn.id),
+                    notes=txn.notes,
+                    created_at=txn.created_at,
+                    cost_basis=round(avg_cost, 2),
+                    realized_gain=round((txn.price - avg_cost) * txn.quantity, 2),
+                )
+            )
+        # Newest first; sells on the same day keep their order.
+        items.sort(key=lambda i: i.transaction_date, reverse=True)
+        return items
 
     @staticmethod
     def get_transactions(db: Session, holding_id: int) -> list[TransactionResponse]:

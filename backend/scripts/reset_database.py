@@ -10,14 +10,14 @@ Usage:
 """
 
 from app.database import SessionLocal
-from app.models.transaction import Transaction
-from app.models.holding import Holding
-from app.models.watchlist_item import WatchlistItem
-from app.models.price_history import PriceHistory
 from app.models.cash_balance import CashBalance
+from app.models.holding import Holding
+from app.models.price_history import PriceHistory
+from app.models.transaction import Transaction
+from app.models.watchlist_item import WatchlistItem
 
 
-def reset_database():
+def reset_database() -> None:
     db = SessionLocal()
     try:
         # Delete in order to respect foreign keys
@@ -40,7 +40,7 @@ def reset_database():
         print(f"  Holdings deleted:     {deleted_holdings}")
         print(f"  Watchlist deleted:    {deleted_watchlist}")
         print(f"  Price history deleted: {deleted_price_history}")
-        print(f"  Cash balance reset to: $0.00")
+        print("  Cash balance reset to: $0.00")
         print("\nAll tables are now empty. Ready for fresh data.")
 
     except Exception as e:

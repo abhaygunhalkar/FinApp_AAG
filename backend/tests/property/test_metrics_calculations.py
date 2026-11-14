@@ -1,6 +1,7 @@
 """Property-based tests for metrics calculations.
 
-Tests Property 1 (Per-holding metrics calculation), Property 13 (Portfolio aggregate metrics),
+Tests Property 1 (Per-holding metrics calculation), Property 13 (Portfolio aggregate
+metrics),
 Property 14 (Cash position tracking), and Property 15 (Top gainers and losers selection)
 using Hypothesis to generate random holdings data and verify calculation formulas.
 
@@ -9,9 +10,8 @@ using Hypothesis to generate random holdings data and verify calculation formula
 
 from dataclasses import dataclass
 
-from hypothesis import given, settings, assume
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
-
 
 # --- Data classes to represent holdings for pure calculation testing ---
 
@@ -39,26 +39,34 @@ class TransactionData:
 # --- Pure calculation functions (mirroring service logic) ---
 
 
-def calculate_unrealized_gain(current_price: float, average_buy_price: float, quantity: float) -> float:
+def calculate_unrealized_gain(
+    current_price: float, average_buy_price: float, quantity: float
+) -> float:
     """Calculate unrealized gain for a holding."""
     return (current_price - average_buy_price) * quantity
 
 
-def calculate_unrealized_gain_pct(current_price: float, average_buy_price: float) -> float:
+def calculate_unrealized_gain_pct(
+    current_price: float, average_buy_price: float
+) -> float:
     """Calculate unrealized gain percentage for a holding."""
     if average_buy_price > 0:
         return round(((current_price - average_buy_price) / average_buy_price) * 100, 2)
     return 0.0
 
 
-def calculate_allocation_pct(current_price: float, quantity: float, total_portfolio_value: float) -> float:
+def calculate_allocation_pct(
+    current_price: float, quantity: float, total_portfolio_value: float
+) -> float:
     """Calculate allocation percentage for a holding."""
     if total_portfolio_value > 0:
         return round((current_price * quantity) / total_portfolio_value * 100, 2)
     return 0.0
 
 
-def calculate_annual_dividend_income(dividend_yield: float, current_price: float, quantity: float) -> float:
+def calculate_annual_dividend_income(
+    dividend_yield: float, current_price: float, quantity: float
+) -> float:
     """Calculate annual dividend income for a holding."""
     return dividend_yield * current_price * quantity
 
@@ -82,7 +90,7 @@ def calculate_cash_position(
         if txn.transaction_type == "sell":
             balance += txn.price * txn.quantity
         elif txn.transaction_type == "buy":
-            balance -= (txn.price * txn.quantity + txn.fees)
+            balance -= txn.price * txn.quantity + txn.fees
     return balance
 
 
@@ -90,7 +98,9 @@ def get_top_gainers(holdings: list[HoldingData], n: int = 5) -> list[HoldingData
     """Get top N holdings by unrealized_gain_pct (highest)."""
     sorted_holdings = sorted(
         holdings,
-        key=lambda h: calculate_unrealized_gain_pct(h.current_price, h.average_buy_price),
+        key=lambda h: calculate_unrealized_gain_pct(
+            h.current_price, h.average_buy_price
+        ),
         reverse=True,
     )
     return sorted_holdings[:n]
@@ -100,7 +110,9 @@ def get_top_losers(holdings: list[HoldingData], n: int = 5) -> list[HoldingData]
     """Get top N holdings by unrealized_gain_pct (lowest)."""
     sorted_holdings = sorted(
         holdings,
-        key=lambda h: calculate_unrealized_gain_pct(h.current_price, h.average_buy_price),
+        key=lambda h: calculate_unrealized_gain_pct(
+            h.current_price, h.average_buy_price
+        ),
     )
     return sorted_holdings[:n]
 
@@ -108,19 +120,29 @@ def get_top_losers(holdings: list[HoldingData], n: int = 5) -> list[HoldingData]
 # --- Strategies ---
 
 # Positive float for quantity (shares owned)
-positive_quantity_st = st.floats(min_value=0.01, max_value=100_000, allow_nan=False, allow_infinity=False)
+positive_quantity_st = st.floats(
+    min_value=0.01, max_value=100_000, allow_nan=False, allow_infinity=False
+)
 
 # Positive float for prices
-positive_price_st = st.floats(min_value=0.01, max_value=100_000, allow_nan=False, allow_infinity=False)
+positive_price_st = st.floats(
+    min_value=0.01, max_value=100_000, allow_nan=False, allow_infinity=False
+)
 
 # Non-negative float for current price (can be 0 if stock is worthless)
-non_negative_price_st = st.floats(min_value=0.0, max_value=100_000, allow_nan=False, allow_infinity=False)
+non_negative_price_st = st.floats(
+    min_value=0.0, max_value=100_000, allow_nan=False, allow_infinity=False
+)
 
 # Dividend yield (0% to 20% expressed as decimal fraction, e.g., 0.05 = 5%)
-dividend_yield_st = st.floats(min_value=0.0, max_value=0.20, allow_nan=False, allow_infinity=False)
+dividend_yield_st = st.floats(
+    min_value=0.0, max_value=0.20, allow_nan=False, allow_infinity=False
+)
 
 # Fees (non-negative)
-fees_st = st.floats(min_value=0.0, max_value=100.0, allow_nan=False, allow_infinity=False)
+fees_st = st.floats(
+    min_value=0.0, max_value=100.0, allow_nan=False, allow_infinity=False
+)
 
 # Strategy for a single holding
 holding_st = st.builds(
@@ -153,7 +175,8 @@ transactions_list_st = st.lists(transaction_st, min_size=1, max_size=20)
 class TestProperty1PerHoldingMetrics:
     """Property 1: Per-holding metrics calculation.
 
-    Verify unrealized_gain, unrealized_gain_pct, allocation_pct, annual_dividend_income formulas.
+    Verify unrealized_gain, unrealized_gain_pct, allocation_pct, annual_dividend_income
+    formulas.
 
     **Validates: Requirements 1.2, 1.3, 1.4, 1.7**
     """
@@ -180,26 +203,33 @@ class TestProperty1PerHoldingMetrics:
     def test_unrealized_gain_pct_formula(
         self, average_buy_price: float, current_price: float
     ) -> None:
-        """unrealized_gain_pct = ((current_price - average_buy_price) / average_buy_price) × 100, rounded to 2dp."""
+        """unrealized_gain_pct = (price - avg) / avg × 100, rounded to 2dp."""
         result = calculate_unrealized_gain_pct(current_price, average_buy_price)
-        expected = round(((current_price - average_buy_price) / average_buy_price) * 100, 2)
+        expected = round(
+            ((current_price - average_buy_price) / average_buy_price) * 100, 2
+        )
         assert result == expected
 
     @settings(max_examples=100)
     @given(
         quantity=positive_quantity_st,
         current_price=non_negative_price_st,
-        total_portfolio_value=st.floats(min_value=0.01, max_value=10_000_000, allow_nan=False, allow_infinity=False),
+        total_portfolio_value=st.floats(
+            min_value=0.01, max_value=10_000_000, allow_nan=False, allow_infinity=False
+        ),
     )
     def test_allocation_pct_formula_positive_total(
         self, quantity: float, current_price: float, total_portfolio_value: float
     ) -> None:
-        """allocation_pct = (current_price × quantity) / total_portfolio_value × 100, rounded to 2dp."""
-        # Ensure total_portfolio_value >= current_price * quantity (realistic constraint)
+        """allocation_pct = price × quantity / total value × 100, rounded to 2dp."""
+        # Ensure total_portfolio_value >= current_price * quantity (realistic
+        # constraint)
         holding_value = current_price * quantity
         assume(total_portfolio_value >= holding_value)
 
-        result = calculate_allocation_pct(current_price, quantity, total_portfolio_value)
+        result = calculate_allocation_pct(
+            current_price, quantity, total_portfolio_value
+        )
         expected = round((current_price * quantity) / total_portfolio_value * 100, 2)
         assert result == expected
 
@@ -208,7 +238,9 @@ class TestProperty1PerHoldingMetrics:
         quantity=positive_quantity_st,
         current_price=non_negative_price_st,
     )
-    def test_allocation_pct_zero_total(self, quantity: float, current_price: float) -> None:
+    def test_allocation_pct_zero_total(
+        self, quantity: float, current_price: float
+    ) -> None:
         """allocation_pct = 0 when total_portfolio_value is 0."""
         result = calculate_allocation_pct(current_price, quantity, 0.0)
         assert result == 0.0
@@ -223,7 +255,9 @@ class TestProperty1PerHoldingMetrics:
         self, quantity: float, current_price: float, dividend_yield: float
     ) -> None:
         """annual_dividend_income = dividend_yield × current_price × quantity."""
-        result = calculate_annual_dividend_income(dividend_yield, current_price, quantity)
+        result = calculate_annual_dividend_income(
+            dividend_yield, current_price, quantity
+        )
         expected = dividend_yield * current_price * quantity
         assert abs(result - expected) < 1e-6
 
@@ -263,11 +297,16 @@ class TestProperty13PortfolioAggregateMetrics:
     def test_daily_change_is_sum(
         self, holdings: list[HoldingData], previous_closes: st.DataObject
     ) -> None:
-        """daily_change = Σ((current_price - previous_close) × quantity) for all holdings."""
+        """daily_change = Σ((current_price - previous_close) × quantity)."""
         # Generate a previous close for each holding
         prev_closes = [
             previous_closes.draw(
-                st.floats(min_value=0.01, max_value=100_000, allow_nan=False, allow_infinity=False)
+                st.floats(
+                    min_value=0.01,
+                    max_value=100_000,
+                    allow_nan=False,
+                    allow_infinity=False,
+                )
             )
             for _ in holdings
         ]
@@ -275,20 +314,22 @@ class TestProperty13PortfolioAggregateMetrics:
         # Calculate daily change
         daily_change = sum(
             (h.current_price - prev_close) * h.quantity
-            for h, prev_close in zip(holdings, prev_closes)
+            for h, prev_close in zip(holdings, prev_closes, strict=True)
         )
 
         # Verify the sum formula
         expected = sum(
             (h.current_price - prev_close) * h.quantity
-            for h, prev_close in zip(holdings, prev_closes)
+            for h, prev_close in zip(holdings, prev_closes, strict=True)
         )
         assert abs(daily_change - expected) < 1e-6
 
     @settings(max_examples=100)
     @given(holdings=holdings_list_st)
-    def test_total_portfolio_value_non_negative(self, holdings: list[HoldingData]) -> None:
-        """total_portfolio_value is always non-negative (prices and quantities are non-negative)."""
+    def test_total_portfolio_value_non_negative(
+        self, holdings: list[HoldingData]
+    ) -> None:
+        """total_portfolio_value is never negative (prices and quantities aren't)."""
         result = calculate_total_portfolio_value(holdings)
         assert result >= 0.0
 
@@ -313,13 +354,15 @@ class TestProperty14CashPositionTracking:
 
     @settings(max_examples=100)
     @given(
-        initial_balance=st.floats(min_value=0.0, max_value=1_000_000, allow_nan=False, allow_infinity=False),
+        initial_balance=st.floats(
+            min_value=0.0, max_value=1_000_000, allow_nan=False, allow_infinity=False
+        ),
         transactions=transactions_list_st,
     )
     def test_cash_position_formula(
         self, initial_balance: float, transactions: list[TransactionData]
     ) -> None:
-        """cash_position = initial_balance + Σ(sell_price × qty) - Σ(buy_price × qty + fees)."""
+        """cash = initial + Σ(sell price × qty) - Σ(buy price × qty + fees)."""
         result = calculate_cash_position(initial_balance, transactions)
 
         # Calculate expected using the explicit formula
@@ -335,7 +378,8 @@ class TestProperty14CashPositionTracking:
         )
         expected = initial_balance + sell_total - buy_total
 
-        # Use relative tolerance for large values to account for floating-point accumulation
+        # Use relative tolerance for large values to account for floating-point
+        # accumulation
         if abs(expected) > 1.0:
             assert abs(result - expected) / abs(expected) < 1e-9
         else:
@@ -343,7 +387,9 @@ class TestProperty14CashPositionTracking:
 
     @settings(max_examples=100)
     @given(
-        initial_balance=st.floats(min_value=0.0, max_value=1_000_000, allow_nan=False, allow_infinity=False),
+        initial_balance=st.floats(
+            min_value=0.0, max_value=1_000_000, allow_nan=False, allow_infinity=False
+        ),
     )
     def test_no_transactions_preserves_balance(self, initial_balance: float) -> None:
         """With no transactions, cash position equals initial balance."""
@@ -352,7 +398,9 @@ class TestProperty14CashPositionTracking:
 
     @settings(max_examples=100)
     @given(
-        initial_balance=st.floats(min_value=1000.0, max_value=1_000_000, allow_nan=False, allow_infinity=False),
+        initial_balance=st.floats(
+            min_value=1000.0, max_value=1_000_000, allow_nan=False, allow_infinity=False
+        ),
         quantity=positive_quantity_st,
         buy_price=positive_price_st,
         fees=fees_st,
@@ -361,14 +409,18 @@ class TestProperty14CashPositionTracking:
         self, initial_balance: float, quantity: float, buy_price: float, fees: float
     ) -> None:
         """A single buy transaction decreases cash by (price × quantity + fees)."""
-        txn = TransactionData(transaction_type="buy", quantity=quantity, price=buy_price, fees=fees)
+        txn = TransactionData(
+            transaction_type="buy", quantity=quantity, price=buy_price, fees=fees
+        )
         result = calculate_cash_position(initial_balance, [txn])
         expected = initial_balance - (buy_price * quantity + fees)
         assert abs(result - expected) < 1e-6
 
     @settings(max_examples=100)
     @given(
-        initial_balance=st.floats(min_value=0.0, max_value=1_000_000, allow_nan=False, allow_infinity=False),
+        initial_balance=st.floats(
+            min_value=0.0, max_value=1_000_000, allow_nan=False, allow_infinity=False
+        ),
         quantity=positive_quantity_st,
         sell_price=positive_price_st,
     )
@@ -376,14 +428,18 @@ class TestProperty14CashPositionTracking:
         self, initial_balance: float, quantity: float, sell_price: float
     ) -> None:
         """A single sell transaction increases cash by (price × quantity)."""
-        txn = TransactionData(transaction_type="sell", quantity=quantity, price=sell_price, fees=0.0)
+        txn = TransactionData(
+            transaction_type="sell", quantity=quantity, price=sell_price, fees=0.0
+        )
         result = calculate_cash_position(initial_balance, [txn])
         expected = initial_balance + sell_price * quantity
         assert abs(result - expected) < 1e-6
 
     @settings(max_examples=100)
     @given(
-        initial_balance=st.floats(min_value=1000.0, max_value=1_000_000, allow_nan=False, allow_infinity=False),
+        initial_balance=st.floats(
+            min_value=1000.0, max_value=1_000_000, allow_nan=False, allow_infinity=False
+        ),
         quantity=positive_quantity_st,
         price=positive_price_st,
     )
@@ -391,8 +447,12 @@ class TestProperty14CashPositionTracking:
         self, initial_balance: float, quantity: float, price: float
     ) -> None:
         """Buy then sell at same price with no fees returns to initial balance."""
-        buy_txn = TransactionData(transaction_type="buy", quantity=quantity, price=price, fees=0.0)
-        sell_txn = TransactionData(transaction_type="sell", quantity=quantity, price=price, fees=0.0)
+        buy_txn = TransactionData(
+            transaction_type="buy", quantity=quantity, price=price, fees=0.0
+        )
+        sell_txn = TransactionData(
+            transaction_type="sell", quantity=quantity, price=price, fees=0.0
+        )
         result = calculate_cash_position(initial_balance, [buy_txn, sell_txn])
         assert abs(result - initial_balance) < 1e-6
 
@@ -424,7 +484,9 @@ class TestProperty15TopGainersAndLosers:
 
     @settings(max_examples=100)
     @given(holdings=st.lists(holding_st, min_size=1, max_size=4))
-    def test_fewer_than_5_returns_all_gainers(self, holdings: list[HoldingData]) -> None:
+    def test_fewer_than_5_returns_all_gainers(
+        self, holdings: list[HoldingData]
+    ) -> None:
         """If fewer than 5 holdings, top gainers returns all holdings."""
         result = get_top_gainers(holdings)
         assert len(result) == len(holdings)
@@ -438,7 +500,9 @@ class TestProperty15TopGainersAndLosers:
 
     @settings(max_examples=100)
     @given(holdings=st.lists(holding_st, min_size=6, max_size=20))
-    def test_top_gainers_have_highest_gain_pct(self, holdings: list[HoldingData]) -> None:
+    def test_top_gainers_have_highest_gain_pct(
+        self, holdings: list[HoldingData]
+    ) -> None:
         """Top 5 gainers have the highest unrealized_gain_pct values."""
         gainers = get_top_gainers(holdings)
         non_gainers = [h for h in holdings if h not in gainers]

@@ -40,6 +40,7 @@ target-version = ["py311"]
 [tool.ruff]
 line-length = 88
 target-version = "py311"
+extend-exclude = ["venv"]
 
 [tool.ruff.lint]
 select = [
@@ -57,11 +58,18 @@ ignore = []
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
 
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency declarations are meant to be call defaults.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.Body"]
+
 [tool.mypy]
 strict = true
-python_version = "3.11"
+# The VM runs 3.11, but the numpy stubs that pytest pulls in need 3.12 syntax.
+# ruff's target-version (py311) still flags syntax 3.11 can't run.
+python_version = "3.12"
 plugins = ["pydantic.mypy"]
 ignore_missing_imports = true
+exclude = ["(^|/)venv/", "(^|/)build/"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

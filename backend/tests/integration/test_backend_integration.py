@@ -183,9 +183,7 @@ class TestTransactionsCRUDFlow:
         transaction_id = create_body["data"]["id"]
 
         # READ transactions for holding
-        read_resp = test_client.get(
-            f"/api/transactions?holding_id={holding_id}"
-        )
+        read_resp = test_client.get(f"/api/transactions?holding_id={holding_id}")
         assert read_resp.status_code == 200
         read_body = read_resp.json()
         assert read_body["success"] is True
@@ -211,9 +209,7 @@ class TestTransactionsCRUDFlow:
         assert holding_resp.json()["data"]["quantity"] == 20.0
 
     @pytest.mark.usefixtures("_seed_cash")
-    def test_sell_transaction_reduces_quantity(
-        self, test_client: TestClient
-    ) -> None:
+    def test_sell_transaction_reduces_quantity(self, test_client: TestClient) -> None:
         """Sell transaction reduces holding quantity."""
         # Create holding
         holding_payload = {
@@ -246,9 +242,7 @@ class TestTransactionsCRUDFlow:
         assert holding_resp.json()["data"]["quantity"] == 20.0
 
     @pytest.mark.usefixtures("_seed_cash")
-    def test_sell_exceeding_quantity_returns_422(
-        self, test_client: TestClient
-    ) -> None:
+    def test_sell_exceeding_quantity_returns_422(self, test_client: TestClient) -> None:
         """Sell transaction exceeding holding quantity returns 422."""
         # Create holding with 5 shares
         holding_payload = {
@@ -315,9 +309,7 @@ class TestWatchlistCRUDFlow:
             "priority": 1,
             "notes": "Updated target after analysis",
         }
-        update_resp = test_client.put(
-            f"/api/watchlist/{item_id}", json=update_payload
-        )
+        update_resp = test_client.put(f"/api/watchlist/{item_id}", json=update_payload)
         assert update_resp.status_code == 200
         update_body = update_resp.json()
         assert update_body["success"] is True
@@ -396,7 +388,8 @@ class TestDashboardWithPopulatedData:
         assert body["error"] is None
 
         data = body["data"]
-        # Total portfolio value: (175*10) + (350*5) + (155*20) = 1750 + 1750 + 3100 = 6600
+        # Total portfolio value: (175*10) + (350*5) + (155*20) = 1750 + 1750 + 3100 =
+        # 6600
         assert data["total_portfolio_value"] == 6600.0
         # Total invested: (150*10) + (300*5) + (160*20) = 1500 + 1500 + 3200 = 6200
         assert data["total_invested"] == 6200.0
@@ -450,9 +443,7 @@ class TestDashboardWithPopulatedData:
 class TestErrorResponseEnvelopeFormat:
     """Verify all error responses match the standard envelope format."""
 
-    def test_404_holding_not_found_envelope(
-        self, test_client: TestClient
-    ) -> None:
+    def test_404_holding_not_found_envelope(self, test_client: TestClient) -> None:
         """404 response for holding not found matches envelope format."""
         resp = test_client.get("/api/holdings/99999")
         assert resp.status_code == 404
@@ -466,9 +457,7 @@ class TestErrorResponseEnvelopeFormat:
         assert isinstance(body["error"], str)
         assert len(body["error"]) > 0
 
-    def test_404_watchlist_not_found_envelope(
-        self, test_client: TestClient
-    ) -> None:
+    def test_404_watchlist_not_found_envelope(self, test_client: TestClient) -> None:
         """404 response for watchlist item not found matches envelope format."""
         resp = test_client.put("/api/watchlist/99999", json={"priority": 1})
         assert resp.status_code == 404
@@ -555,9 +544,7 @@ class TestErrorResponseEnvelopeFormat:
         assert body["data"] is None
         assert isinstance(body["error"], str)
 
-    def test_success_response_envelope_format(
-        self, test_client: TestClient
-    ) -> None:
+    def test_success_response_envelope_format(self, test_client: TestClient) -> None:
         """Successful responses match envelope format with success=True."""
         resp = test_client.get("/api/holdings")
         assert resp.status_code == 200
@@ -578,9 +565,7 @@ class TestErrorResponseEnvelopeFormat:
 class TestMarketDataEndpoints:
     """Test market data endpoints with mocked yfinance."""
 
-    def test_market_quote_with_full_data(
-        self, test_client: TestClient
-    ) -> None:
+    def test_market_quote_with_full_data(self, test_client: TestClient) -> None:
         """Market quote endpoint returns full quote data when available."""
         mock_quote = MarketQuote(
             ticker="AAPL",
@@ -619,9 +604,7 @@ class TestMarketDataEndpoints:
         assert data["dividend_yield"] == 0.005
         assert data["analyst_rating"] == "buy"
 
-    def test_market_quote_fallback_to_cache(
-        self, test_client: TestClient
-    ) -> None:
+    def test_market_quote_fallback_to_cache(self, test_client: TestClient) -> None:
         """Market quote falls back to cached price when yfinance fails."""
         with (
             patch(
@@ -642,9 +625,7 @@ class TestMarketDataEndpoints:
         assert body["data"]["current_price"] == 180.0
         assert body["data"]["cached"] is True
 
-    def test_market_quote_no_data_returns_404(
-        self, test_client: TestClient
-    ) -> None:
+    def test_market_quote_no_data_returns_404(self, test_client: TestClient) -> None:
         """Market quote returns 404 when no data available at all."""
         with (
             patch(
@@ -664,9 +645,7 @@ class TestMarketDataEndpoints:
         assert body["data"] is None
         assert "not available" in body["error"].lower()
 
-    def test_market_history_returns_price_points(
-        self, test_client: TestClient
-    ) -> None:
+    def test_market_history_returns_price_points(self, test_client: TestClient) -> None:
         """Market history endpoint returns list of price points."""
         mock_history = [
             PricePoint(
@@ -727,9 +706,7 @@ class TestMarketDataEndpoints:
         assert body["data"] == []
         assert body["error"] is None
 
-    def test_market_history_different_periods(
-        self, test_client: TestClient
-    ) -> None:
+    def test_market_history_different_periods(self, test_client: TestClient) -> None:
         """Market history endpoint accepts different period parameters."""
         with patch(
             "app.routers.market.MarketDataService.fetch_history",

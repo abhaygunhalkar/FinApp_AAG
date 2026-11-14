@@ -3,6 +3,7 @@
 from collections.abc import Generator
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -84,21 +85,18 @@ def db_session() -> Generator[Session, None, None]:
 
 
 @pytest.fixture()
-def client(db_session: Session) -> Generator:
+def client(db_session: Session) -> Generator[TestClient, None, None]:
     """Provide an HTTP test client with the test database session injected.
 
     Overrides the FastAPI `get_db` dependency so that API tests use the
     in-memory test database instead of the production SQLite file.
     """
-    from httpx import ASGITransport, AsyncClient
 
     def _override_get_db() -> Generator[Session, None, None]:
         yield db_session
 
     app.dependency_overrides[get_db] = _override_get_db
-
-    transport = ASGITransport(app=app)  # type: ignore[arg-type]
-    with AsyncClient(transport=transport, base_url="http://test") as ac:
-        yield ac
+    with TestClient(app) as tc:
+        yield tc
 
     app.dependency_overrides.clear()

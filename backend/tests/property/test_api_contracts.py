@@ -1,6 +1,7 @@
 """Property-based tests for API contracts and error handling.
 
-Tests Property 19 (API response contract) and Property 20 (Error responses hide internals)
+Tests Property 19 (API response contract) and Property 20 (Error responses hide
+internals)
 using Hypothesis to generate random payloads and verify response format and security.
 
 **Validates: Requirements 11.6, 11.7, 14.1, 14.2**
@@ -8,6 +9,7 @@ using Hypothesis to generate random payloads and verify response format and secu
 
 import re
 from collections.abc import Generator
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -18,7 +20,6 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.main import app
-
 
 # --- Fixtures ---
 
@@ -119,7 +120,7 @@ PBT_SETTINGS = settings(
 )
 
 
-def _validate_envelope(body: dict) -> None:
+def _validate_envelope(body: dict[str, Any]) -> None:
     """Assert the response body conforms to the API envelope format.
 
     Envelope: {success: bool, data: T | null, error: str | null}
@@ -132,17 +133,17 @@ def _validate_envelope(body: dict) -> None:
     assert "error" in body, f"Missing 'error' key in response: {body}"
 
     if body["success"] is True:
-        assert body["error"] is None, (
-            f"success=true but error is not null: {body['error']}"
-        )
+        assert (
+            body["error"] is None
+        ), f"success=true but error is not null: {body['error']}"
     else:
-        assert body["data"] is None, (
-            f"success=false but data is not null: {body['data']}"
-        )
+        assert (
+            body["data"] is None
+        ), f"success=false but data is not null: {body['data']}"
         assert body["error"] is not None, "success=false but error is null"
-        assert isinstance(body["error"], str), (
-            f"error must be a string, got: {type(body['error'])}"
-        )
+        assert isinstance(
+            body["error"], str
+        ), f"error must be a string, got: {type(body['error'])}"
 
 
 # --- Property 19: API response contract ---
@@ -180,15 +181,19 @@ class TestProperty19ApiResponseContract:
     ) -> None:
         """Market GET endpoints return responses conforming to the envelope format."""
         # Mock external yfinance calls to avoid network dependency
-        with patch(
-            "app.services.market_data_service.MarketDataService.fetch_quote",
-            return_value=None,
-        ), patch(
-            "app.services.market_data_service.MarketDataService.fetch_history",
-            return_value=[],
-        ), patch(
-            "app.services.market_data_service.MarketDataService.get_cached_price",
-            return_value=None,
+        with (
+            patch(
+                "app.services.market_data_service.MarketDataService.fetch_quote",
+                return_value=None,
+            ),
+            patch(
+                "app.services.market_data_service.MarketDataService.fetch_history",
+                return_value=[],
+            ),
+            patch(
+                "app.services.market_data_service.MarketDataService.get_cached_price",
+                return_value=None,
+            ),
         ):
             response = test_client.get(endpoint)
             body = response.json()
@@ -197,7 +202,7 @@ class TestProperty19ApiResponseContract:
     @PBT_SETTINGS
     @given(endpoint=ALL_POST_ENDPOINTS, payload=random_payload_st)
     def test_post_with_random_payload_returns_envelope(
-        self, endpoint: str, payload: dict, test_client: TestClient
+        self, endpoint: str, payload: dict[str, Any], test_client: TestClient
     ) -> None:
         """POST endpoints with random payloads return responses in envelope format."""
         response = test_client.post(endpoint, json=payload)
@@ -207,7 +212,7 @@ class TestProperty19ApiResponseContract:
     @PBT_SETTINGS
     @given(endpoint=ALL_PUT_ENDPOINTS, payload=random_payload_st)
     def test_put_with_random_payload_returns_envelope(
-        self, endpoint: str, payload: dict, test_client: TestClient
+        self, endpoint: str, payload: dict[str, Any], test_client: TestClient
     ) -> None:
         """PUT endpoints with random payloads return responses in envelope format."""
         response = test_client.put(endpoint, json=payload)
@@ -227,7 +232,7 @@ class TestProperty19ApiResponseContract:
     @PBT_SETTINGS
     @given(endpoint=ALL_POST_ENDPOINTS, payload=random_payload_st)
     def test_invalid_payload_returns_422(
-        self, endpoint: str, payload: dict, test_client: TestClient
+        self, endpoint: str, payload: dict[str, Any], test_client: TestClient
     ) -> None:
         """POST with payloads missing required fields returns 422 with envelope."""
         response = test_client.post(endpoint, json=payload)
@@ -247,7 +252,7 @@ class TestProperty19ApiResponseContract:
         payload=st.just({}),  # Empty payload always fails validation
     )
     def test_empty_payload_returns_422_with_envelope(
-        self, endpoint: str, payload: dict, test_client: TestClient
+        self, endpoint: str, payload: dict[str, Any], test_client: TestClient
     ) -> None:
         """POST with empty payload returns 422 status code with envelope format."""
         response = test_client.post(endpoint, json=payload)
@@ -321,7 +326,7 @@ class TestProperty20ErrorResponsesHideInternals:
     @PBT_SETTINGS
     @given(endpoint=ALL_POST_ENDPOINTS, payload=random_payload_st)
     def test_post_error_responses_hide_internals(
-        self, endpoint: str, payload: dict, test_client: TestClient
+        self, endpoint: str, payload: dict[str, Any], test_client: TestClient
     ) -> None:
         """POST error responses do not expose internal implementation details."""
         response = test_client.post(endpoint, json=payload)
@@ -333,7 +338,7 @@ class TestProperty20ErrorResponsesHideInternals:
     @PBT_SETTINGS
     @given(endpoint=ALL_PUT_ENDPOINTS, payload=random_payload_st)
     def test_put_error_responses_hide_internals(
-        self, endpoint: str, payload: dict, test_client: TestClient
+        self, endpoint: str, payload: dict[str, Any], test_client: TestClient
     ) -> None:
         """PUT error responses do not expose internal implementation details."""
         response = test_client.put(endpoint, json=payload)
@@ -371,7 +376,7 @@ class TestProperty20ErrorResponsesHideInternals:
         )
     )
     def test_500_responses_return_generic_message(
-        self, payload: dict, test_client: TestClient
+        self, payload: dict[str, Any], test_client: TestClient
     ) -> None:
         """Any 500 response should contain only a generic error message."""
         # Try all POST endpoints with random payloads to trigger potential 500s
@@ -379,9 +384,9 @@ class TestProperty20ErrorResponsesHideInternals:
             response = test_client.post(endpoint, json=payload)
             if response.status_code == 500:
                 body = response.json()
-                assert body["error"] == "Internal server error", (
-                    f"500 response has non-generic error: {body['error']!r}"
-                )
+                assert (
+                    body["error"] == "Internal server error"
+                ), f"500 response has non-generic error: {body['error']!r}"
                 assert body["success"] is False
                 assert body["data"] is None
                 _assert_no_internals(body["error"])

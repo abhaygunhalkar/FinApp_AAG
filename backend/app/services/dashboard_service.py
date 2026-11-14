@@ -6,11 +6,8 @@ from datetime import date, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from app.config import get_settings
 from app.models.holding import Holding
 from app.models.price_history import PriceHistory
-from app.models.transaction import Transaction
-from app.models.watchlist_item import WatchlistItem
 from app.repositories.cash_balance_repository import CashBalanceRepository
 from app.repositories.holdings_repository import HoldingsRepository
 from app.repositories.price_history_repository import PriceHistoryRepository
@@ -50,7 +47,6 @@ class DashboardService:
         - stale_data: True if any holding price hasn't updated in > 2x refresh interval
         - last_successful_fetch: most recent price_history.fetched_at
         """
-        settings = get_settings()
         holdings = HoldingsRepository.get_all(db)
 
         # Calculate portfolio value metrics
@@ -171,8 +167,8 @@ class DashboardService:
         for txn in all_transactions:
             if txn.transaction_type == "sell":
                 # Calculate realized gain for this sell
-                holding = HoldingsRepository.get_by_ticker(db, txn.ticker)
-                avg_buy_price = holding.average_buy_price if holding else 0.0
+                sold = HoldingsRepository.get_by_ticker(db, txn.ticker)
+                avg_buy_price = sold.average_buy_price if sold else 0.0
                 realized_gain = (txn.price - avg_buy_price) * txn.quantity
 
                 events.append(

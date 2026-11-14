@@ -33,7 +33,7 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 - Demo data: `backend/finance_demo.db` holds made-up data. Run the backend with `DATABASE_URL=sqlite:///./finance_demo.db` for local testing and screenshots; never use or show the real `finance_tracker.db`.
 - Migrations must tolerate tables that already exist, because `verify_database()` runs `create_all` at startup before Alembic.
 
-Coverage gate is enforced via pytest config: `--cov-fail-under=70`. `mypy` runs in `strict` mode.
+Coverage gate is enforced via pytest config: `--cov-fail-under=70`. `mypy` runs in `strict` mode. `task lint` is clean across the whole backend (including tests, scripts and migrations); keep it that way. mypy targets Python 3.12 because the numpy stubs pytest pulls in need it; the VM runs 3.11 and ruff (`target-version = py311`) guards syntax.
 
 ### Frontend (`frontend/`)
 
@@ -45,7 +45,7 @@ npm run dev   # http://localhost:3000
 
 - Test: `npm test` (watch mode: `npm run test:watch`; coverage: `npm run test:coverage`)
 - Single test file: `npx vitest run src/__tests__/unit/<file>.test.tsx`
-- Lint/format/typecheck all at once: `npm run check` (= eslint + prettier --check + tsc -b --noEmit)
+- Lint/format/typecheck all at once: `npm run check` (= eslint + prettier --check + tsc -b --noEmit). It passes on `main`; keep it that way.
 - Build: `npm run build`
 
 Vitest coverage thresholds are 70% (statements/branches/functions/lines), enforced in `vite.config.ts`.
@@ -138,9 +138,10 @@ Open work, deferred ideas and decisions not to revisit are in `docs/backlog.md`.
 ## Conventions
 
 - **Python:** black + ruff (line length 88), mypy strict, full type hints. Services are classes of `@staticmethod`s named `<Thing>Service`; repositories are `<Thing>Repository`. Module names are `snake_case`; one model per file in `app/models/`, registered in `app/models/__init__.py`. Pydantic schemas are `<Thing>Create` / `<Thing>Update` / `<Thing>Response`; enums are `Literal[...]` aliases. Docstrings and comments are short and plain-English.
-- **Routers:** `APIRouter(prefix="/api/<resource-kebab-case>")`; return `{"success": True, "data": ..., "error": None}` with `response_model=ApiResponse[...]`. Some older routers (`transactions.py /sells`, `income.py`) still contain logic or build dicts by hand; don't copy that pattern.
+- **Routers:** `APIRouter(prefix="/api/<resource-kebab-case>")`; return `{"success": True, "data": ..., "error": None}` with `response_model=ApiResponse[<schema>]`. A router only calls its service: turn a service `ValueError` into `HTTPException` (404/422), and let `HTTPException`s from services pass through to the app-wide handler. Never build a `JSONResponse` by hand (only `chat.py` does, for its own error shape) and never import a repository.
 - **TypeScript/React:** function components, default export per component file, `PascalCase.tsx` for components and `camelCase.ts` for helpers. Pure helpers live in separate `.ts` files (ESLint `react-refresh/only-export-components`). Feature folders under `src/components/<feature>/` with an `index.ts` barrel. Types in `src/types/<resource>.ts` mirror backend schemas.
 - **Styling:** Tailwind v4 utility classes only (no component library). Dark mode via the `dark` class on `<html>` (toggled from `uiStore.theme`); newer pages (Net Worth, Dashboard 2) use named colour tokens plus `dark:` variants. Dark is the default theme. Colours are switchable palettes (`src/palettes.css`, `uiStore.palette`, picked in Settings; a deployment's starting palette is `VITE_DEFAULT_PALETTE`): use Tailwind palette classes or the tokens there (`accent-*`, `ink-*`, `hero-*`, `gain-*`, `loss-*`), including `var(--color-…)` in chart props, never new hex values, except for fixed category and brand colours. Use `tabular-nums` for money. Layouts must work at 390px wide with no horizontal scroll.
+- **Dates:** show them only through the formatters in `src/utils/date.ts` (`fmtDate` "Nov 13, 2026", `fmtDayMonth`, `fmtMonthYear`, `fmtWeekdayDate`, `fmtDateTime`, ...), never `toLocaleDateString` directly. Parse backend `YYYY-MM-DD` strings with `parseLocalDateString` (no UTC off-by-one).
 - **Money formatting:** per-feature helpers, not one shared util: `components/networth/format.ts` (`fmtMoney`, `fmtCompact`, `fmtPct`, `timeAgo`, `staleDays`) and `components/dashboard2/format.ts` (`fmtMoney`, `fmtSigned`). Both respect the "hide numbers" toggle (`uiStore.hideBalances`, mask `••••••`) and use `−` (U+2212) for negatives.
 - **Charts:** Recharts.
 - **Chat contract:** the chat assistant's request/response shapes are mirrored in `backend/app/schemas/chat.py` (Pydantic) and `frontend/src/types/chat.ts` (Zod), checked against shared examples in `docs/chat-contract.examples.json`. Change all three together; see `docs/chat-contract.md`. This API is camelCase on the wire, unlike the rest.

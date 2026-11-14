@@ -65,9 +65,7 @@ class HoldingsService:
             unrealized_gain_pct = 0.0
 
         if total_portfolio_value > 0:
-            allocation_pct = round(
-                (current_value / total_portfolio_value) * 100, 2
-            )
+            allocation_pct = round((current_value / total_portfolio_value) * 100, 2)
         else:
             allocation_pct = 0.0
 
@@ -96,7 +94,9 @@ class HoldingsService:
         # Cap dividend yield at 20% to avoid unrealistic values from yfinance
         # (some ETFs report return-of-capital as dividends, inflating the yield)
         capped_yield = min(dividend_yield, 0.20)
-        annual_dividend_income = round(capped_yield * holding.current_price * holding.quantity, 2)
+        annual_dividend_income = round(
+            capped_yield * holding.current_price * holding.quantity, 2
+        )
 
         return HoldingResponse(
             id=holding.id,
@@ -167,11 +167,13 @@ class HoldingsService:
         total_portfolio_value = HoldingsService._calculate_total_portfolio_value(
             db, holding_type
         )
-        return HoldingsService._build_holding_response(db, holding, total_portfolio_value)
+        return HoldingsService._build_holding_response(
+            db, holding, total_portfolio_value
+        )
 
     @staticmethod
     def create_holding(
-        db: Session, data: HoldingCreate, holding_type: str = 'stock'
+        db: Session, data: HoldingCreate, holding_type: str = "stock"
     ) -> HoldingResponse:
         """Create a new holding with an initial buy transaction.
 
@@ -251,7 +253,9 @@ class HoldingsService:
         total_portfolio_value = HoldingsService._calculate_total_portfolio_value(
             db, holding_type
         )
-        return HoldingsService._build_holding_response(db, holding, total_portfolio_value)
+        return HoldingsService._build_holding_response(
+            db, holding, total_portfolio_value
+        )
 
     @staticmethod
     def update_holding(
@@ -298,7 +302,9 @@ class HoldingsService:
         total_portfolio_value = HoldingsService._calculate_total_portfolio_value(
             db, holding_type
         )
-        return HoldingsService._build_holding_response(db, holding, total_portfolio_value)
+        return HoldingsService._build_holding_response(
+            db, holding, total_portfolio_value
+        )
 
     @staticmethod
     def delete_holding(

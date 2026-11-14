@@ -26,7 +26,9 @@ class FinancialAccountRepository:
 
     @staticmethod
     def get_by_id(db: Session, account_id: int) -> FinancialAccount | None:
-        return db.query(FinancialAccount).filter(FinancialAccount.id == account_id).first()
+        return (
+            db.query(FinancialAccount).filter(FinancialAccount.id == account_id).first()
+        )
 
     @staticmethod
     def create(db: Session, data: FinancialAccountCreate) -> FinancialAccount:
@@ -84,7 +86,9 @@ class FinancialAccountRepository:
             raise
 
     @staticmethod
-    def get_by_plaid_account_id(db: Session, plaid_account_id: str) -> FinancialAccount | None:
+    def get_by_plaid_account_id(
+        db: Session, plaid_account_id: str
+    ) -> FinancialAccount | None:
         return (
             db.query(FinancialAccount)
             .filter(FinancialAccount.plaid_account_id == plaid_account_id)

@@ -113,7 +113,9 @@ def test_crypto_counts_as_asset(db_session: Session) -> None:
 def test_confirm_balance_marks_account_up_to_date(db_session: Session) -> None:
     created = FinancialAccountService.create(
         db_session,
-        FinancialAccountCreate(name="Amex", account_type="credit_card", balance=1240.18),
+        FinancialAccountCreate(
+            name="Amex", account_type="credit_card", balance=1240.18
+        ),
     )
     account = db_session.get(FinancialAccount, created.id)
     assert account is not None
@@ -125,7 +127,9 @@ def test_confirm_balance_marks_account_up_to_date(db_session: Session) -> None:
 
     assert confirmed.balance == 1240.18
     assert confirmed.last_synced is not None and confirmed.last_synced > old
-    assert datetime.now(UTC).replace(tzinfo=None) - confirmed.last_synced < timedelta(minutes=1)
+    assert datetime.now(UTC).replace(tzinfo=None) - confirmed.last_synced < timedelta(
+        minutes=1
+    )
 
 
 def test_confirm_balance_missing_account_is_404(db_session: Session) -> None:

@@ -28,7 +28,9 @@ class Holding(Base):
     quantity: Mapped[float] = mapped_column(Float, nullable=False)
     average_buy_price: Mapped[float] = mapped_column(Float, nullable=False)
     current_price: Mapped[float] = mapped_column(Float, default=0.0)
-    holding_type: Mapped[str] = mapped_column(String(20), default='stock', nullable=False)
+    holding_type: Mapped[str] = mapped_column(
+        String(20), default="stock", nullable=False
+    )
     sector: Mapped[str | None] = mapped_column(String(100), nullable=True)
     industry: Mapped[str | None] = mapped_column(String(100), nullable=True)
     dividend_yield: Mapped[float] = mapped_column(Float, default=0.0)

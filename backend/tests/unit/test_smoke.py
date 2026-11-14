@@ -10,7 +10,7 @@ def test_database_tables_created(db_session: Session) -> None:
     # The setup_database fixture should have created all tables
     # Check that we can query without errors
     tables = Base.metadata.tables.keys()
-    # At minimum, the base metadata should be accessible
+    assert "holdings" in tables
     assert db_session.is_active
 
 

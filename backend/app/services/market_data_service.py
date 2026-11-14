@@ -9,13 +9,14 @@ from datetime import date, datetime
 from typing import Any
 
 import yfinance as yf
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.price_history import PriceHistory
 from app.repositories.holdings_repository import HoldingsRepository
 from app.repositories.price_history_repository import PriceHistoryRepository
 from app.repositories.watchlist_repository import WatchlistRepository
-from app.schemas.market import MarketQuote, PricePoint
+from app.schemas.market import CompanyInfo, MarketQuote, PricePoint
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ def _safe_positive_float(value: Any) -> float | None:
 
 
 def calculate_rsi(closes: list[float], period: int = RSI_PERIOD) -> float | None:
-    """Calculate RSI (Relative Strength Index) using the standard Wilder smoothing method.
+    """Calculate RSI (Relative Strength Index) with Wilder's standard smoothing.
 
     Args:
         closes: List of closing prices (oldest first).
@@ -77,6 +78,7 @@ def calculate_rsi(closes: list[float], period: int = RSI_PERIOD) -> float | None
     rs = avg_gain / avg_loss
     rsi = 100.0 - (100.0 / (1.0 + rs))
     return round(rsi, 2)
+
 
 HISTORY_RETENTION_DAYS = 365
 
@@ -116,9 +118,7 @@ class MarketDataService:
                     # Try regularMarketPrice as fallback
                     current_price = info.get("regularMarketPrice")
 
-                if current_price is None or not isinstance(
-                    current_price, (int, float)
-                ):
+                if current_price is None or not isinstance(current_price, (int, float)):
                     logger.warning(
                         "Invalid or missing currentPrice for ticker '%s': %s",
                         ticker,
@@ -156,9 +156,7 @@ class MarketDataService:
                     week_52_low = 0.0
 
                 market_cap = info.get("marketCap")
-                if market_cap is not None and not isinstance(
-                    market_cap, (int, float)
-                ):
+                if market_cap is not None and not isinstance(market_cap, (int, float)):
                     market_cap = None
 
                 pe_ratio = info.get("trailingPE")
@@ -171,9 +169,7 @@ class MarketDataService:
                 dividend_yield = float(dividend_yield_raw)
 
                 analyst_rating = info.get("recommendationKey")
-                if analyst_rating is not None and not isinstance(
-                    analyst_rating, str
-                ):
+                if analyst_rating is not None and not isinstance(analyst_rating, str):
                     analyst_rating = None
 
                 return MarketQuote(
@@ -247,7 +243,7 @@ class MarketDataService:
             for idx, row in hist.iterrows():
                 price_points.append(
                     PricePoint(
-                        date=idx.date(),  # type: ignore[union-attr]
+                        date=idx.date(),
                         open=float(row["Open"]),
                         close=float(row["Close"]),
                         high=float(row["High"]),
@@ -294,7 +290,8 @@ class MarketDataService:
         """Fetch RSI (14-period) for daily and weekly timeframes.
 
         Returns:
-            Tuple of (rsi_daily, rsi_weekly). Either can be None if data is insufficient.
+            Tuple of (rsi_daily, rsi_weekly). Either can be None if data is
+            insufficient.
         """
         rsi_daily: float | None = None
         rsi_weekly: float | None = None
@@ -315,9 +312,7 @@ class MarketDataService:
                 rsi_weekly = calculate_rsi(weekly_closes, RSI_PERIOD)
 
         except Exception as exc:
-            logger.warning(
-                "Failed to calculate RSI for ticker '%s': %s", ticker, exc
-            )
+            logger.warning("Failed to calculate RSI for ticker '%s': %s", ticker, exc)
 
         return rsi_daily, rsi_weekly
 
@@ -463,7 +458,9 @@ class MarketDataService:
             return None
 
     @staticmethod
-    def extract_option_quote(chain_side: Any, strike: float) -> dict[str, float | None] | None:
+    def extract_option_quote(
+        chain_side: Any, strike: float
+    ) -> dict[str, float | None] | None:
         """Find the row matching `strike` in a calls/puts DataFrame and extract
         bid/ask/lastPrice, plus a current_price (bid/ask midpoint, falling back
         to lastPrice when there's no two-sided market).
@@ -478,7 +475,11 @@ class MarketDataService:
         bid = _safe_positive_float(row.get("bid"))
         ask = _safe_positive_float(row.get("ask"))
         last_price = _safe_positive_float(row.get("lastPrice"))
-        current_price = round((bid + ask) / 2, 4) if bid is not None and ask is not None else last_price
+        current_price = (
+            round((bid + ask) / 2, 4)
+            if bid is not None and ask is not None
+            else last_price
+        )
 
         return {
             "bid": bid,
@@ -486,6 +487,42 @@ class MarketDataService:
             "last_price": last_price,
             "current_price": current_price,
         }
+
+    @staticmethod
+    def fetch_company_info(ticker: str) -> CompanyInfo:
+        """Company name, sector, industry and a short description from yfinance.
+
+        Raises HTTPException 404 when Yahoo has nothing for the ticker or
+        can't be reached.
+        """
+        ticker = ticker.upper()
+        try:
+            info = yf.Ticker(ticker).info
+            company_name = info.get("longName") or info.get("shortName") or None
+            sector = info.get("sector") or None
+            industry = info.get("industry") or None
+            description = info.get("longBusinessSummary") or None
+        except Exception as exc:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Unable to fetch information for ticker {ticker}",
+            ) from exc
+
+        if not company_name:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No company information found for ticker {ticker}",
+            )
+        notes = None
+        if description:
+            notes = description[:200] + ("..." if len(description) > 200 else "")
+        return CompanyInfo(
+            ticker=ticker,
+            company_name=company_name,
+            sector=sector,
+            industry=industry,
+            notes=notes,
+        )
 
     @staticmethod
     def get_cached_price(db: Session, ticker: str) -> float | None:

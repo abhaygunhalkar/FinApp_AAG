@@ -15,9 +15,7 @@ from app.services.transaction_service import TransactionService
 class TestGetTransactions:
     """Tests for TransactionService.get_transactions."""
 
-    def test_returns_empty_list_when_no_transactions(
-        self, db_session: Session
-    ) -> None:
+    def test_returns_empty_list_when_no_transactions(self, db_session: Session) -> None:
         holding = Holding(
             ticker="AAPL",
             quantity=10.0,
@@ -68,9 +66,7 @@ class TestGetTransactions:
 class TestCreateBuyTransaction:
     """Tests for TransactionService.create_transaction with buy type."""
 
-    def test_buy_creates_new_holding_if_none_exists(
-        self, db_session: Session
-    ) -> None:
+    def test_buy_creates_new_holding_if_none_exists(self, db_session: Session) -> None:
         cash = CashBalance(balance=10000.0)
         db_session.add(cash)
         db_session.commit()
@@ -274,9 +270,7 @@ class TestCreateSellTransaction:
         TransactionService.create_transaction(db_session, data)
 
         # Holding should be removed
-        remaining = (
-            db_session.query(Holding).filter(Holding.id == holding_id).first()
-        )
+        remaining = db_session.query(Holding).filter(Holding.id == holding_id).first()
         assert remaining is None
 
     def test_sell_removes_holding_when_quantity_is_near_zero_due_to_float_drift(
@@ -315,9 +309,7 @@ class TestCreateSellTransaction:
         TransactionService.create_transaction(db_session, first_sell)
         TransactionService.create_transaction(db_session, second_sell)
 
-        remaining = (
-            db_session.query(Holding).filter(Holding.id == holding_id).first()
-        )
+        remaining = db_session.query(Holding).filter(Holding.id == holding_id).first()
         assert remaining is None
 
     def test_sell_rejects_if_no_holding_exists(self, db_session: Session) -> None:
@@ -383,9 +375,7 @@ class TestDeleteTransaction:
         assert holding.quantity == 10.0
         assert holding.average_buy_price == 100.0
 
-    def test_delete_last_transaction_removes_holding(
-        self, db_session: Session
-    ) -> None:
+    def test_delete_last_transaction_removes_holding(self, db_session: Session) -> None:
         cash = CashBalance(balance=10000.0)
         db_session.add(cash)
 
@@ -414,14 +404,10 @@ class TestDeleteTransaction:
         TransactionService.delete_transaction(db_session, txn.id)
 
         # Holding should be removed
-        remaining = (
-            db_session.query(Holding).filter(Holding.id == holding_id).first()
-        )
+        remaining = db_session.query(Holding).filter(Holding.id == holding_id).first()
         assert remaining is None
 
-    def test_delete_reverses_cash_balance_for_buy(
-        self, db_session: Session
-    ) -> None:
+    def test_delete_reverses_cash_balance_for_buy(self, db_session: Session) -> None:
         cash = CashBalance(balance=5000.0)
         db_session.add(cash)
 
@@ -453,9 +439,7 @@ class TestDeleteTransaction:
         # 5000 + (100 * 10 + 10) = 5000 + 1010 = 6010
         assert updated_cash.balance == 6010.0
 
-    def test_delete_reverses_cash_balance_for_sell(
-        self, db_session: Session
-    ) -> None:
+    def test_delete_reverses_cash_balance_for_sell(self, db_session: Session) -> None:
         cash = CashBalance(balance=5000.0)
         db_session.add(cash)
 

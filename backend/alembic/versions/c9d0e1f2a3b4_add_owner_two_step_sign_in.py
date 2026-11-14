@@ -7,6 +7,7 @@ Create Date: 2026-11-14
 """
 
 from collections.abc import Sequence
+from typing import Any
 
 import sqlalchemy as sa
 
@@ -17,7 +18,7 @@ down_revision: str | Sequence[str] | None = "b8c9d0e1f2a3"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-COLUMNS = {
+COLUMNS: dict[str, sa.types.TypeEngine[Any]] = {
     "totp_secret": sa.String(64),
     "totp_last_counter": sa.Integer(),
     "backup_code_hashes": sa.Text(),

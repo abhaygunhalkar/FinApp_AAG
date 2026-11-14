@@ -1,8 +1,11 @@
 """Property-based tests for transaction logic.
 
-Tests Property 7 (Buy transaction weighted average), Property 8 (Sell transaction realized gain),
-Property 10 (Transaction deletion recalculates holding), and Property 11 (Reject sell exceeding quantity)
-using Hypothesis to generate random transaction data and verify against the actual TransactionService.
+Tests Property 7 (Buy transaction weighted average), Property 8 (Sell transaction
+realized gain),
+Property 10 (Transaction deletion recalculates holding), and Property 11 (Reject sell
+exceeding quantity)
+using Hypothesis to generate random transaction data and verify against the actual
+TransactionService.
 
 **Validates: Requirements 4.1, 4.2, 4.4, 4.5**
 """
@@ -18,20 +21,24 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.database import Base
-from app.models.cash_balance import CashBalance
 from app.models.holding import Holding
 from app.repositories.cash_balance_repository import CashBalanceRepository
 from app.repositories.holdings_repository import HoldingsRepository
 from app.schemas.transaction import TransactionCreate
 from app.services.transaction_service import TransactionService
 
-
 # --- Strategies ---
 
 # Prices and quantities constrained to reasonable ranges to avoid floating point issues
-price_st = st.floats(min_value=1.0, max_value=10000.0, allow_nan=False, allow_infinity=False)
-quantity_st = st.floats(min_value=1.0, max_value=10000.0, allow_nan=False, allow_infinity=False)
-fees_st = st.floats(min_value=0.0, max_value=100.0, allow_nan=False, allow_infinity=False)
+price_st = st.floats(
+    min_value=1.0, max_value=10000.0, allow_nan=False, allow_infinity=False
+)
+quantity_st = st.floats(
+    min_value=1.0, max_value=10000.0, allow_nan=False, allow_infinity=False
+)
+fees_st = st.floats(
+    min_value=0.0, max_value=100.0, allow_nan=False, allow_infinity=False
+)
 ticker_st = st.from_regex(r"^[A-Z]{1,5}$", fullmatch=True)
 date_st = st.dates(min_value=date(2020, 1, 1), max_value=date(2024, 12, 31))
 
@@ -59,16 +66,21 @@ def _setup_cash_balance(db: Session, amount: float = 1_000_000.0) -> None:
 class TestProperty7BuyTransactionWeightedAverage:
     """Property 7: Buy transaction weighted average.
 
-    For any existing holding with average_buy_price and quantity, and any buy transaction
-    with price > 0 and transaction_quantity > 0, after processing the buy transaction the
+    For any existing holding with average_buy_price and quantity, and any buy
+    transaction
+    with price > 0 and transaction_quantity > 0, after processing the buy transaction
+    the
     holding's new average_buy_price SHALL equal
-    ((old_avg × old_qty) + (price × transaction_quantity)) / (old_qty + transaction_quantity)
+    ((old_avg × old_qty) + (price × transaction_quantity)) / (old_qty +
+    transaction_quantity)
     and the new quantity SHALL equal old_qty + transaction_quantity.
 
     **Validates: Requirements 4.1**
     """
 
-    @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+    @settings(
+        max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture]
+    )
     @given(
         old_avg=price_st,
         old_qty=quantity_st,
@@ -116,15 +128,17 @@ class TestProperty7BuyTransactionWeightedAverage:
             updated_holding = HoldingsRepository.get_by_ticker(db, ticker)
             assert updated_holding is not None
 
-            expected_avg = ((old_avg * old_qty) + (buy_price * buy_qty)) / (old_qty + buy_qty)
+            expected_avg = ((old_avg * old_qty) + (buy_price * buy_qty)) / (
+                old_qty + buy_qty
+            )
             expected_qty = old_qty + buy_qty
 
-            assert abs(updated_holding.average_buy_price - expected_avg) < 1e-6, (
-                f"Expected avg {expected_avg}, got {updated_holding.average_buy_price}"
-            )
-            assert abs(updated_holding.quantity - expected_qty) < 1e-6, (
-                f"Expected qty {expected_qty}, got {updated_holding.quantity}"
-            )
+            assert (
+                abs(updated_holding.average_buy_price - expected_avg) < 1e-6
+            ), f"Expected avg {expected_avg}, got {updated_holding.average_buy_price}"
+            assert (
+                abs(updated_holding.quantity - expected_qty) < 1e-6
+            ), f"Expected qty {expected_qty}, got {updated_holding.quantity}"
         finally:
             db.close()
 
@@ -135,19 +149,26 @@ class TestProperty7BuyTransactionWeightedAverage:
 class TestProperty8SellTransactionRealizedGain:
     """Property 8: Sell transaction realized gain.
 
-    For any existing holding and any valid sell transaction (quantity <= holding quantity),
+    For any existing holding and any valid sell transaction (quantity <= holding
+    quantity),
     the realized_gain SHALL equal (sell_price - average_buy_price) × quantity_sold,
     and the holding quantity SHALL decrease by quantity_sold.
 
     **Validates: Requirements 4.2**
     """
 
-    @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+    @settings(
+        max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture]
+    )
     @given(
         avg_price=price_st,
-        holding_qty=st.floats(min_value=10.0, max_value=10000.0, allow_nan=False, allow_infinity=False),
+        holding_qty=st.floats(
+            min_value=10.0, max_value=10000.0, allow_nan=False, allow_infinity=False
+        ),
         sell_price=price_st,
-        sell_fraction=st.floats(min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False),
+        sell_fraction=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
         ticker=ticker_st,
         fees=fees_st,
         txn_date=date_st,
@@ -162,7 +183,7 @@ class TestProperty8SellTransactionRealizedGain:
         fees: float,
         txn_date: date,
     ) -> None:
-        """After a sell, realized gain = (sell_price - avg) × qty_sold, and quantity decreases."""
+        """After a sell, realized gain = (price - avg) × qty sold; quantity drops."""
         db = _create_session()
         try:
             # Compute sell quantity as a fraction of holding to ensure it's valid
@@ -199,9 +220,9 @@ class TestProperty8SellTransactionRealizedGain:
             assert updated_holding is not None
 
             expected_qty = holding_qty - sell_qty
-            assert abs(updated_holding.quantity - expected_qty) < 1e-6, (
-                f"Expected qty {expected_qty}, got {updated_holding.quantity}"
-            )
+            assert (
+                abs(updated_holding.quantity - expected_qty) < 1e-6
+            ), f"Expected qty {expected_qty}, got {updated_holding.quantity}"
 
             # Verify realized gain via cash balance change
             # Cash increases by (sell_price × sell_qty - fees)
@@ -209,13 +230,17 @@ class TestProperty8SellTransactionRealizedGain:
             expected_cash_increase = sell_price * sell_qty - fees
             actual_cash_increase = cash_after - cash_before
             assert abs(actual_cash_increase - expected_cash_increase) < 1e-4, (
-                f"Expected cash increase {expected_cash_increase}, got {actual_cash_increase}"
+                f"Expected cash increase {expected_cash_increase}, "
+                f"got {actual_cash_increase}"
             )
 
-            # The realized gain formula: (sell_price - avg_price) × sell_qty
-            expected_realized_gain = (sell_price - avg_price) * sell_qty
-            # This is verified implicitly: the system correctly processes the sell
-            # and the holding's average_buy_price remains unchanged after a sell
+            # The sell history reports (sell_price - avg_price) × sell_qty. The
+            # holding has no buy lots, so its average is the cost basis.
+            [sell] = TransactionService.get_sell_history(db)
+            expected_realized_gain = round((sell_price - avg_price) * sell_qty, 2)
+            assert sell.realized_gain == expected_realized_gain
+
+            # The average cost of the shares kept doesn't change on a sell
             assert abs(updated_holding.average_buy_price - avg_price) < 1e-6, (
                 f"Average buy price should not change on sell: expected {avg_price}, "
                 f"got {updated_holding.average_buy_price}"
@@ -230,14 +255,17 @@ class TestProperty8SellTransactionRealizedGain:
 class TestProperty10TransactionDeletionRecalculates:
     """Property 10: Transaction deletion recalculates holding.
 
-    For any holding with multiple buy transactions, deleting any single transaction SHALL
+    For any holding with multiple buy transactions, deleting any single transaction
+    SHALL
     result in a holding whose average_buy_price and quantity are equivalent to replaying
     all remaining buy transactions in chronological order from an empty state.
 
     **Validates: Requirements 4.4**
     """
 
-    @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+    @settings(
+        max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture]
+    )
     @given(
         prices=st.lists(
             price_st,
@@ -297,24 +325,29 @@ class TestProperty10TransactionDeletionRecalculates:
 
             # Compute expected state by replaying remaining buys
             remaining_prices = [p for i, p in enumerate(prices) if i != delete_index]
-            remaining_quantities = [q for i, q in enumerate(quantities) if i != delete_index]
+            remaining_quantities = [
+                q for i, q in enumerate(quantities) if i != delete_index
+            ]
 
             expected_qty = sum(remaining_quantities)
-            expected_cost = sum(p * q for p, q in zip(remaining_prices, remaining_quantities))
+            expected_cost = sum(
+                p * q
+                for p, q in zip(remaining_prices, remaining_quantities, strict=True)
+            )
             expected_avg = expected_cost / expected_qty if expected_qty > 0 else 0.0
 
             # Assert
             updated_holding = HoldingsRepository.get_by_ticker(db, ticker)
-            assert updated_holding is not None, (
-                "Holding should still exist after deleting one of multiple transactions"
-            )
+            assert (
+                updated_holding is not None
+            ), "Holding should still exist after deleting one of multiple transactions"
 
-            assert abs(updated_holding.quantity - expected_qty) < 1e-4, (
-                f"Expected qty {expected_qty}, got {updated_holding.quantity}"
-            )
-            assert abs(updated_holding.average_buy_price - expected_avg) < 1e-4, (
-                f"Expected avg {expected_avg}, got {updated_holding.average_buy_price}"
-            )
+            assert (
+                abs(updated_holding.quantity - expected_qty) < 1e-4
+            ), f"Expected qty {expected_qty}, got {updated_holding.quantity}"
+            assert (
+                abs(updated_holding.average_buy_price - expected_avg) < 1e-4
+            ), f"Expected avg {expected_avg}, got {updated_holding.average_buy_price}"
         finally:
             db.close()
 
@@ -326,16 +359,21 @@ class TestProperty11RejectSellExceedingQuantity:
     """Property 11: Reject sell exceeding quantity.
 
     Any sell with quantity > holding.quantity should be rejected with 422 status.
-    The holding's quantity and average_buy_price should remain unchanged after rejection.
+    The holding's quantity and average_buy_price should remain unchanged after
+    rejection.
 
     **Validates: Requirements 4.5**
     """
 
-    @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+    @settings(
+        max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture]
+    )
     @given(
         avg_price=price_st,
         holding_qty=quantity_st,
-        excess_factor=st.floats(min_value=1.01, max_value=10.0, allow_nan=False, allow_infinity=False),
+        excess_factor=st.floats(
+            min_value=1.01, max_value=10.0, allow_nan=False, allow_infinity=False
+        ),
         sell_price=price_st,
         ticker=ticker_st,
         fees=fees_st,

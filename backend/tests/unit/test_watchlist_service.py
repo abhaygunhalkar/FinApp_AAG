@@ -137,9 +137,7 @@ class TestUpdateItem:
         # Other fields remain unchanged
         assert result.notes == "Original notes"
 
-    def test_raises_value_error_for_nonexistent_item(
-        self, db_session: Session
-    ) -> None:
+    def test_raises_value_error_for_nonexistent_item(self, db_session: Session) -> None:
         data = WatchlistUpdate(priority=1)
 
         with pytest.raises(ValueError, match="not found"):
@@ -159,15 +157,11 @@ class TestDeleteItem:
 
         # Verify item is deleted
         remaining = (
-            db_session.query(WatchlistItem)
-            .filter(WatchlistItem.id == item_id)
-            .first()
+            db_session.query(WatchlistItem).filter(WatchlistItem.id == item_id).first()
         )
         assert remaining is None
 
-    def test_raises_value_error_for_nonexistent_item(
-        self, db_session: Session
-    ) -> None:
+    def test_raises_value_error_for_nonexistent_item(self, db_session: Session) -> None:
         with pytest.raises(ValueError, match="not found"):
             WatchlistService.delete_item(db_session, 999)
 
@@ -209,25 +203,17 @@ class TestMoveToHoldings:
 
         # Verify watchlist item was deleted
         remaining = (
-            db_session.query(WatchlistItem)
-            .filter(WatchlistItem.id == item_id)
-            .first()
+            db_session.query(WatchlistItem).filter(WatchlistItem.id == item_id).first()
         )
         assert remaining is None
 
         # Verify holding exists in DB
-        holding = (
-            db_session.query(Holding).filter(Holding.ticker == "AAPL").first()
-        )
+        holding = db_session.query(Holding).filter(Holding.ticker == "AAPL").first()
         assert holding is not None
         assert holding.quantity == 10.0
 
-    def test_raises_value_error_for_nonexistent_item(
-        self, db_session: Session
-    ) -> None:
-        holding_data = HoldingCreate(
-            ticker="AAPL", quantity=10.0, buy_price=170.0
-        )
+    def test_raises_value_error_for_nonexistent_item(self, db_session: Session) -> None:
+        holding_data = HoldingCreate(ticker="AAPL", quantity=10.0, buy_price=170.0)
 
         with pytest.raises(ValueError, match="not found"):
             WatchlistService.move_to_holdings(db_session, 999, holding_data)

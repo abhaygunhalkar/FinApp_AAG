@@ -31,26 +31,28 @@ class WatchlistService:
                 item.current_price = quote.current_price
                 WatchlistRepository.update(db, item)
 
-                responses.append(WatchlistResponse(
-                    id=item.id,
-                    ticker=item.ticker,
-                    company_name=item.company_name,
-                    current_price=quote.current_price,
-                    daily_change_pct=quote.daily_change_pct,
-                    week_52_high=quote.week_52_high,
-                    week_52_low=quote.week_52_low,
-                    target_buy_price=item.target_buy_price,
-                    analyst_rating=quote.analyst_rating,
-                    pe_ratio=quote.pe_ratio,
-                    market_cap=quote.market_cap,
-                    sector=item.sector,
-                    notes=item.notes,
-                    priority=item.priority,
-                    rsi_daily=rsi_daily,
-                    rsi_weekly=rsi_weekly,
-                    created_at=item.created_at,
-                    updated_at=item.updated_at,
-                ))
+                responses.append(
+                    WatchlistResponse(
+                        id=item.id,
+                        ticker=item.ticker,
+                        company_name=item.company_name,
+                        current_price=quote.current_price,
+                        daily_change_pct=quote.daily_change_pct,
+                        week_52_high=quote.week_52_high,
+                        week_52_low=quote.week_52_low,
+                        target_buy_price=item.target_buy_price,
+                        analyst_rating=quote.analyst_rating,
+                        pe_ratio=quote.pe_ratio,
+                        market_cap=quote.market_cap,
+                        sector=item.sector,
+                        notes=item.notes,
+                        priority=item.priority,
+                        rsi_daily=rsi_daily,
+                        rsi_weekly=rsi_weekly,
+                        created_at=item.created_at,
+                        updated_at=item.updated_at,
+                    )
+                )
             else:
                 resp = WatchlistService._to_response(item)
                 resp.rsi_daily = rsi_daily
@@ -68,9 +70,7 @@ class WatchlistService:
         """
         existing = WatchlistRepository.get_by_ticker(db, data.ticker)
         if existing:
-            raise ValueError(
-                f"Ticker '{data.ticker}' is already on the watchlist"
-            )
+            raise ValueError(f"Ticker '{data.ticker}' is already on the watchlist")
 
         # Fetch market data for the ticker
         from app.services.market_data_service import MarketDataService
@@ -218,5 +218,3 @@ class WatchlistService:
             created_at=item.created_at,
             updated_at=item.updated_at,
         )
-
-

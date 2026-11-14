@@ -21,7 +21,7 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 def get_dashboard_summary(
     db: Session = Depends(get_db),
 ) -> ApiResponse[DashboardSummary]:
-    """Return aggregate portfolio metrics including stale_data and last_successful_fetch."""
+    """Aggregate portfolio metrics, with stale_data and last_successful_fetch."""
     summary = DashboardService.get_summary(db)
     return ApiResponse(success=True, data=summary, error=None)
 

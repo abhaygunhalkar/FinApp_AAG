@@ -1,15 +1,17 @@
 """Tests for database configuration and startup verification."""
 
+import contextlib
 import os
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import QueuePool
 
-from app.database import Base, SessionLocal, get_db, verify_database
+from app.database import Base, get_db, verify_database
 
 
 class TestGetDb:
@@ -21,24 +23,22 @@ class TestGetDb:
         session = next(gen)
         assert isinstance(session, Session)
         # Clean up
-        try:
+        with contextlib.suppress(StopIteration):
             next(gen)
-        except StopIteration:
-            pass
 
     def test_get_db_closes_session_on_exit(self) -> None:
         """get_db should close the session after the generator exits."""
         gen = get_db()
         session = next(gen)
         # Exhaust the generator (triggers finally block with session.close())
-        try:
+        with contextlib.suppress(StopIteration):
             next(gen)
-        except StopIteration:
-            pass
         # After close(), the session's connection should be released.
         # Attempting to use it for new work should fail or require re-opening.
         # We verify close was called by checking the session has no bound connection.
-        assert not session.get_bind().pool.checkedout()
+        bind = session.get_bind()
+        assert isinstance(bind, Engine) and isinstance(bind.pool, QueuePool)
+        assert not bind.pool.checkedout()
 
 
 class TestVerifyDatabase:

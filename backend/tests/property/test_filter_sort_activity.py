@@ -1,13 +1,14 @@
 """Property-based tests for filter/sort and activity feed (backend).
 
 Tests Property 9 (Transaction history ordering) and Property 5 (Create holding produces
-consistent records) using Hypothesis to generate random data and verify against the actual
+consistent records) using Hypothesis to generate random data and verify against the
+actual
 service layer.
 
 **Validates: Requirements 4.3, 3.1, 3.5**
 """
 
-from datetime import date, timedelta
+from datetime import date
 
 import pytest
 from hypothesis import HealthCheck, given, settings
@@ -17,7 +18,6 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.database import Base
-from app.models.cash_balance import CashBalance
 from app.repositories.cash_balance_repository import CashBalanceRepository
 from app.repositories.holdings_repository import HoldingsRepository
 from app.repositories.transaction_repository import TransactionRepository
@@ -26,13 +26,18 @@ from app.schemas.transaction import TransactionCreate
 from app.services.holdings_service import HoldingsService
 from app.services.transaction_service import TransactionService
 
-
 # --- Strategies ---
 
 ticker_st = st.from_regex(r"^[A-Z]{1,5}$", fullmatch=True)
-price_st = st.floats(min_value=0.01, max_value=10000.0, allow_nan=False, allow_infinity=False)
-quantity_st = st.floats(min_value=1.0, max_value=10000.0, allow_nan=False, allow_infinity=False)
-fees_st = st.floats(min_value=0.0, max_value=100.0, allow_nan=False, allow_infinity=False)
+price_st = st.floats(
+    min_value=0.01, max_value=10000.0, allow_nan=False, allow_infinity=False
+)
+quantity_st = st.floats(
+    min_value=1.0, max_value=10000.0, allow_nan=False, allow_infinity=False
+)
+fees_st = st.floats(
+    min_value=0.0, max_value=100.0, allow_nan=False, allow_infinity=False
+)
 date_st = st.dates(min_value=date(2020, 1, 1), max_value=date(2024, 12, 31))
 
 
@@ -60,14 +65,17 @@ class TestProperty9TransactionHistoryOrdering:
     """Property 9: Transaction history ordering.
 
     For any holding with multiple transactions, the transaction history returned by
-    TransactionService.get_transactions SHALL be in descending order by transaction_date,
+    TransactionService.get_transactions SHALL be in descending order by
+    transaction_date,
     such that each transaction's date is greater than or equal to the next transaction's
     date in the list.
 
     **Validates: Requirements 4.3**
     """
 
-    @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+    @settings(
+        max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture]
+    )
     @given(
         ticker=ticker_st,
         num_transactions=st.integers(min_value=2, max_value=8),
@@ -127,9 +135,9 @@ class TestProperty9TransactionHistoryOrdering:
             transactions = TransactionService.get_transactions(db, holding.id)
 
             # Assert: transactions are in descending date order
-            assert len(transactions) == num_transactions, (
-                f"Expected {num_transactions} transactions, got {len(transactions)}"
-            )
+            assert (
+                len(transactions) == num_transactions
+            ), f"Expected {num_transactions} transactions, got {len(transactions)}"
 
             for i in range(len(transactions) - 1):
                 current_date = transactions[i].transaction_date
@@ -149,9 +157,12 @@ class TestProperty9TransactionHistoryOrdering:
 class TestProperty5CreateHoldingProducesConsistentRecords:
     """Property 5: Create holding produces consistent records.
 
-    For any valid holding input (ticker 1-5 uppercase chars, quantity > 0, buy_price >= 0.01),
-    creating a holding SHALL produce both a Holding record and a Transaction record where the
-    transaction's ticker, quantity, and price match the input, and the returned HoldingResponse
+    For any valid holding input (ticker 1-5 uppercase chars, quantity > 0, buy_price >=
+    0.01),
+    creating a holding SHALL produce both a Holding record and a Transaction record
+    where the
+    transaction's ticker, quantity, and price match the input, and the returned
+    HoldingResponse
     includes all calculated fields with values consistent with the input data.
 
     **Validates: Requirements 3.1, 3.5**
@@ -159,7 +170,9 @@ class TestProperty5CreateHoldingProducesConsistentRecords:
 
     # Offline: with no quote, the buy price stands in as the current price.
     @pytest.mark.usefixtures("offline_market")
-    @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+    @settings(
+        max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture]
+    )
     @given(
         ticker=ticker_st,
         quantity=quantity_st,
@@ -186,29 +199,34 @@ class TestProperty5CreateHoldingProducesConsistentRecords:
 
             # Assert: HoldingResponse has correct values
             assert response.ticker == ticker
-            assert abs(response.quantity - quantity) < 1e-6, (
-                f"Expected quantity {quantity}, got {response.quantity}"
-            )
-            assert abs(response.average_buy_price - buy_price) < 1e-6, (
-                f"Expected avg buy price {buy_price}, got {response.average_buy_price}"
-            )
-            assert abs(response.current_price - buy_price) < 1e-6, (
-                f"Expected current price {buy_price}, got {response.current_price}"
-            )
+            assert (
+                abs(response.quantity - quantity) < 1e-6
+            ), f"Expected quantity {quantity}, got {response.quantity}"
+            assert (
+                abs(response.average_buy_price - buy_price) < 1e-6
+            ), f"Expected avg buy price {buy_price}, got {response.average_buy_price}"
+            assert (
+                abs(response.current_price - buy_price) < 1e-6
+            ), f"Expected current price {buy_price}, got {response.current_price}"
 
             # Verify calculated fields are consistent with input
             expected_total_invested = buy_price * quantity
-            expected_current_value = buy_price * quantity  # current_price == buy_price initially
+            expected_current_value = (
+                buy_price * quantity
+            )  # current_price == buy_price initially
             expected_unrealized_gain = 0.0  # current_price == avg_buy_price initially
 
             assert abs(response.total_invested - expected_total_invested) < 1e-4, (
-                f"Expected total_invested {expected_total_invested}, got {response.total_invested}"
+                f"Expected total_invested {expected_total_invested}, "
+                f"got {response.total_invested}"
             )
             assert abs(response.current_value - expected_current_value) < 1e-4, (
-                f"Expected current_value {expected_current_value}, got {response.current_value}"
+                f"Expected current_value {expected_current_value}, "
+                f"got {response.current_value}"
             )
             assert abs(response.unrealized_gain - expected_unrealized_gain) < 1e-4, (
-                f"Expected unrealized_gain {expected_unrealized_gain}, got {response.unrealized_gain}"
+                f"Expected unrealized_gain {expected_unrealized_gain}, "
+                f"got {response.unrealized_gain}"
             )
 
             # Assert: a Transaction record was created with matching data
@@ -216,25 +234,26 @@ class TestProperty5CreateHoldingProducesConsistentRecords:
             assert holding is not None
 
             transactions = TransactionRepository.get_by_holding(db, holding.id)
-            assert len(transactions) == 1, (
-                f"Expected exactly 1 transaction, got {len(transactions)}"
-            )
+            assert (
+                len(transactions) == 1
+            ), f"Expected exactly 1 transaction, got {len(transactions)}"
 
             txn = transactions[0]
-            assert txn.ticker == ticker, (
-                f"Transaction ticker should be '{ticker}', got '{txn.ticker}'"
-            )
-            assert abs(txn.quantity - quantity) < 1e-6, (
-                f"Transaction quantity should be {quantity}, got {txn.quantity}"
-            )
-            assert abs(txn.price - buy_price) < 1e-6, (
-                f"Transaction price should be {buy_price}, got {txn.price}"
-            )
-            assert txn.transaction_type == "buy", (
-                f"Transaction type should be 'buy', got '{txn.transaction_type}'"
-            )
+            assert (
+                txn.ticker == ticker
+            ), f"Transaction ticker should be '{ticker}', got '{txn.ticker}'"
+            assert (
+                abs(txn.quantity - quantity) < 1e-6
+            ), f"Transaction quantity should be {quantity}, got {txn.quantity}"
+            assert (
+                abs(txn.price - buy_price) < 1e-6
+            ), f"Transaction price should be {buy_price}, got {txn.price}"
+            assert (
+                txn.transaction_type == "buy"
+            ), f"Transaction type should be 'buy', got '{txn.transaction_type}'"
             assert txn.transaction_date == date.today(), (
-                f"Transaction date should be today ({date.today()}), got {txn.transaction_date}"
+                f"Transaction date should be today ({date.today()}), "
+                f"got {txn.transaction_date}"
             )
         finally:
             db.close()

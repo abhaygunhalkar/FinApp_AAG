@@ -57,9 +57,7 @@ class TestGetAllHoldings:
         assert h.allocation_pct == 100.0  # only holding
         assert h.annual_dividend_income == 8.75  # 0.005 * 175 * 10
 
-    def test_allocation_pct_across_multiple_holdings(
-        self, db_session: Session
-    ) -> None:
+    def test_allocation_pct_across_multiple_holdings(self, db_session: Session) -> None:
         h1 = Holding(
             ticker="AAPL",
             quantity=10.0,
@@ -278,7 +276,9 @@ class TestDeleteHolding:
         HoldingsService.delete_holding(db_session, holding_id)
 
         # Holding should be gone
-        assert db_session.query(Holding).filter(Holding.id == holding_id).first() is None
+        assert (
+            db_session.query(Holding).filter(Holding.id == holding_id).first() is None
+        )
 
         # Cash should be increased by quantity * average_buy_price
         updated_cash = db_session.query(CashBalance).first()
@@ -337,9 +337,7 @@ class TestMetricsCalculation:
         result = HoldingsService.get_all_holdings(db_session)
         assert result[0].allocation_pct == 0.0
 
-    def test_zero_dividend_yield_gives_zero_income(
-        self, db_session: Session
-    ) -> None:
+    def test_zero_dividend_yield_gives_zero_income(self, db_session: Session) -> None:
         holding = Holding(
             ticker="AAPL",
             quantity=10.0,

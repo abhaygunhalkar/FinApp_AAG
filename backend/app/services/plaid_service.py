@@ -1,6 +1,7 @@
 """Service for Plaid API interactions: link tokens, token exchange, account sync."""
 
 import logging
+from typing import Any
 
 from fastapi import HTTPException
 from plaid import ApiClient, Configuration
@@ -9,7 +10,9 @@ from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.country_code import CountryCode
 from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
 from plaid.model.item_get_request import ItemGetRequest
-from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
+from plaid.model.item_public_token_exchange_request import (
+    ItemPublicTokenExchangeRequest,
+)
 from plaid.model.item_remove_request import ItemRemoveRequest
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
@@ -18,10 +21,11 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.models.financial_account import FinancialAccount
-from app.models.plaid_item import PlaidItem as plaid_item_type
+from app.models.plaid_item import PlaidItem
 from app.repositories.financial_account_repository import FinancialAccountRepository
 from app.repositories.plaid_item_repository import PlaidItemRepository
 from app.schemas.financial_account import ASSET_TYPES
+from app.schemas.plaid import ExchangeTokenResponse, PlaidItemInfo, PlaidSyncResponse
 from app.services.financial_account_service import FinancialAccountService
 
 logger = logging.getLogger(__name__)
@@ -62,11 +66,16 @@ class PlaidService:
     def _get_client() -> plaid_api.PlaidApi:
         settings = get_settings()
         if not settings.PLAID_CLIENT_ID or not settings.PLAID_SECRET:
-            raise HTTPException(status_code=503, detail="Plaid credentials not configured")
+            raise HTTPException(
+                status_code=503, detail="Plaid credentials not configured"
+            )
         host = ENV_MAP.get(settings.PLAID_ENV, "https://sandbox.plaid.com")
         configuration = Configuration(
             host=host,
-            api_key={"clientId": settings.PLAID_CLIENT_ID, "secret": settings.PLAID_SECRET},
+            api_key={
+                "clientId": settings.PLAID_CLIENT_ID,
+                "secret": settings.PLAID_SECRET,
+            },
         )
         api_client = ApiClient(configuration)
         return plaid_api.PlaidApi(api_client)
@@ -82,10 +91,10 @@ class PlaidService:
             language="en",
         )
         response = client.link_token_create(request)
-        return response.to_dict()["link_token"]
+        return str(response.to_dict()["link_token"])
 
     @staticmethod
-    def exchange_public_token(db: Session, public_token: str) -> dict:
+    def exchange_public_token(db: Session, public_token: str) -> ExchangeTokenResponse:
         client = PlaidService._get_client()
 
         exchange_request = ItemPublicTokenExchangeRequest(public_token=public_token)
@@ -96,7 +105,9 @@ class PlaidService:
         institution_id: str | None = None
         institution_name: str | None = None
         try:
-            item_data = client.item_get(ItemGetRequest(access_token=access_token)).to_dict()
+            item_data = client.item_get(
+                ItemGetRequest(access_token=access_token)
+            ).to_dict()
             institution_id = item_data["item"]["institution_id"]
             if institution_id:
                 inst_data = client.institutions_get_by_id(
@@ -114,18 +125,20 @@ class PlaidService:
         )
 
         accounts_synced = PlaidService.sync_item(db, plaid_item)
-        return {
-            "item_id": item_id,
-            "institution_name": institution_name or "Unknown Institution",
-            "accounts_synced": accounts_synced,
-        }
+        return ExchangeTokenResponse(
+            item_id=item_id,
+            institution_name=institution_name or "Unknown Institution",
+            accounts_synced=accounts_synced,
+        )
 
     @staticmethod
-    def sync_item(db: Session, plaid_item: plaid_item_type) -> int:
+    def sync_item(db: Session, plaid_item: PlaidItem) -> int:
         client = PlaidService._get_client()
 
         accounts_request = AccountsGetRequest(access_token=plaid_item.access_token)
-        accounts: list[dict] = client.accounts_get(accounts_request).to_dict()["accounts"]
+        accounts: list[dict[str, Any]] = client.accounts_get(
+            accounts_request
+        ).to_dict()["accounts"]
 
         synced = 0
         for acct in accounts:
@@ -135,9 +148,13 @@ class PlaidService:
 
             account_type = SUBTYPE_MAP.get(subtype_raw)
             if account_type is None:
-                account_type = "other_liability" if plaid_type in LIABILITY_PLAID_TYPES else "other_asset"
+                account_type = (
+                    "other_liability"
+                    if plaid_type in LIABILITY_PLAID_TYPES
+                    else "other_asset"
+                )
 
-            balances: dict = acct.get("balances") or {}
+            balances: dict[str, Any] = acct.get("balances") or {}
             raw_balance = balances.get("current") or 0.0
             is_liability = account_type not in ASSET_TYPES
             balance = abs(float(raw_balance)) if is_liability else float(raw_balance)
@@ -148,7 +165,9 @@ class PlaidService:
             raw_limit = balances.get("limit")
             credit_limit = float(raw_limit) if raw_limit else None
 
-            existing = FinancialAccountRepository.get_by_plaid_account_id(db, plaid_account_id)
+            existing = FinancialAccountRepository.get_by_plaid_account_id(
+                db, plaid_account_id
+            )
             if existing:
                 existing.balance = balance
                 existing.name = name
@@ -176,7 +195,23 @@ class PlaidService:
         return synced
 
     @staticmethod
-    def sync_all(db: Session) -> dict:
+    def get_items(db: Session) -> list[PlaidItemInfo]:
+        """Every connected institution, with how many accounts it feeds."""
+        return [
+            PlaidItemInfo(
+                id=item.id,
+                item_id=item.item_id,
+                institution_name=item.institution_name,
+                last_synced=item.last_synced,
+                account_count=len(
+                    FinancialAccountRepository.get_by_plaid_item_id(db, item.id)
+                ),
+            )
+            for item in PlaidItemRepository.get_all(db)
+        ]
+
+    @staticmethod
+    def sync_all(db: Session) -> PlaidSyncResponse:
         items = PlaidItemRepository.get_all(db)
         total_accounts = 0
         for item in items:
@@ -184,7 +219,9 @@ class PlaidService:
                 total_accounts += PlaidService.sync_item(db, item)
             except Exception as exc:
                 logger.error("Failed to sync Plaid item %s: %s", item.item_id, exc)
-        return {"items_synced": len(items), "accounts_updated": total_accounts}
+        return PlaidSyncResponse(
+            items_synced=len(items), accounts_updated=total_accounts
+        )
 
     @staticmethod
     def disconnect_item(db: Session, item_id: str) -> None:
@@ -198,7 +235,9 @@ class PlaidService:
         except Exception as exc:
             logger.warning("Plaid item/remove API call failed (continuing): %s", exc)
 
-        linked_accounts = FinancialAccountRepository.get_by_plaid_item_id(db, plaid_item.id)
+        linked_accounts = FinancialAccountRepository.get_by_plaid_item_id(
+            db, plaid_item.id
+        )
         for acct in linked_accounts:
             FinancialAccountService.detach_links(db, acct)
             db.delete(acct)

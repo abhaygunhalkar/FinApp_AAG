@@ -1,7 +1,6 @@
 """Net worth and financial accounts router."""
 
 from fastapi import APIRouter, Depends, status
-from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -14,14 +13,20 @@ from app.schemas.financial_account import (
     NetWorthSummaryResponse,
 )
 from app.services.financial_account_service import FinancialAccountService
-from fastapi import HTTPException
 
 router = APIRouter(prefix="/api/net-worth", tags=["net-worth"])
 
+# Service errors (404, 422) are HTTPExceptions; the app-wide handler turns
+# them into the error envelope.
+
 
 @router.get("/accounts", response_model=ApiResponse[list[FinancialAccountResponse]])
-def get_accounts(db: Session = Depends(get_db)) -> ApiResponse[list[FinancialAccountResponse]]:
-    return ApiResponse(success=True, data=FinancialAccountService.get_all(db), error=None)
+def get_accounts(
+    db: Session = Depends(get_db),
+) -> ApiResponse[list[FinancialAccountResponse]]:
+    return ApiResponse(
+        success=True, data=FinancialAccountService.get_all(db), error=None
+    )
 
 
 @router.post(
@@ -31,28 +36,18 @@ def get_accounts(db: Session = Depends(get_db)) -> ApiResponse[list[FinancialAcc
 )
 def create_account(
     data: FinancialAccountCreate, db: Session = Depends(get_db)
-) -> JSONResponse | ApiResponse[FinancialAccountResponse]:
-    try:
-        account = FinancialAccountService.create(db, data)
-    except HTTPException as exc:
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={"success": False, "data": None, "error": exc.detail},
-        )
+) -> ApiResponse[FinancialAccountResponse]:
+    account = FinancialAccountService.create(db, data)
     return ApiResponse(success=True, data=account, error=None)
 
 
-@router.put("/accounts/{account_id}", response_model=ApiResponse[FinancialAccountResponse])
+@router.put(
+    "/accounts/{account_id}", response_model=ApiResponse[FinancialAccountResponse]
+)
 def update_account(
     account_id: int, data: FinancialAccountUpdate, db: Session = Depends(get_db)
-) -> JSONResponse | ApiResponse[FinancialAccountResponse]:
-    try:
-        account = FinancialAccountService.update(db, account_id, data)
-    except HTTPException as exc:
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={"success": False, "data": None, "error": exc.detail},
-        )
+) -> ApiResponse[FinancialAccountResponse]:
+    account = FinancialAccountService.update(db, account_id, data)
     return ApiResponse(success=True, data=account, error=None)
 
 
@@ -62,37 +57,29 @@ def update_account(
 )
 def confirm_balance(
     account_id: int, db: Session = Depends(get_db)
-) -> JSONResponse | ApiResponse[FinancialAccountResponse]:
+) -> ApiResponse[FinancialAccountResponse]:
     """Mark a manual account's balance as still correct."""
-    try:
-        account = FinancialAccountService.confirm_balance(db, account_id)
-    except HTTPException as exc:
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={"success": False, "data": None, "error": exc.detail},
-        )
+    account = FinancialAccountService.confirm_balance(db, account_id)
     return ApiResponse(success=True, data=account, error=None)
 
 
 @router.delete("/accounts/{account_id}", response_model=ApiResponse[None])
-def delete_account(
-    account_id: int, db: Session = Depends(get_db)
-) -> JSONResponse | ApiResponse[None]:
-    try:
-        FinancialAccountService.delete(db, account_id)
-    except HTTPException as exc:
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={"success": False, "data": None, "error": exc.detail},
-        )
+def delete_account(account_id: int, db: Session = Depends(get_db)) -> ApiResponse[None]:
+    FinancialAccountService.delete(db, account_id)
     return ApiResponse(success=True, data=None, error=None)
 
 
 @router.get("/summary", response_model=ApiResponse[NetWorthSummaryResponse])
 def get_summary(db: Session = Depends(get_db)) -> ApiResponse[NetWorthSummaryResponse]:
-    return ApiResponse(success=True, data=FinancialAccountService.get_summary(db), error=None)
+    return ApiResponse(
+        success=True, data=FinancialAccountService.get_summary(db), error=None
+    )
 
 
 @router.get("/snapshots", response_model=ApiResponse[list[NetWorthSnapshotResponse]])
-def get_snapshots(db: Session = Depends(get_db)) -> ApiResponse[list[NetWorthSnapshotResponse]]:
-    return ApiResponse(success=True, data=FinancialAccountService.get_snapshots(db), error=None)
+def get_snapshots(
+    db: Session = Depends(get_db),
+) -> ApiResponse[list[NetWorthSnapshotResponse]]:
+    return ApiResponse(
+        success=True, data=FinancialAccountService.get_snapshots(db), error=None
+    )

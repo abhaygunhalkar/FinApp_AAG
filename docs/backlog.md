@@ -16,12 +16,9 @@ What's still to do on FinApp, so nothing gets forgotten. Newest decisions at the
 
 - [ ] **Add the payoff date to the real mortgage** on Net Worth, so Mortgage Payoff works out the monthly payment instead of asking for it.
 
-## Standardization pass (after the initial features)
+## Standardization pass
 
-- [ ] **Format dates the same way everywhere**, with the browser's built-in date formatting (`Intl.DateTimeFormat`).
-- [ ] **Bring older code up to the current conventions:**
-  - `transactions.py` `/sells` and `income.py` routers still hold logic and build response dicts by hand;
-  - lint warnings in older files (ruff and mypy in `portfolio_analysis_service.py`, `plaid.py` and others; prettier in `Sidebar.tsx` and `Settings.tsx`);
+Done; see 2026-11-14 below.
 
 ## Later: an install friends can host themselves
 
@@ -41,6 +38,12 @@ One copy per person on their own cloud, not a multi-user service.
 - **Chat feature flag, metrics dashboards, Playwright end-to-end tests:** not needed for one user.
 
 ## Done
+
+- 2026-11-14: standardization pass.
+  - Every router follows one pattern: call the service, declare `response_model=ApiResponse[<schema>]`, no hand-built `JSONResponse`, no repository imports. Logic moved into services: sell history (`TransactionService.get_sell_history`), the earnings calendar (new `EarningsService`), company info (`MarketDataService.fetch_company_info`) and the Plaid item list (`PlaidService.get_items`). New schemas for market, earnings, Plaid and sell-history replies. A recording of 68 replies (successes and errors) was identical before and after.
+  - Backend lint is fully clean: black, ruff and strict mypy over app, tests, scripts and migrations (from ~410 ruff and 65 mypy problems). The realized-gain property test now checks the gain; the shared `client` test fixture works.
+  - Frontend `npm run check` is clean (from ~335 problems). `HoldingForm` no longer calls a hook conditionally; forms don't copy props into state in effects; option trades have types (`src/types/options.ts`); unused `OptionsLogModal` removed.
+  - Dates: one set of formatters in `src/utils/date.ts`, one style ("Nov 13, 2026") everywhere. The Portfolio Growth tooltip and the stale-data warning no longer follow the browser's locale.
 
 - 2026-11-14: frontend tests that failed on `main` all pass (379), and `tsc -b` is clean. They were out of date: tables gained a query hook and renamed columns, dividend and notes columns were removed, gains gained a + sign. The flaky "Activity feed ordering" property test generated invalid dates (`noInvalidDate`). Also fixed an unused import and a `JSX` type in app code.
 

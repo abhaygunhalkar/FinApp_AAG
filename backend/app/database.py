@@ -79,8 +79,9 @@ def _stamp_latest_migration() -> None:
     if not ini.exists():
         logger.warning("alembic.ini not found; new database not stamped.")
         return
-    from alembic import command
     from alembic.config import Config
+
+    from alembic import command
 
     config = Config(str(ini))
     config.set_main_option("script_location", str(ini.parent / "alembic"))
@@ -140,11 +141,13 @@ def verify_database() -> None:
             columns = [row[1] for row in pragma_result.fetchall()]
             if "holding_type" not in columns:
                 logger.info(
-                    "Existing database is missing holdings.holding_type; applying compatibility patch."
+                    "Existing database is missing holdings.holding_type; applying "
+                    "compatibility patch."
                 )
                 conn.execute(
                     text(
-                        "ALTER TABLE holdings ADD COLUMN holding_type VARCHAR(20) NOT NULL DEFAULT 'stock'"
+                        "ALTER TABLE holdings ADD COLUMN holding_type VARCHAR(20) "
+                        "NOT NULL DEFAULT 'stock'"
                     )
                 )
                 logger.info("Added missing holdings.holding_type column.")

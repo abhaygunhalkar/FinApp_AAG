@@ -1,15 +1,17 @@
 """Tests for FastAPI application setup and error handling."""
 
+from collections.abc import AsyncGenerator
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.main import app, _get_refresh_interval
+from app.main import _get_refresh_interval, app
 
 
 @pytest.fixture()
-async def test_client():
+async def test_client() -> AsyncGenerator[AsyncClient, None]:
     """Provide an async test client."""
-    transport = ASGITransport(app=app)  # type: ignore[arg-type]
+    transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
@@ -29,9 +31,7 @@ class TestCORSMiddleware:
     """Tests for CORS middleware configuration."""
 
     @pytest.mark.asyncio
-    async def test_cors_allows_localhost_3000(
-        self, test_client: AsyncClient
-    ) -> None:
+    async def test_cors_allows_localhost_3000(self, test_client: AsyncClient) -> None:
         """CORS should allow requests from http://localhost:3000."""
         response = await test_client.options(
             "/health",
@@ -40,12 +40,13 @@ class TestCORSMiddleware:
                 "Access-Control-Request-Method": "GET",
             },
         )
-        assert response.headers.get("access-control-allow-origin") == "http://localhost:3000"
+        assert (
+            response.headers.get("access-control-allow-origin")
+            == "http://localhost:3000"
+        )
 
     @pytest.mark.asyncio
-    async def test_cors_rejects_other_origins(
-        self, test_client: AsyncClient
-    ) -> None:
+    async def test_cors_rejects_other_origins(self, test_client: AsyncClient) -> None:
         """CORS should not allow requests from other origins."""
         response = await test_client.options(
             "/health",
@@ -63,6 +64,7 @@ class TestGlobalExceptionHandler:
     @pytest.mark.asyncio
     async def test_unhandled_exception_returns_500_envelope(self) -> None:
         """Unhandled exceptions should return 500 with envelope format."""
+
         # Add a temporary route that raises an exception
         @app.get("/test-error")
         def raise_error() -> None:
@@ -71,7 +73,7 @@ class TestGlobalExceptionHandler:
         # Use raise_app_exceptions=False so the test client doesn't re-raise
         # the exception that Starlette's ServerErrorMiddleware propagates.
         transport = ASGITransport(
-            app=app,  # type: ignore[arg-type]
+            app=app,
             raise_app_exceptions=False,
         )
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -95,8 +97,8 @@ class TestValidationErrorHandler:
         self, test_client: AsyncClient
     ) -> None:
         """Validation errors should return 422 with field-level error messages."""
-        from pydantic import BaseModel, Field
         from fastapi import APIRouter
+        from pydantic import BaseModel, Field
 
         # Create a temporary router with a validated endpoint
         test_router = APIRouter()
@@ -135,6 +137,7 @@ class TestRefreshInterval:
     def test_default_interval(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Default interval should be 15 minutes."""
         from app.config import get_settings
+
         get_settings.cache_clear()
         monkeypatch.setenv("REFRESH_INTERVAL_MINUTES", "15")
         get_settings.cache_clear()
@@ -144,6 +147,7 @@ class TestRefreshInterval:
     def test_interval_clamped_to_minimum(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Interval below 1 should be clamped to 1."""
         from app.config import get_settings
+
         get_settings.cache_clear()
         monkeypatch.setenv("REFRESH_INTERVAL_MINUTES", "0")
         get_settings.cache_clear()
@@ -153,15 +157,19 @@ class TestRefreshInterval:
     def test_interval_clamped_to_maximum(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Interval above 1440 should be clamped to 1440."""
         from app.config import get_settings
+
         get_settings.cache_clear()
         monkeypatch.setenv("REFRESH_INTERVAL_MINUTES", "2000")
         get_settings.cache_clear()
         interval = _get_refresh_interval()
         assert interval == 1440
 
-    def test_valid_interval_passes_through(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_valid_interval_passes_through(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Valid interval within range should pass through unchanged."""
         from app.config import get_settings
+
         get_settings.cache_clear()
         monkeypatch.setenv("REFRESH_INTERVAL_MINUTES", "30")
         get_settings.cache_clear()

@@ -14,9 +14,7 @@ class HoldingsRepository:
     def get_all(db: Session) -> list[Holding]:
         """Retrieve all active holdings."""
         return list(
-            db.query(Holding)
-            .filter(Holding.quantity > ACTIVE_QUANTITY_THRESHOLD)
-            .all()
+            db.query(Holding).filter(Holding.quantity > ACTIVE_QUANTITY_THRESHOLD).all()
         )
 
     @staticmethod
@@ -90,7 +88,9 @@ class HoldingsRepository:
             raise
 
     @staticmethod
-    def get_by_id_and_type(db: Session, holding_id: int, holding_type: str) -> Holding | None:
+    def get_by_id_and_type(
+        db: Session, holding_id: int, holding_type: str
+    ) -> Holding | None:
         """Retrieve an active holding by ID and type."""
         return (
             db.query(Holding)
@@ -127,7 +127,7 @@ class HoldingsRepository:
 
     @staticmethod
     def delete(db: Session, holding_id: int) -> None:
-        """Delete a holding by its ID. Preserves transaction history by nullifying holding_id."""
+        """Delete a holding; its transactions stay, with holding_id set to NULL."""
         try:
             from app.models.transaction import Transaction
 

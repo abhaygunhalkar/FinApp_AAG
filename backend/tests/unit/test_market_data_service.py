@@ -1,6 +1,7 @@
 """Unit tests for the MarketDataService."""
 
 from datetime import date, timedelta
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,10 +11,8 @@ from app.models.holding import Holding
 from app.models.price_history import PriceHistory
 from app.models.watchlist_item import WatchlistItem
 from app.services.market_data_service import (
-    HISTORY_RETENTION_DAYS,
     MAX_RETRIES,
     MarketDataService,
-    RefreshResult,
 )
 
 
@@ -89,7 +88,7 @@ class TestFetchQuote:
     def test_fetch_quote_returns_none_when_price_missing(
         self, mock_ticker_cls: MagicMock
     ) -> None:
-        """Should return None when both currentPrice and regularMarketPrice are missing."""
+        """None when both currentPrice and regularMarketPrice are missing."""
         mock_ticker = MagicMock()
         mock_ticker.info = {
             "previousClose": 148.50,
@@ -128,7 +127,7 @@ class TestFetchQuote:
         # Make .info access raise on first two attempts, succeed on third
         call_count = 0
 
-        def side_effect_info() -> dict:
+        def side_effect_info() -> dict[str, Any]:
             nonlocal call_count
             call_count += 1
             if call_count < 3:
@@ -331,9 +330,7 @@ class TestRefreshAllPrices:
 
         # Verify price history was stored
         history = (
-            db_session.query(PriceHistory)
-            .filter(PriceHistory.ticker == "GOOG")
-            .all()
+            db_session.query(PriceHistory).filter(PriceHistory.ticker == "GOOG").all()
         )
         assert len(history) == 1
         assert history[0].close_price == 175.0

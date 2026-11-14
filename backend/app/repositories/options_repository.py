@@ -1,6 +1,7 @@
 """Repository for options trades."""
+
 from datetime import date
-from typing import List
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -9,7 +10,7 @@ from app.models.options_trade import OptionsTrade
 
 class OptionsRepository:
     @staticmethod
-    def get_all(db: Session) -> List[OptionsTrade]:
+    def get_all(db: Session) -> list[OptionsTrade]:
         return db.query(OptionsTrade).order_by(OptionsTrade.expiry_date.asc()).all()
 
     @staticmethod
@@ -17,7 +18,7 @@ class OptionsRepository:
         return db.query(OptionsTrade).filter(OptionsTrade.id == id).first()
 
     @staticmethod
-    def create(db: Session, payload: dict) -> OptionsTrade:
+    def create(db: Session, payload: dict[str, Any]) -> OptionsTrade:
         obj = OptionsTrade(**payload)
         db.add(obj)
         db.commit()
@@ -25,7 +26,7 @@ class OptionsRepository:
         return obj
 
     @staticmethod
-    def update(db: Session, id: int, payload: dict) -> OptionsTrade | None:
+    def update(db: Session, id: int, payload: dict[str, Any]) -> OptionsTrade | None:
         obj = db.query(OptionsTrade).filter(OptionsTrade.id == id).first()
         if not obj:
             return None
@@ -45,4 +46,12 @@ class OptionsRepository:
 
     @staticmethod
     def count_expiring_between(db: Session, start: date, end: date) -> int:
-        return db.query(OptionsTrade).filter(OptionsTrade.status == 'open', OptionsTrade.expiry_date >= start, OptionsTrade.expiry_date <= end).count()
+        return (
+            db.query(OptionsTrade)
+            .filter(
+                OptionsTrade.status == "open",
+                OptionsTrade.expiry_date >= start,
+                OptionsTrade.expiry_date <= end,
+            )
+            .count()
+        )

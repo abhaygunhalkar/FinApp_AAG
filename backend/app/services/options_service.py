@@ -1,44 +1,49 @@
 """Service layer for options trades and summary computations."""
-from collections import namedtuple
-from datetime import date, datetime, timedelta
-from typing import List
+
+from datetime import date, timedelta
+from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.models.options_trade import OptionsTrade
 from app.repositories.options_repository import OptionsRepository
-from app.schemas.options import OptionQuoteResponse, OptionsTradeResponse, OptionsSummary
+from app.schemas.options import (
+    OptionQuoteResponse,
+    OptionsSummary,
+    OptionsTradeResponse,
+)
 from app.services.market_data_service import MarketDataService
 
 
 class OptionsService:
     @staticmethod
-    def _calculate_pnl_for_trade(trade) -> float | None:
+    def _calculate_pnl_for_trade(trade: OptionsTrade) -> float | None:
         # P&L rules per spec
-        if trade.status == 'open':
+        if trade.status == "open":
             return None
         contracts = trade.contracts or 0
         multiplier = contracts * 100
-        premium = trade.premium or 0.0
-        close_price = trade.close_price
+        premium: float = trade.premium or 0.0
+        close_price: float | None = trade.close_price
         # Credit trades (sell_put/sell_call) collect premium up front; debit
         # trades (buy_put/buy_call) pay premium up front, so the sign of
         # every outcome is mirrored.
-        is_credit = trade.trade_type.startswith('sell_')
+        is_credit = trade.trade_type.startswith("sell_")
 
-        if trade.status == 'closed':
+        if trade.status == "closed":
             if close_price is None:
                 return None
             if is_credit:
                 return round((premium - close_price) * multiplier, 2)
             return round((close_price - premium) * multiplier, 2)
-        if trade.status in ('expired_worthless', 'assigned'):
+        if trade.status in ("expired_worthless", "assigned"):
             if is_credit:
                 return round(premium * multiplier, 2)
             return round(-premium * multiplier, 2)
         return None
 
     @staticmethod
-    def list_trades(db: Session) -> List[OptionsTradeResponse]:
+    def list_trades(db: Session) -> list[OptionsTradeResponse]:
         trades = OptionsRepository.get_all(db)
         result = []
         for t in trades:
@@ -49,19 +54,21 @@ class OptionsService:
         return result
 
     @staticmethod
-    def get_monthly_pnl(db: Session) -> list[dict]:
-        """Return realized P&L per closed/expired/assigned trade, keyed by expiry_date."""
+    def get_monthly_pnl(db: Session) -> list[dict[str, Any]]:
+        """Realized P&L per closed or expired trade, keyed by expiry_date."""
         trades = OptionsRepository.get_all(db)
         result = []
         for trade in trades:
-            if trade.status not in ('closed', 'expired_worthless'):
+            if trade.status not in ("closed", "expired_worthless"):
                 continue
             pnl = OptionsService._calculate_pnl_for_trade(trade)
             if pnl is not None:
-                result.append({
-                    "transaction_date": trade.expiry_date.isoformat(),
-                    "realized_gain": pnl,
-                })
+                result.append(
+                    {
+                        "transaction_date": trade.expiry_date.isoformat(),
+                        "realized_gain": pnl,
+                    }
+                )
         return result
 
     @staticmethod
@@ -74,14 +81,16 @@ class OptionsService:
         return obj
 
     @staticmethod
-    def create_trade(db: Session, payload: dict) -> OptionsTradeResponse:
+    def create_trade(db: Session, payload: dict[str, Any]) -> OptionsTradeResponse:
         obj = OptionsRepository.create(db, payload)
         resp = OptionsTradeResponse.model_validate(obj)
         resp.pnl = OptionsService._calculate_pnl_for_trade(obj)
         return resp
 
     @staticmethod
-    def update_trade(db: Session, id: int, payload: dict) -> OptionsTradeResponse | None:
+    def update_trade(
+        db: Session, id: int, payload: dict[str, Any]
+    ) -> OptionsTradeResponse | None:
         obj = OptionsRepository.update(db, id, payload)
         if not obj:
             return None
@@ -103,11 +112,13 @@ class OptionsService:
 
         today = date.today()
         week_ahead = today + timedelta(days=7)
-        expiring_this_week = OptionsRepository.count_expiring_between(db, today, week_ahead)
+        expiring_this_week = OptionsRepository.count_expiring_between(
+            db, today, week_ahead
+        )
 
         for t in trades:
             pnl = OptionsService._calculate_pnl_for_trade(t)
-            if t.status == 'open':
+            if t.status == "open":
                 open_positions += 1
             if pnl is not None:
                 total_pnl += pnl
@@ -115,7 +126,11 @@ class OptionsService:
                 if pnl > 0:
                     winning_count += 1
 
-        win_rate = round((winning_count / closed_or_expired_count) * 100, 2) if closed_or_expired_count > 0 else 0.0
+        win_rate = (
+            round((winning_count / closed_or_expired_count) * 100, 2)
+            if closed_or_expired_count > 0
+            else 0.0
+        )
 
         return OptionsSummary(
             total_pnl=round(total_pnl, 2),
@@ -145,7 +160,7 @@ class OptionsService:
         yfinance once.
         """
         trades = [t for t in OptionsRepository.get_all(db) if t.status == "open"]
-        chain_cache: dict[tuple[str, date], tuple | None] = {}
+        chain_cache: dict[tuple[str, date], tuple[Any, ...] | None] = {}
         results: dict[int, OptionQuoteResponse] = {}
 
         for trade in trades:
@@ -160,14 +175,19 @@ class OptionsService:
 
             calls, puts = chain
             chain_side = calls if trade.trade_type.endswith("_call") else puts
-            quote_data = MarketDataService.extract_option_quote(chain_side, trade.strike_price)
+            quote_data = MarketDataService.extract_option_quote(
+                chain_side, trade.strike_price
+            )
             if quote_data is None:
                 continue
 
             unrealized_pnl = None
             if quote_data["current_price"] is not None:
                 unrealized_pnl = OptionsService._calculate_unrealized_pnl(
-                    trade.trade_type, trade.premium, trade.contracts, quote_data["current_price"]
+                    trade.trade_type,
+                    trade.premium,
+                    trade.contracts,
+                    quote_data["current_price"],
                 )
 
             results[trade.id] = OptionQuoteResponse(

@@ -24,8 +24,12 @@ class FinancialAccount(Base):
     apr: Mapped[float | None] = mapped_column(Float, nullable=True)
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     payoff_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    plaid_account_id: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True)
-    plaid_item_id: Mapped[int | None] = mapped_column(ForeignKey("plaid_items.id"), nullable=True)
+    plaid_account_id: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, unique=True
+    )
+    plaid_item_id: Mapped[int | None] = mapped_column(
+        ForeignKey("plaid_items.id"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), onupdate=func.now()

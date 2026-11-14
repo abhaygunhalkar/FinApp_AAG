@@ -101,11 +101,10 @@ def test_create_invalid_ticker_returns_422(test_client: TestClient) -> None:
 
 
 @pytest.mark.usefixtures("_seed_watchlist")
-def test_update_watchlist_item(
-    test_client: TestClient, db_session: Session
-) -> None:
+def test_update_watchlist_item(test_client: TestClient, db_session: Session) -> None:
     """PUT /api/watchlist/{id} updates item and returns 200."""
     item = db_session.query(WatchlistItem).filter_by(ticker="AAPL").first()
+    assert item is not None
     payload = {"target_buy_price": 160.0, "priority": 2, "notes": "Updated note"}
     response = test_client.put(f"/api/watchlist/{item.id}", json=payload)
     assert response.status_code == 200
@@ -129,11 +128,10 @@ def test_update_nonexistent_item_returns_404(test_client: TestClient) -> None:
 
 
 @pytest.mark.usefixtures("_seed_watchlist")
-def test_delete_watchlist_item(
-    test_client: TestClient, db_session: Session
-) -> None:
+def test_delete_watchlist_item(test_client: TestClient, db_session: Session) -> None:
     """DELETE /api/watchlist/{id} removes item and returns 200."""
     item = db_session.query(WatchlistItem).filter_by(ticker="AAPL").first()
+    assert item is not None
     response = test_client.delete(f"/api/watchlist/{item.id}")
     assert response.status_code == 200
     body = response.json()

@@ -18,9 +18,7 @@ class NetWorthSnapshotRepository:
     ) -> NetWorthSnapshot:
         today = date.today()
         existing = (
-            db.query(NetWorthSnapshot)
-            .filter(NetWorthSnapshot.date == today)
-            .first()
+            db.query(NetWorthSnapshot).filter(NetWorthSnapshot.date == today).first()
         )
         if existing:
             existing.total_assets = total_assets

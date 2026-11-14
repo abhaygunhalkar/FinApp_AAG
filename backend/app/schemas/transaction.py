@@ -74,3 +74,23 @@ class TransactionResponse(BaseModel):
     lots: list[LotAllocationResponse] = []
 
     model_config = {"from_attributes": True}
+
+
+class SellHistoryItem(BaseModel):
+    """One sell with its cost basis and realized gain (GET /api/transactions/sells)."""
+
+    id: int
+    holding_id: int | None
+    ticker: str
+    transaction_type: Literal["sell"]
+    quantity: float
+    price: float
+    fees: float
+    transaction_date: date
+    broker: str | None
+    notes: str | None
+    created_at: datetime
+    # Average cost of the shares sold: from the buy lots it took, else the
+    # holding's current average, else 0 when unknown.
+    cost_basis: float
+    realized_gain: float

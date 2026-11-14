@@ -23,7 +23,7 @@ async def async_client(db_session: Session) -> AsyncGenerator[AsyncClient, None]
 
     app.dependency_overrides[get_db] = _override_get_db
 
-    transport = ASGITransport(app=app)  # type: ignore[arg-type]
+    transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
@@ -58,9 +58,7 @@ class TestGetTransactions:
         db_session.add(txn)
         db_session.commit()
 
-        response = await async_client.get(
-            f"/api/transactions?holding_id={holding.id}"
-        )
+        response = await async_client.get(f"/api/transactions?holding_id={holding.id}")
 
         assert response.status_code == 200
         body = response.json()
@@ -83,9 +81,7 @@ class TestGetTransactions:
         db_session.add(holding)
         db_session.commit()
 
-        response = await async_client.get(
-            f"/api/transactions?holding_id={holding.id}"
-        )
+        response = await async_client.get(f"/api/transactions?holding_id={holding.id}")
 
         assert response.status_code == 200
         body = response.json()

@@ -8,6 +8,7 @@ the database state unchanged.
 """
 
 from datetime import date
+from typing import Any
 
 import pytest
 from fastapi import HTTPException
@@ -18,7 +19,6 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.database import Base
-from app.models.cash_balance import CashBalance
 from app.models.holding import Holding
 from app.repositories.cash_balance_repository import CashBalanceRepository
 from app.repositories.holdings_repository import HoldingsRepository
@@ -27,12 +27,17 @@ from app.schemas.transaction import TransactionCreate
 from app.services.holdings_service import HoldingsService
 from app.services.transaction_service import TransactionService
 
-
 # --- Strategies ---
 
-price_st = st.floats(min_value=1.0, max_value=10000.0, allow_nan=False, allow_infinity=False)
-quantity_st = st.floats(min_value=1.0, max_value=10000.0, allow_nan=False, allow_infinity=False)
-fees_st = st.floats(min_value=0.0, max_value=100.0, allow_nan=False, allow_infinity=False)
+price_st = st.floats(
+    min_value=1.0, max_value=10000.0, allow_nan=False, allow_infinity=False
+)
+quantity_st = st.floats(
+    min_value=1.0, max_value=10000.0, allow_nan=False, allow_infinity=False
+)
+fees_st = st.floats(
+    min_value=0.0, max_value=100.0, allow_nan=False, allow_infinity=False
+)
 ticker_st = st.from_regex(r"^[A-Z]{1,5}$", fullmatch=True)
 date_st = st.dates(min_value=date(2020, 1, 1), max_value=date(2024, 12, 31))
 
@@ -54,7 +59,7 @@ def _setup_cash_balance(db: Session, amount: float = 1_000_000.0) -> None:
     CashBalanceRepository.update_balance(db, amount)
 
 
-def _snapshot_db_state(db: Session) -> dict:
+def _snapshot_db_state(db: Session) -> dict[str, Any]:
     """Capture the current database state for comparison.
 
     Returns a dictionary with:
@@ -74,17 +79,18 @@ def _snapshot_db_state(db: Session) -> dict:
     }
 
 
-def _assert_state_unchanged(before: dict, after: dict) -> None:
+def _assert_state_unchanged(before: dict[str, Any], after: dict[str, Any]) -> None:
     """Assert that the database state has not changed."""
     assert before["holdings_count"] == after["holdings_count"], (
-        f"Holdings count changed: {before['holdings_count']} -> {after['holdings_count']}"
+        f"Holdings count changed: {before['holdings_count']} -> "
+        f"{after['holdings_count']}"
     )
-    assert before["holdings"] == after["holdings"], (
-        f"Holdings changed: {before['holdings']} -> {after['holdings']}"
-    )
-    assert abs(before["cash_balance"] - after["cash_balance"]) < 1e-6, (
-        f"Cash balance changed: {before['cash_balance']} -> {after['cash_balance']}"
-    )
+    assert (
+        before["holdings"] == after["holdings"]
+    ), f"Holdings changed: {before['holdings']} -> {after['holdings']}"
+    assert (
+        abs(before["cash_balance"] - after["cash_balance"]) < 1e-6
+    ), f"Cash balance changed: {before['cash_balance']} -> {after['cash_balance']}"
 
 
 # --- Property 18: Database transaction rollback ---
@@ -100,7 +106,9 @@ class TestProperty18DatabaseTransactionRollback:
     **Validates: Requirements 10.7, 14.5**
     """
 
-    @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+    @settings(
+        max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture]
+    )
     @given(
         ticker=ticker_st,
         holding_qty=quantity_st,
@@ -165,7 +173,9 @@ class TestProperty18DatabaseTransactionRollback:
         finally:
             db.close()
 
-    @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+    @settings(
+        max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture]
+    )
     @given(
         ticker=ticker_st,
         holding_qty=quantity_st,
@@ -215,7 +225,9 @@ class TestProperty18DatabaseTransactionRollback:
         finally:
             db.close()
 
-    @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+    @settings(
+        max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture]
+    )
     @given(
         ticker=ticker_st,
         sell_price=price_st,
@@ -263,7 +275,9 @@ class TestProperty18DatabaseTransactionRollback:
         finally:
             db.close()
 
-    @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+    @settings(
+        max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture]
+    )
     @given(
         ticker=ticker_st,
         holding_qty=quantity_st,

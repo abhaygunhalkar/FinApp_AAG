@@ -1,4 +1,5 @@
 """Pydantic schemas for options trades."""
+
 from datetime import date, datetime
 from typing import Literal
 
