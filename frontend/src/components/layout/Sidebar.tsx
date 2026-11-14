@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useLogout } from '../../hooks/useAuth';
 import { useUIStore } from '../../store/uiStore';
 import ThemeToggle from './ThemeToggle';
 
@@ -37,6 +38,7 @@ const navGroups = [
 
 export default function Sidebar() {
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
+  const logout = useLogout();
 
   return (
     <>
@@ -118,7 +120,7 @@ export default function Sidebar() {
             ))}
           </nav>
 
-          {/* Footer: Settings and the theme toggle, always visible */}
+          {/* Footer: Settings, the theme toggle and Sign out, always visible */}
           <div className="px-4 py-3 border-t border-white/10">
             <div className="flex items-center justify-between gap-2">
               <NavLink
@@ -140,6 +142,16 @@ export default function Sidebar() {
                 <span>Settings</span>
               </NavLink>
               <ThemeToggle />
+              <button
+                type="button"
+                onClick={() => logout.mutate()}
+                disabled={logout.isPending}
+                aria-label="Sign out"
+                title="Sign out"
+                className="p-2 rounded-lg text-slate-300 hover:bg-white/10 hover:text-white disabled:opacity-50 transition-colors focus-visible:outline-2 focus-visible:outline-sky-300"
+              >
+                <SignOutIcon />
+              </button>
             </div>
           </div>
         </div>
@@ -237,6 +249,29 @@ function WatchlistIcon() {
       <path
         fillRule="evenodd"
         d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
+function SignOutIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-5 w-5"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path
+        fillRule="evenodd"
+        d="M3 4.25A2.25 2.25 0 0 1 5.25 2h5.5A2.25 2.25 0 0 1 13 4.25v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 0-.75-.75h-5.5a.75.75 0 0 0-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 0 0 .75-.75v-2a.75.75 0 0 1 1.5 0v2A2.25 2.25 0 0 1 10.75 18h-5.5A2.25 2.25 0 0 1 3 15.75V4.25Z"
+        clipRule="evenodd"
+      />
+      <path
+        fillRule="evenodd"
+        d="M19 10a.75.75 0 0 0-.75-.75H8.704l1.048-.943a.75.75 0 1 0-1.004-1.114l-2.5 2.25a.75.75 0 0 0 0 1.114l2.5 2.25a.75.75 0 1 0 1.004-1.114l-1.048-.943h9.546A.75.75 0 0 0 19 10Z"
         clipRule="evenodd"
       />
     </svg>

@@ -10,6 +10,8 @@ import type { FinancialAccount } from '../../../types';
 const mocks = vi.hoisted(() => ({ accounts: [] as FinancialAccount[] }));
 const mutation = { mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false, isSuccess: false };
 
+vi.mock('../../../hooks/useAuth', () => ({ useLogout: () => mutation }));
+
 vi.mock('../../../hooks', () => ({
   useAccounts: () => ({ data: mocks.accounts, isLoading: false }),
   useNetWorthSummary: () => ({

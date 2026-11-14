@@ -1,4 +1,10 @@
-export { default as apiClient, unwrapResponse } from './client';
+export {
+  default as apiClient,
+  isUnauthorized,
+  setSignedOutHandler,
+  unwrapResponse,
+} from './client';
+export { getMe, login, logout } from './auth';
 export { getHoldings, getHolding, createHolding, updateHolding, deleteHolding } from './holdings';
 export { getETFHoldings, createETFHolding } from './etfHoldings';
 export { getTransactions, createTransaction, deleteTransaction } from './transactions';

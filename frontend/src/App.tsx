@@ -1,9 +1,12 @@
-import { useLayoutEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { setSignedOutHandler } from './api/client';
 import { queryClient } from './hooks/queryClient';
 import { useUIStore } from './store/uiStore';
 import AppLayout from './components/layout/AppLayout';
+import { RequireAuth, loginUrl } from './components/auth';
+import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Dashboard2 from './pages/Dashboard2';
 import Holdings from './pages/Holdings';
@@ -22,25 +25,32 @@ import FixedCosts from './pages/FixedCosts';
 import CashFlow from './pages/CashFlow';
 
 const router = createBrowserRouter([
+  { path: '/login', element: <Login /> },
   {
-    element: <AppLayout />,
+    // Every other page needs a signed-in session.
+    element: <RequireAuth />,
     children: [
-      { path: '/', element: <Dashboard /> },
-      { path: '/dashboard-2', element: <Dashboard2 /> },
-      { path: '/net-worth', element: <NetWorth /> },
-      { path: '/fixed-costs', element: <FixedCosts /> },
-      { path: '/cash-flow', element: <CashFlow /> },
-      { path: '/holdings', element: <Holdings /> },
-      { path: '/etf-holdings', element: <ETFHoldings /> },
-      { path: '/watchlist', element: <Watchlist /> },
-      { path: '/trades', element: <TradeHistory /> },
-      { path: '/earnings', element: <EarningsCalendar /> },
-      { path: '/options-strategy', element: <OptionsStrategy /> },
-      { path: '/mortgage-payoff', element: <MortgagePayoff /> },
-      { path: '/options', element: <OptionsTradesPage /> },
-      { path: '/settings', element: <Settings /> },
-      { path: '/utilities', element: <Utilities /> },
-      { path: '/portfolio-analysis', element: <PortfolioAnalysisPage /> },
+      {
+        element: <AppLayout />,
+        children: [
+          { path: '/', element: <Dashboard /> },
+          { path: '/dashboard-2', element: <Dashboard2 /> },
+          { path: '/net-worth', element: <NetWorth /> },
+          { path: '/fixed-costs', element: <FixedCosts /> },
+          { path: '/cash-flow', element: <CashFlow /> },
+          { path: '/holdings', element: <Holdings /> },
+          { path: '/etf-holdings', element: <ETFHoldings /> },
+          { path: '/watchlist', element: <Watchlist /> },
+          { path: '/trades', element: <TradeHistory /> },
+          { path: '/earnings', element: <EarningsCalendar /> },
+          { path: '/options-strategy', element: <OptionsStrategy /> },
+          { path: '/mortgage-payoff', element: <MortgagePayoff /> },
+          { path: '/options', element: <OptionsTradesPage /> },
+          { path: '/settings', element: <Settings /> },
+          { path: '/utilities', element: <Utilities /> },
+          { path: '/portfolio-analysis', element: <PortfolioAnalysisPage /> },
+        ],
+      },
     ],
   },
 ]);
@@ -62,6 +72,18 @@ function App() {
   useLayoutEffect(() => {
     document.documentElement.dataset.palette = palette;
   }, [palette]);
+
+  // When the API says the session ended: drop every cached response and go
+  // to the sign-in page, coming back here afterwards.
+  useEffect(() => {
+    setSignedOutHandler(() => {
+      const { pathname, search } = router.state.location;
+      if (pathname === '/login') return;
+      queryClient.clear();
+      void router.navigate(loginUrl(pathname + search, true), { replace: true });
+    });
+    return () => setSignedOutHandler(null);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
