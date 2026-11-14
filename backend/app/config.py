@@ -31,15 +31,6 @@ class Settings(BaseSettings):
     AUTH_LOCKOUT_MINUTES: int = 15
     AUTH_LOGIN_ATTEMPTS_PER_MINUTE: int = 10
 
-    # No longer used: the nginx basic-auth setup before the app had its own
-    # sign-in. Kept so an existing .env still loads; remove them from .env,
-    # then from here.
-    AUTH_USER_HEADER: str = "X-Remote-User"
-    AUTH_TRUSTED_PROXIES: str = "127.0.0.1,::1"
-    AUTH_PROXY_SECRET: str | None = None
-    AUTH_PROXY_SECRET_HEADER: str = "X-Proxy-Secret"
-    AUTH_DEV_USER: str | None = None
-
     # POST /api/chat limits.
     CHAT_RATE_LIMIT_PER_MINUTE: int = 30
     CHAT_MAX_BODY_BYTES: int = 8192

@@ -43,30 +43,31 @@ DATABASE_URL=sqlite:///./finance_demo.db AUTH_COOKIE_SECURE=false uvicorn app.ma
 
 ## Moving the VM from nginx basic auth (one time)
 
-Order matters, so the site is never open and you're never locked out.
+Order matters, so the site is never open and you're never locked out. The two logins can't run side by side: when the new page gets its expected 401 ("nobody signed in yet"), Chrome takes that as the popup password being rejected and forgets it, so the sign-in request is then stopped by nginx. Remove the popup straight after creating the account; every data route already refuses requests without a session.
 
-1. **Deploy the code** (backend, then frontend). Basic auth is still on, so for a moment you sign in twice: the browser popup, then the new page.
+1. **Deploy the code** (backend, then frontend).
 2. **Create the account** on the VM:
    ```bash
    cd ~/FinApp_AAG/backend && source venv/bin/activate && python scripts/create_owner.py
    ```
-3. **Sign in** at https://finapp.techysnacks.click and check the pages load.
-4. **Remove basic auth and the old chat headers from nginx:**
+3. **Remove basic auth and the old chat headers from nginx**, then check from outside that data is refused:
    ```bash
    F=/etc/nginx/sites-enabled/finapp
    sudo cp $F ~/finapp.nginx.bak
    sudo sed -i -E '/auth_basic/d; /X-Remote-User/d; /X-Proxy-Secret/d' $F
    sudo nginx -t && sudo systemctl reload nginx
    sudo nginx -T 2>/dev/null | grep -cE "auth_basic|X-Remote-User|X-Proxy-Secret"   # should print 0
+   curl -s https://finapp.techysnacks.click/api/holdings; echo   # should print "Please sign in."
    ```
+4. **Sign in** at https://finapp.techysnacks.click in a private window: only the new page should appear.
 5. **Remove the old settings** from `backend/.env` and restart:
    ```bash
    sed -i '/^AUTH_PROXY_SECRET=/d; /^AUTH_USER_HEADER=/d; /^AUTH_TRUSTED_PROXIES=/d; /^AUTH_PROXY_SECRET_HEADER=/d; /^AUTH_DEV_USER=/d' ~/FinApp_AAG/backend/.env
    sudo systemctl restart finapp
    ```
-   Keep `OWNER_USER_ID`. Those five settings are still accepted but unused; they can be deleted from `app/config.py` once no `.env` has them.
+   Keep `OWNER_USER_ID`. The app no longer knows those five settings, so a `.env` that still has them stops the service from starting.
 
-To undo step 4: `sudo cp ~/finapp.nginx.bak /etc/nginx/sites-enabled/finapp && sudo systemctl reload nginx`.
+To undo step 3: `sudo cp ~/finapp.nginx.bak /etc/nginx/sites-enabled/finapp && sudo systemctl reload nginx`.
 
 **Optional:** an nginx limit on sign-in requests as well, in addition to the app's own. Add `limit_req_zone $binary_remote_addr zone=login:1m rate=10r/m;` in the `http` block of `/etc/nginx/nginx.conf`, and inside the `server` block:
 
