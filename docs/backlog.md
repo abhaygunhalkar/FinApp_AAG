@@ -4,7 +4,7 @@ What's still to do on FinApp, so nothing gets forgotten. Newest decisions at the
 
 ## Infrastructure (quick, in GCP and on the VM)
 
-- [ ] **Make the VM's external IP static.** Route 53 points `finapp.techysnacks.click` at `35.209.242.92`, which is ephemeral: a VM stop/start can change it and take the site offline until DNS is updated. GCP console → VPC network → IP addresses → `35.209.242.92` → **Promote to static IP address**. No VM, DNS or certificate changes. No extra cost while the VM runs; a reserved static IP bills while idle, so release it if the app is ever shut down for good.
+- [ ] **Turn on nightly database backups**, which also makes the VM's external IP static: run `backend/scripts/backup/cloudshell_setup.sh` in Cloud Shell, then `install_backup.sh` on the VM. See [backup.md](backup.md). Until then there is no backup of `finance_tracker.db` at all.
 - [ ] **Find out why the VM froze** (it needed a Reset). On the VM:
   ```bash
   free -h; df -h /; sudo journalctl -k -b -1 --no-pager | grep -iE "oom|killed process" | tail -5

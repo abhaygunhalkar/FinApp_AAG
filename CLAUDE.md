@@ -122,7 +122,7 @@ The app has its own sign-in page and one account, the owner's, created on the se
 
 ### Deployment
 
-`.github/workflows/deploy.yml` deploys on push to `main`: backend changes are deployed via SSH (`git pull` + `pip install .` + `alembic upgrade head` + restart a `systemd` service named `finapp`) to a GCP VM; frontend changes are built and `scp`'d to the same VM behind nginx. Backend and frontend deploy independently based on which paths changed in the last commit. The production database is `backend/finance_tracker.db` on the VM.
+`.github/workflows/deploy.yml` deploys on push to `main`: backend changes are deployed via SSH (`git pull` + `pip install .` + `alembic upgrade head` + restart a `systemd` service named `finapp`) to a GCP VM; frontend changes are built and `scp`'d to the same VM behind nginx. Backend and frontend deploy independently based on which paths changed in the last commit. The production database is `backend/finance_tracker.db` on the VM; it's backed up nightly to `~/finapp-backups` and a private Cloud Storage bucket (`docs/backup.md`, `backend/scripts/backup/`).
 
 ### Testing conventions
 
