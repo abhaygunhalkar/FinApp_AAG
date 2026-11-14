@@ -130,6 +130,10 @@ The app has its own sign-in page and one account, the owner's, created on the se
 - Frontend tests live in `src/__tests__/unit/` and `src/__tests__/property/` (fast-check), plus some co-located `*.test.tsx` next to components (e.g. `components/holdings/`). Page tests usually `vi.mock` the hooks module rather than mocking HTTP; `msw` is available for API mocking. Use dates relative to today in tests, not hard-coded ones that go stale.
 - Some tests already fail on `main` (backend: a handful in watchlist/ETF tests; frontend: `FrontendComponents`, `MetricsCards` and others with out-of-date fixtures), and `tsc -b` reports errors in old test files. Compare against `main` before assuming a failure is new.
 
+## Backlog
+
+Open work, deferred ideas and decisions not to revisit are in `docs/backlog.md`. Keep it current: add new deferred items there and move finished ones to its "Done" section.
+
 ## Conventions
 
 - **Python:** black + ruff (line length 88), mypy strict, full type hints. Services are classes of `@staticmethod`s named `<Thing>Service`; repositories are `<Thing>Repository`. Module names are `snake_case`; one model per file in `app/models/`, registered in `app/models/__init__.py`. Pydantic schemas are `<Thing>Create` / `<Thing>Update` / `<Thing>Response`; enums are `Literal[...]` aliases. Docstrings and comments are short and plain-English.

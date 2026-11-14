@@ -12,6 +12,21 @@ The app has its own sign-in page and **one account**, the owner's. There is no s
 | Account setup and reset | `backend/scripts/create_owner.py` |
 | Sign-in page, route guard, Sign out | `frontend/src/pages/Login.tsx`, `src/components/auth/`, `src/components/layout/Sidebar.tsx` |
 
+## Locked out? (on the VM)
+
+```bash
+cd ~/FinApp_AAG/backend && source venv/bin/activate
+```
+
+| Problem | Command |
+|---|---|
+| Lost your phone (no authenticator codes) | `python scripts/create_owner.py --disable-2fa`, then sign in with the password and turn it back on with `--enable-2fa` |
+| Forgot the password | `python scripts/create_owner.py --reset` (also signs out every browser) |
+| "Too many failed sign-ins" | `python scripts/create_owner.py --unlock`, or wait 15 minutes |
+| Running low on backup codes (Settings warns at 2) | `python scripts/create_owner.py --backup-codes` (the old ones stop working) |
+
+These need SSH access to the VM, which the website itself never gives, so keep the GCP console sign-in working.
+
 ## How it works
 
 - **Password storage:** scrypt from Python's standard library, with a random salt per password. Rules: 12–128 characters, no leading or trailing space, doesn't contain the username, at least 5 different characters.
