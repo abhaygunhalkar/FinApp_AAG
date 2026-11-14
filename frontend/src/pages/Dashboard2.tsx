@@ -24,7 +24,7 @@ import {
   type TickerGain,
 } from '../components/dashboard2/RealizedCards';
 import { inCurrentYear } from '../components/dashboard2/format';
-import { parseLocalDateString } from '../utils/date';
+import { fmtDayMonthTime, parseLocalDateString } from '../utils/date';
 
 // Below 900px every row stacks; above it, cards fill columns at least 280/340px wide.
 const ROW_280 = 'grid grid-cols-1 gap-3 min-[900px]:grid-cols-[repeat(auto-fit,minmax(280px,1fr))]';
@@ -32,12 +32,7 @@ const ROW_340 = 'grid grid-cols-1 gap-3 min-[900px]:grid-cols-[repeat(auto-fit,m
 
 function asOf(iso: string | null): string | null {
   if (!iso) return null;
-  return new Date(iso).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
+  return fmtDayMonthTime(iso);
 }
 
 export default function Dashboard2() {

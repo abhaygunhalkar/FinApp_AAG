@@ -55,9 +55,7 @@ function renderWithProviders(ui: React.ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }
 
 describe('TransactionHistory', () => {
@@ -128,9 +126,11 @@ describe('TransactionHistory', () => {
   });
 
   it('calls createTransaction on valid form submission', () => {
-    mockCreateTransaction.mockImplementation((_payload: unknown, options: { onSuccess: () => void }) => {
-      options.onSuccess();
-    });
+    mockCreateTransaction.mockImplementation(
+      (_payload: unknown, options: { onSuccess: () => void }) => {
+        options.onSuccess();
+      },
+    );
     renderWithProviders(<TransactionHistory holdingId={1} ticker="AAPL" />);
     fireEvent.click(screen.getByText('Record Transaction'));
 
@@ -148,7 +148,7 @@ describe('TransactionHistory', () => {
         price: 160,
         fees: 4.99,
       }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -157,7 +157,9 @@ describe('TransactionHistory', () => {
     const deleteButtons = screen.getAllByLabelText(/Delete transaction/);
     fireEvent.click(deleteButtons[0]);
     expect(screen.getByText('Delete Transaction')).toBeInTheDocument();
-    expect(screen.getByText(/Are you sure you want to delete this buy transaction/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Are you sure you want to delete this buy transaction/),
+    ).toBeInTheDocument();
   });
 
   it('calls deleteTransaction on confirmation', () => {

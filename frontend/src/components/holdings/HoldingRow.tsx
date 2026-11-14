@@ -2,7 +2,7 @@ import { useState } from 'react';
 import TransactionHistory from './TransactionHistory';
 import { MASK } from '../networth/format';
 import { useUIStore } from '../../store/uiStore';
-import { parseLocalDateString } from '../../utils/date';
+import { fmtDate } from '../../utils/date';
 import type { Holding } from '../../types';
 
 interface HoldingRowProps {
@@ -36,13 +36,6 @@ export default function HoldingRow({ holding, hasOpenOption = false }: HoldingRo
   const fmtSigned = (v: number) => `${v > 0 ? '+' : ''}${fmt(v)}`;
   const fmtPct = (v: number) => `${v.toFixed(2)}%`;
   const fmtSignedPct = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(2)}%`;
-
-  const fmtDate = (dateStr: string) =>
-    parseLocalDateString(dateStr).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
 
   return (
     <>

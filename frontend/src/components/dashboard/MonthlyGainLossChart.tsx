@@ -18,8 +18,18 @@ import { useUIStore } from '../../store/uiStore';
 import { MASK } from '../networth/format';
 
 const MONTH_NAMES = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 function formatCurrency(value: number): string {
@@ -87,8 +97,20 @@ export default function MonthlyGainLossChart() {
         </h3>
         <EmptyState
           icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12h18M12 3v18" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-10 w-10"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M3 12h18M12 3v18"
+              />
             </svg>
           }
           title="No monthly gain/loss data"
@@ -109,8 +131,16 @@ export default function MonthlyGainLossChart() {
       <ResponsiveContainer width="100%" height={256}>
         <BarChart data={monthlyData} margin={{ top: 5, right: 12, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-          <XAxis dataKey="month" tick={{ fontSize: 12 }} className="text-gray-500 dark:text-gray-400" />
-          <YAxis tick={{ fontSize: 12 }} className="text-gray-500 dark:text-gray-400" tickFormatter={money} />
+          <XAxis
+            dataKey="month"
+            tick={{ fontSize: 12 }}
+            className="text-gray-500 dark:text-gray-400"
+          />
+          <YAxis
+            tick={{ fontSize: 12 }}
+            className="text-gray-500 dark:text-gray-400"
+            tickFormatter={money}
+          />
           <Tooltip
             formatter={(value, name) => [
               money(Number(value)),
@@ -128,12 +158,18 @@ export default function MonthlyGainLossChart() {
           />
           <Bar dataKey="stocks" radius={[4, 4, 0, 0]} fill="var(--color-accent-500)">
             {monthlyData.map((entry) => (
-              <Cell key={`stocks-${entry.month}`} fill={entry.stocks >= 0 ? 'var(--color-accent-500)' : 'var(--color-loss-500)'} />
+              <Cell
+                key={`stocks-${entry.month}`}
+                fill={entry.stocks >= 0 ? 'var(--color-accent-500)' : 'var(--color-loss-500)'}
+              />
             ))}
           </Bar>
           <Bar dataKey="options" radius={[4, 4, 0, 0]} fill="#8b5cf6">
             {monthlyData.map((entry) => (
-              <Cell key={`options-${entry.month}`} fill={entry.options >= 0 ? '#8b5cf6' : '#f97316'} />
+              <Cell
+                key={`options-${entry.month}`}
+                fill={entry.options >= 0 ? '#8b5cf6' : '#f97316'}
+              />
             ))}
           </Bar>
         </BarChart>

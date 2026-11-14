@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useCreateOption, useUpdateOption } from '../../hooks';
 import apiClient from '../../api/client';
+import type { OptionPayload, OptionsTrade, OptionStatus, OptionTradeType } from '../../types';
 
 function getStatusOptions(tradeType: string): { value: string; label: string }[] {
   const isCredit = tradeType.startsWith('sell_');
@@ -35,7 +36,8 @@ export default function OptionsLogForm({
   editing,
   onClose,
 }: {
-  editing?: any;
+  /** The trade to edit; mount a new form (a new `key`) for each trade. */
+  editing?: OptionsTrade;
   onClose: () => void;
 }) {
   const create = useCreateOption();
@@ -58,12 +60,6 @@ export default function OptionsLogForm({
       .catch(() => setBrokers(['Robinhood', 'Schwab', 'Merrill']));
   }, []);
 
-  useEffect(() => {
-    setTradeType(editing?.trade_type ?? 'sell_put');
-    setStatus(editing?.status ?? 'open');
-    setBroker(editing?.broker ?? '');
-  }, [editing]);
-
   function handleTradeTypeChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const next = e.target.value;
     setTradeType(next);
@@ -74,15 +70,15 @@ export default function OptionsLogForm({
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const payload: any = {
-      ticker: fd.get('ticker')?.toString().toUpperCase(),
-      trade_type: fd.get('trade_type'),
+    const payload: OptionPayload = {
+      ticker: fd.get('ticker')?.toString().toUpperCase() ?? '',
+      trade_type: fd.get('trade_type') as OptionTradeType,
       strike_price: Number(fd.get('strike_price')),
       premium: Number(fd.get('premium')),
       contracts: Number(fd.get('contracts')),
-      open_date: fd.get('open_date'),
-      expiry_date: fd.get('expiry_date'),
-      status: fd.get('status'),
+      open_date: String(fd.get('open_date') ?? ''),
+      expiry_date: String(fd.get('expiry_date') ?? ''),
+      status: fd.get('status') as OptionStatus,
       close_price: fd.get('close_price') ? Number(fd.get('close_price')) : null,
       notes: fd.get('notes')?.toString() || null,
       broker: fd.get('broker')?.toString() || null,
@@ -95,7 +91,7 @@ export default function OptionsLogForm({
     if (!(payload.contracts >= 1)) return setErrorMsg('Contracts must be at least 1');
     if (new Date(payload.expiry_date) <= new Date(payload.open_date))
       return setErrorMsg('Expiry date must be after open date');
-    if (payload.status === 'closed' && !(payload.close_price > 0))
+    if (payload.status === 'closed' && !((payload.close_price ?? 0) > 0))
       return setErrorMsg('Close price is required when status is Closed');
 
     try {
@@ -103,8 +99,8 @@ export default function OptionsLogForm({
       else await create.mutateAsync(payload);
       setSuccessMsg(editing ? 'Trade updated' : 'Trade logged');
       setTimeout(onClose, 500);
-    } catch (err: any) {
-      setErrorMsg(err?.message || 'Save failed. Please try again.');
+    } catch (err: unknown) {
+      setErrorMsg((err instanceof Error && err.message) || 'Save failed. Please try again.');
     }
   }
 

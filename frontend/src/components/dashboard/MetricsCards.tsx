@@ -2,6 +2,7 @@ import type { DashboardSummary } from '../../types';
 import BrokerTiles from './BrokerTiles';
 import { useUIStore } from '../../store/uiStore';
 import { MASK } from '../networth/format';
+import { fmtDateTime } from '../../utils/date';
 
 interface MetricsCardsProps {
   data: DashboardSummary;
@@ -40,12 +41,18 @@ function MetricCard({ label, value, changeValue, variant = 'default' }: MetricCa
     variant === 'blue'
       ? 'bg-gradient-to-br from-sky-700 via-sky-800 to-sky-900 text-white shadow-sky-700/40 border border-transparent'
       : variant === 'purple'
-      ? 'bg-gradient-to-br from-violet-700 via-violet-800 to-violet-900 text-white shadow-violet-700/40 border border-transparent'
-      : variant === 'peacock'
-      ? 'bg-gradient-to-br from-teal-700 via-teal-800 to-teal-900 text-white shadow-teal-700/40 border border-transparent'
-      : 'border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white';
-  const labelClasses = variant === 'default' ? 'text-sm font-medium text-slate-500 dark:text-slate-400' : 'text-sm font-medium text-white/90';
-  const valueClasses = variant === 'default' ? 'mt-2 text-2xl font-bold text-slate-900 dark:text-white' : 'mt-2 text-2xl font-bold text-white';
+        ? 'bg-gradient-to-br from-violet-700 via-violet-800 to-violet-900 text-white shadow-violet-700/40 border border-transparent'
+        : variant === 'peacock'
+          ? 'bg-gradient-to-br from-teal-700 via-teal-800 to-teal-900 text-white shadow-teal-700/40 border border-transparent'
+          : 'border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white';
+  const labelClasses =
+    variant === 'default'
+      ? 'text-sm font-medium text-slate-500 dark:text-slate-400'
+      : 'text-sm font-medium text-white/90';
+  const valueClasses =
+    variant === 'default'
+      ? 'mt-2 text-2xl font-bold text-slate-900 dark:text-white'
+      : 'mt-2 text-2xl font-bold text-white';
   const changeClasses =
     variant === 'purple'
       ? 'mt-1 text-sm font-semibold text-white/90'
@@ -88,9 +95,7 @@ export default function MetricsCards({ data }: MetricsCardsProps) {
           </svg>
           <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
             Market data may be stale. Last updated:{' '}
-            {data.last_successful_fetch
-              ? new Date(data.last_successful_fetch).toLocaleString()
-              : 'Never'}
+            {data.last_successful_fetch ? fmtDateTime(data.last_successful_fetch) : 'Never'}
           </span>
         </div>
       )}
@@ -122,13 +127,15 @@ export default function MetricsCards({ data }: MetricsCardsProps) {
           changeValue={data.realized_gain}
           variant="peacock"
         />
-        <div className={`rounded-xl p-5 shadow-lg ${
-          data.daily_change > 0
-            ? 'bg-gradient-to-br from-green-500 to-green-700 shadow-green-500/20'
-            : data.daily_change < 0
-              ? 'bg-gradient-to-br from-red-500 to-red-700 shadow-red-500/20'
-              : 'bg-gradient-to-br from-slate-500 to-slate-700 shadow-slate-500/20'
-        }`}>
+        <div
+          className={`rounded-xl p-5 shadow-lg ${
+            data.daily_change > 0
+              ? 'bg-gradient-to-br from-green-500 to-green-700 shadow-green-500/20'
+              : data.daily_change < 0
+                ? 'bg-gradient-to-br from-red-500 to-red-700 shadow-red-500/20'
+                : 'bg-gradient-to-br from-slate-500 to-slate-700 shadow-slate-500/20'
+          }`}
+        >
           <p className="text-sm font-medium text-white/80">Daily Change</p>
           <p className="mt-2 text-2xl font-bold text-white">
             {hidden
@@ -140,10 +147,7 @@ export default function MetricsCards({ data }: MetricsCardsProps) {
           <p className="text-sm font-medium text-amber-100">Cash Position</p>
           <p className="mt-2 text-2xl font-bold text-white">{money(data.cash_position)}</p>
         </div>
-        <MetricCard
-          label="Number of Holdings"
-          value={formatNumber(data.number_of_holdings)}
-        />
+        <MetricCard label="Number of Holdings" value={formatNumber(data.number_of_holdings)} />
       </div>
     </div>
   );

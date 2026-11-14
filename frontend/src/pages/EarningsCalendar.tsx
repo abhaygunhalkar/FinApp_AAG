@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useEarningsCalendar } from '../hooks/useEarningsCalendar';
 import { LoadingSpinner, EmptyState } from '../components/shared';
-import { parseLocalDateString } from '../utils/date';
+import { fmtDate, parseLocalDateString } from '../utils/date';
 import type { EarningsCalendarEntry } from '../types/earnings';
 
 function getDateLabel(dateString: string): string {
@@ -22,11 +22,7 @@ function getDateLabel(dateString: string): string {
     return 'Day After';
   }
 
-  return dateValue.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  return fmtDate(dateValue);
 }
 
 function formatRevenue(value: number | null): string {
@@ -112,12 +108,11 @@ export default function EarningsCalendar() {
   if (isError) {
     return (
       <div className="p-4">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
-          {pageTitle}
-        </h1>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">{pageTitle}</h1>
         <div className="rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-700/40 dark:bg-red-900/20">
           <p className="text-sm text-red-700 dark:text-red-300">
-            Unable to load the earnings calendar. {error instanceof Error ? error.message : 'Please try again later.'}
+            Unable to load the earnings calendar.{' '}
+            {error instanceof Error ? error.message : 'Please try again later.'}
           </p>
         </div>
       </div>
@@ -131,7 +126,8 @@ export default function EarningsCalendar() {
       <div className="mb-4">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{pageTitle}</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
-          Upcoming earnings announcements from major companies for the next three days, including before market open (BMO) and after market close (AMC).
+          Upcoming earnings announcements from major companies for the next three days, including
+          before market open (BMO) and after market close (AMC).
         </p>
       </div>
 
@@ -164,11 +160,15 @@ export default function EarningsCalendar() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-semibold text-slate-900 dark:text-white">{label}</h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{items.length} announcement{items.length === 1 ? '' : 's'}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {items.length} announcement{items.length === 1 ? '' : 's'}
+                  </p>
                 </div>
               </div>
 
-              <div className={`overflow-hidden rounded-3xl border border-slate-200 shadow-sm dark:border-slate-700 ${getGroupBackground(label)}`}>
+              <div
+                className={`overflow-hidden rounded-3xl border border-slate-200 shadow-sm dark:border-slate-700 ${getGroupBackground(label)}`}
+              >
                 <table className="min-w-full border-separate border-spacing-0 text-left text-sm">
                   <thead>
                     <tr className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
@@ -187,21 +187,27 @@ export default function EarningsCalendar() {
                         className={`border-t border-slate-200 dark:border-slate-700 ${index % 2 === 0 ? 'bg-white dark:bg-slate-950/70' : 'bg-slate-50 dark:bg-slate-900/50'}`}
                       >
                         <td className="px-4 py-4 text-slate-700 dark:text-slate-300">
-                          {parseLocalDateString(item.date).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                          })}
+                          {fmtDate(item.date)}
                         </td>
-                        <td className="px-4 py-4 font-semibold text-slate-900 dark:text-white">{item.ticker}</td>
-                        <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{item.company}</td>
+                        <td className="px-4 py-4 font-semibold text-slate-900 dark:text-white">
+                          {item.ticker}
+                        </td>
+                        <td className="px-4 py-4 text-slate-700 dark:text-slate-300">
+                          {item.company}
+                        </td>
                         <td className="px-4 py-4">
-                          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getBadgeClass(item.hour)}`}>
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getBadgeClass(item.hour)}`}
+                          >
                             {getHourLabel(item.hour)}
                           </span>
                         </td>
-                        <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{formatEps(item.epsEstimate)}</td>
-                        <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{formatRevenue(item.revenueEstimate)}</td>
+                        <td className="px-4 py-4 text-slate-700 dark:text-slate-300">
+                          {formatEps(item.epsEstimate)}
+                        </td>
+                        <td className="px-4 py-4 text-slate-700 dark:text-slate-300">
+                          {formatRevenue(item.revenueEstimate)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

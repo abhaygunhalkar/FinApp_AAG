@@ -1,3 +1,5 @@
+import { fmtMonthYear } from '../../utils/date';
+
 /**
  * Mortgage payoff maths. Pure functions, no React: amounts are never rounded
  * here, only when displayed.
@@ -26,7 +28,7 @@ export function thisMonth(now = new Date()): YearMonth {
 /** "Jun 2054" */
 export function fmtYearMonth(ym: YearMonth): string {
   const [y, m] = ym.split('-').map(Number);
-  return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  return fmtMonthYear(new Date(y, m - 1, 1));
 }
 
 /** "2 yrs 3 mos", "11 mos", "0 mos" */

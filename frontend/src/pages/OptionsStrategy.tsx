@@ -10,14 +10,16 @@ const STRATEGIES: OptionStrategy[] = [
   {
     strategy: 'Cash-Secured Put (Standard / OTM)',
     openingAction: 'Sell to Open (Put)',
-    whatYoureDoing: 'Collect premium while holding cash aside to buy 100 shares at the strike, aiming for a discount entry',
+    whatYoureDoing:
+      'Collect premium while holding cash aside to buy 100 shares at the strike, aiming for a discount entry',
     closingAction: 'Buy to Close',
     profitWhenClosingEarly: 'Option price has fallen below what you sold it for',
   },
   {
     strategy: 'Cash-Secured Put (Aggressive / ITM)',
     openingAction: 'Sell to Open (Put)',
-    whatYoureDoing: 'Collect a large premium while actively wanting to be assigned the stock right away',
+    whatYoureDoing:
+      'Collect a large premium while actively wanting to be assigned the stock right away',
     closingAction: 'Buy to Close',
     profitWhenClosingEarly: 'Option price has fallen below what you sold it for',
   },
@@ -31,28 +33,32 @@ const STRATEGIES: OptionStrategy[] = [
   {
     strategy: 'Covered Call (Aggressive / ITM)',
     openingAction: 'Sell to Open (Call)',
-    whatYoureDoing: 'Collect a large premium while owning 100 shares, prioritizing downside protection or accepting an early sale',
+    whatYoureDoing:
+      'Collect a large premium while owning 100 shares, prioritizing downside protection or accepting an early sale',
     closingAction: 'Buy to Close',
     profitWhenClosingEarly: 'Option price has fallen below what you sold it for',
   },
   {
     strategy: 'Standard Long Call (OTM)',
     openingAction: 'Buy to Open (Call)',
-    whatYoureDoing: 'Pay premium for maximum leveraged upside, betting on a big rally before expiration',
+    whatYoureDoing:
+      'Pay premium for maximum leveraged upside, betting on a big rally before expiration',
     closingAction: 'Sell to Close',
     profitWhenClosingEarly: 'Option price has risen above what you paid for it',
   },
   {
     strategy: 'At-The-Money Call (ATM)',
     openingAction: 'Buy to Open (Call)',
-    whatYoureDoing: "Pay premium to capture the stock's upside from the current price, balancing moderate cost with 50/50 odds",
+    whatYoureDoing:
+      "Pay premium to capture the stock's upside from the current price, balancing moderate cost with 50/50 odds",
     closingAction: 'Sell to Close',
     profitWhenClosingEarly: 'Option price has risen above what you paid for it',
   },
   {
     strategy: 'Deep In-The-Money Call (ITM)',
     openingAction: 'Buy to Open (Call)',
-    whatYoureDoing: 'Pay a larger premium to mimic owning the stock for a fraction of the price, with a higher probability of success and a built-in downside cushion',
+    whatYoureDoing:
+      'Pay a larger premium to mimic owning the stock for a fraction of the price, with a higher probability of success and a built-in downside cushion',
     closingAction: 'Sell to Close',
     profitWhenClosingEarly: 'Option price has risen above what you paid for it',
   },

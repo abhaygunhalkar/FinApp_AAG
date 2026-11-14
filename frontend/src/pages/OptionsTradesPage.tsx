@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useOptions, useDeleteOption, useOptionsSummary, useOpenTradeQuotes } from '../hooks';
 import { parseLocalDateString } from '../utils/date';
 import OptionsLogForm from '../components/options/OptionsLogForm';
+import type { OptionsTrade } from '../types';
 
 // ── icons ─────────────────────────────────────────────────────────────────────
 
@@ -195,7 +196,9 @@ export default function OptionsTradesPage() {
   const [sortKey, setSortKey] = useState<SortKey>('expiry');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalEditing, setModalEditing] = useState<any | null>(null);
+  const [modalEditing, setModalEditing] = useState<OptionsTrade | null>(null);
+  // Days left are counted from when the page opened.
+  const [now] = useState(() => Date.now());
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -216,7 +219,7 @@ export default function OptionsTradesPage() {
   const filtered = useMemo(() => {
     if (!trades) return [];
     if (filter === 'all') return trades;
-    return trades.filter((t: any) => t.status === filter);
+    return trades.filter((t) => t.status === filter);
   }, [trades, filter]);
 
   // compute unrealized P&L from open-trade quotes
@@ -224,7 +227,7 @@ export default function OptionsTradesPage() {
     if (!quotes.data) return null;
     let sum = 0;
     let hasAny = false;
-    for (const q of Object.values(quotes.data) as any[]) {
+    for (const q of Object.values(quotes.data)) {
       if (q.unrealized_pnl != null) {
         sum += q.unrealized_pnl;
         hasAny = true;
@@ -234,9 +237,9 @@ export default function OptionsTradesPage() {
   }, [quotes.data]);
 
   const rows = useMemo(() => {
-    return filtered.map((t: any) => {
+    return filtered.map((t) => {
       const expiryDate = parseLocalDateString(t.expiry_date);
-      const daysLeft = Math.ceil((expiryDate.getTime() - Date.now()) / (24 * 3600 * 1000));
+      const daysLeft = Math.ceil((expiryDate.getTime() - now) / (24 * 3600 * 1000));
       const expired = daysLeft < 0;
       const isCredit = t.trade_type.startsWith('sell_');
       const amount = (t.premium || 0) * (t.contracts || 0) * 100;
@@ -257,7 +260,7 @@ export default function OptionsTradesPage() {
         pctGain,
       };
     });
-  }, [filtered, quotes.data]);
+  }, [filtered, quotes.data, now]);
 
   const sortedRows = useMemo(() => {
     const dir = sortDir === 'asc' ? 1 : -1;
@@ -295,7 +298,7 @@ export default function OptionsTradesPage() {
     });
   }, [rows, sortKey, sortDir]);
 
-  async function handleDelete(trade: any) {
+  async function handleDelete(trade: OptionsTrade) {
     const label = TYPE_CONFIG[trade.trade_type]?.label ?? trade.trade_type;
     if (
       !window.confirm(
@@ -713,9 +716,9 @@ export default function OptionsTradesPage() {
         {/* table footer note */}
         <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
           <p className="text-xs text-slate-400">
-            Premium shown as net collected/paid per position (premium × contracts × 100). Eff.
-            Price = strike ± premium/share — hover for details. Option prices reflect mid-market;
-            hover for bid/ask spread.
+            Premium shown as net collected/paid per position (premium × contracts × 100). Eff. Price
+            = strike ± premium/share — hover for details. Option prices reflect mid-market; hover
+            for bid/ask spread.
           </p>
         </div>
       </div>
@@ -736,6 +739,7 @@ export default function OptionsTradesPage() {
           />
           <div className="relative z-10 w-full max-w-2xl mx-4">
             <OptionsLogForm
+              key={modalEditing?.id ?? 'new'}
               editing={modalEditing ?? undefined}
               onClose={() => {
                 setModalOpen(false);

@@ -23,9 +23,7 @@ export default function GainersLosersChart() {
   const chartData: ChartItem[] = useMemo(() => {
     if (!holdings || holdings.length === 0) return [];
 
-    const sorted = [...holdings].sort(
-      (a, b) => b.unrealized_gain_pct - a.unrealized_gain_pct
-    );
+    const sorted = [...holdings].sort((a, b) => b.unrealized_gain_pct - a.unrealized_gain_pct);
 
     const gainers = sorted.slice(0, 5).filter((h) => h.unrealized_gain_pct > 0);
     const losers = sorted
@@ -63,8 +61,20 @@ export default function GainersLosersChart() {
         </h3>
         <EmptyState
           icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-10 w-10"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+              />
             </svg>
           }
           title="No Gainers or Losers"
@@ -104,7 +114,9 @@ export default function GainersLosersChart() {
             {chartData.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={entry.unrealized_gain_pct >= 0 ? 'var(--color-gain-500)' : 'var(--color-loss-500)'}
+                fill={
+                  entry.unrealized_gain_pct >= 0 ? 'var(--color-gain-500)' : 'var(--color-loss-500)'
+                }
               />
             ))}
           </Bar>

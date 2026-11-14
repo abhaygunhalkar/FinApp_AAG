@@ -13,6 +13,15 @@ export type { MarketQuote, PricePoint } from './market';
 export type { ApiResponse } from './api';
 export type { AuthUser, LoginRequest, LoginResult } from './auth';
 export type {
+  MonthlyPnlEntry,
+  OptionPayload,
+  OptionQuote,
+  OptionsSummary,
+  OptionsTrade,
+  OptionStatus,
+  OptionTradeType,
+} from './options';
+export type {
   AccountType,
   FinancialAccount,
   FinancialAccountCreate,

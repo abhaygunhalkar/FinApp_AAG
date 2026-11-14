@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useCreateWatchlistItem, useUpdateWatchlistItem } from '../../hooks/useWatchlist';
 import type { WatchlistItem, WatchlistCreate, WatchlistUpdate } from '../../types';
 import { AxiosError } from 'axios';
@@ -36,17 +36,6 @@ export default function WatchlistForm({ item, onClose }: WatchlistFormProps) {
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
-
-  useEffect(() => {
-    if (item) {
-      setFormData({
-        ticker: item.ticker,
-        target_buy_price: item.target_buy_price?.toString() ?? '',
-        priority: item.priority.toString(),
-        notes: item.notes ?? '',
-      });
-    }
-  }, [item]);
 
   function validate(): FormErrors {
     const newErrors: FormErrors = {};
@@ -196,10 +185,7 @@ export default function WatchlistForm({ item, onClose }: WatchlistFormProps) {
       aria-labelledby="watchlist-form-title"
     >
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 dark:bg-black/70"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/50 dark:bg-black/70" onClick={onClose} />
 
       {/* Modal */}
       <div className="relative z-10 w-full max-w-lg mx-4 bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden">
@@ -270,7 +256,9 @@ export default function WatchlistForm({ item, onClose }: WatchlistFormProps) {
               } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400`}
             />
             {errors.target_buy_price && (
-              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.target_buy_price}</p>
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                {errors.target_buy_price}
+              </p>
             )}
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Optional. Range: $0.01 – $999,999.99

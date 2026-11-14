@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { usePortfolioHistory } from '../../hooks/useDashboard';
-import { parseLocalDateString } from '../../utils/date';
+import { fmtDate, parseLocalDateString } from '../../utils/date';
 import { EmptyState } from '../shared';
 import { useUIStore } from '../../store/uiStore';
 import { MASK } from '../networth/format';
@@ -56,8 +56,20 @@ export default function PortfolioGrowthChart() {
         </h3>
         <EmptyState
           icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-10 w-10"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
+              />
             </svg>
           }
           title="No Portfolio History"
@@ -70,9 +82,7 @@ export default function PortfolioGrowthChart() {
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-          Portfolio Growth
-        </h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Portfolio Growth</h3>
         <div className="flex gap-1">
           {RANGE_OPTIONS.map((option) => (
             <button
@@ -108,7 +118,7 @@ export default function PortfolioGrowthChart() {
           />
           <Tooltip
             formatter={(value) => [money(Number(value)), 'Portfolio Value']}
-            labelFormatter={(label) => parseLocalDateString(String(label)).toLocaleDateString()}
+            labelFormatter={(label) => fmtDate(String(label))}
             contentStyle={{
               backgroundColor: 'var(--color-white, #fff)',
               border: '1px solid var(--color-gray-200, #e5e7eb)',

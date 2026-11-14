@@ -14,7 +14,7 @@ describe('EmptyState', () => {
         icon={<span data-testid="icon">📦</span>}
         title="No items"
         description="There are no items to display."
-      />
+      />,
     );
 
     expect(screen.getByTestId('icon')).toBeInTheDocument();
@@ -31,7 +31,7 @@ describe('EmptyState', () => {
         description="Add your first item."
         actionLabel="Add Item"
         onAction={onAction}
-      />
+      />,
     );
 
     const button = screen.getByText('Add Item');
@@ -41,13 +41,7 @@ describe('EmptyState', () => {
   });
 
   it('does not render action button when actionLabel is missing', () => {
-    render(
-      <EmptyState
-        icon={<span>📦</span>}
-        title="No items"
-        description="Nothing here."
-      />
-    );
+    render(<EmptyState icon={<span>📦</span>} title="No items" description="Nothing here." />);
 
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
@@ -118,9 +112,7 @@ describe('ErrorNotification', () => {
 
   it('auto-dismisses after custom duration', () => {
     const onDismiss = vi.fn();
-    render(
-      <ErrorNotification message="Error" onDismiss={onDismiss} autoDismissMs={3000} />
-    );
+    render(<ErrorNotification message="Error" onDismiss={onDismiss} autoDismissMs={3000} />);
 
     act(() => {
       vi.advanceTimersByTime(2999);
@@ -147,7 +139,7 @@ describe('DeleteConfirmation', () => {
         message="Are you sure you want to delete this holding?"
         onConfirm={vi.fn()}
         onCancel={vi.fn()}
-      />
+      />,
     );
 
     expect(screen.getByText('Delete Holding')).toBeInTheDocument();
@@ -162,7 +154,7 @@ describe('DeleteConfirmation', () => {
         message="Confirm?"
         onConfirm={onConfirm}
         onCancel={vi.fn()}
-      />
+      />,
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
@@ -177,7 +169,7 @@ describe('DeleteConfirmation', () => {
         message="Confirm?"
         onConfirm={vi.fn()}
         onCancel={onCancel}
-      />
+      />,
     );
 
     fireEvent.click(screen.getByText('Cancel'));
@@ -193,7 +185,7 @@ describe('DeleteConfirmation', () => {
         onCancel={vi.fn()}
         confirmLabel="Yes, Remove"
         cancelLabel="No, Keep"
-      />
+      />,
     );
 
     expect(screen.getByText('Yes, Remove')).toBeInTheDocument();
@@ -207,7 +199,7 @@ describe('DeleteConfirmation', () => {
         message="Confirm?"
         onConfirm={vi.fn()}
         onCancel={vi.fn()}
-      />
+      />,
     );
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -233,18 +225,14 @@ describe('DataTable', () => {
   ];
 
   it('renders table headers', () => {
-    render(
-      <DataTable columns={columns} data={data} keyExtractor={(row) => row.id} />
-    );
+    render(<DataTable columns={columns} data={data} keyExtractor={(row) => row.id} />);
 
     expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.getByText('Value')).toBeInTheDocument();
   });
 
   it('renders all data rows', () => {
-    render(
-      <DataTable columns={columns} data={data} keyExtractor={(row) => row.id} />
-    );
+    render(<DataTable columns={columns} data={data} keyExtractor={(row) => row.id} />);
 
     expect(screen.getByText('Apple')).toBeInTheDocument();
     expect(screen.getByText('Google')).toBeInTheDocument();
@@ -252,9 +240,7 @@ describe('DataTable', () => {
   });
 
   it('sorts data when clicking a sortable column header', () => {
-    render(
-      <DataTable columns={columns} data={data} keyExtractor={(row) => row.id} />
-    );
+    render(<DataTable columns={columns} data={data} keyExtractor={(row) => row.id} />);
 
     // Click Name header to sort ascending
     fireEvent.click(screen.getByText('Name'));
@@ -267,9 +253,7 @@ describe('DataTable', () => {
   });
 
   it('toggles sort direction on repeated clicks', () => {
-    render(
-      <DataTable columns={columns} data={data} keyExtractor={(row) => row.id} />
-    );
+    render(<DataTable columns={columns} data={data} keyExtractor={(row) => row.id} />);
 
     // Click Value header twice for descending
     fireEvent.click(screen.getByText('Value'));
@@ -289,7 +273,7 @@ describe('DataTable', () => {
         data={data}
         keyExtractor={(row) => row.id}
         onSortChange={onSortChange}
-      />
+      />,
     );
 
     fireEvent.click(screen.getByText('Name'));
@@ -307,20 +291,14 @@ describe('DataTable', () => {
     ];
 
     render(
-      <DataTable
-        columns={columnsWithRender}
-        data={[data[0]]}
-        keyExtractor={(row) => row.id}
-      />
+      <DataTable columns={columnsWithRender} data={[data[0]]} keyExtractor={(row) => row.id} />,
     );
 
     expect(screen.getByTestId('custom')).toHaveTextContent('$150');
   });
 
   it('applies minimum font size, row height, and cell padding', () => {
-    render(
-      <DataTable columns={columns} data={data} keyExtractor={(row) => row.id} />
-    );
+    render(<DataTable columns={columns} data={data} keyExtractor={(row) => row.id} />);
 
     const cells = screen.getAllByRole('cell');
     const firstCell = cells[0];
@@ -329,7 +307,7 @@ describe('DataTable', () => {
 
   it('has responsive horizontal scroll container', () => {
     const { container } = render(
-      <DataTable columns={columns} data={data} keyExtractor={(row) => row.id} />
+      <DataTable columns={columns} data={data} keyExtractor={(row) => row.id} />,
     );
 
     const scrollContainer = container.firstElementChild;

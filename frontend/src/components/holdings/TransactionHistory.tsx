@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { AxiosError } from 'axios';
-import { useTransactions, useCreateTransaction, useDeleteTransaction } from '../../hooks/useTransactions';
+import {
+  useTransactions,
+  useCreateTransaction,
+  useDeleteTransaction,
+} from '../../hooks/useTransactions';
 import { LoadingSpinner, DeleteConfirmation } from '../shared';
-import { parseLocalDateString } from '../../utils/date';
+import { fmtDate } from '../../utils/date';
 import { MASK } from '../networth/format';
 import { useUIStore } from '../../store/uiStore';
 import { EPSILON, fillLots, openLots, round, type LotOrder } from './lots';
@@ -107,12 +111,7 @@ export default function TransactionHistory({ holdingId, ticker, broker }: Transa
       minimumFractionDigits: 2,
     });
 
-  const formatDate = (dateStr: string) =>
-    parseLocalDateString(dateStr).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+  const formatDate = fmtDate;
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
@@ -314,7 +313,10 @@ export default function TransactionHistory({ holdingId, ticker, broker }: Transa
 
               {/* Quantity */}
               <div>
-                <label htmlFor="tx-quantity" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label
+                  htmlFor="tx-quantity"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
                   Quantity
                 </label>
                 <input
@@ -338,13 +340,18 @@ export default function TransactionHistory({ holdingId, ticker, broker }: Transa
                   </p>
                 )}
                 {formErrors.quantity && (
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{formErrors.quantity}</p>
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                    {formErrors.quantity}
+                  </p>
                 )}
               </div>
 
               {/* Price */}
               <div>
-                <label htmlFor="tx-price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label
+                  htmlFor="tx-price"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
                   Price per Share
                 </label>
                 <input
@@ -485,7 +492,10 @@ export default function TransactionHistory({ holdingId, ticker, broker }: Transa
 
               {/* Fees */}
               <div>
-                <label htmlFor="tx-fees" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label
+                  htmlFor="tx-fees"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
                   Fees
                 </label>
                 <input
@@ -507,7 +517,10 @@ export default function TransactionHistory({ holdingId, ticker, broker }: Transa
 
               {/* Date */}
               <div>
-                <label htmlFor="tx-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label
+                  htmlFor="tx-date"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
                   Transaction Date
                 </label>
                 <input
@@ -516,17 +529,24 @@ export default function TransactionHistory({ holdingId, ticker, broker }: Transa
                   value={formData.transaction_date}
                   onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
                   className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    formErrors.transaction_date ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                    formErrors.transaction_date
+                      ? 'border-red-500'
+                      : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
                 {formErrors.transaction_date && (
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{formErrors.transaction_date}</p>
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                    {formErrors.transaction_date}
+                  </p>
                 )}
               </div>
 
               {/* Notes */}
               <div>
-                <label htmlFor="tx-notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label
+                  htmlFor="tx-notes"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
                   Notes (optional)
                 </label>
                 <textarea
@@ -597,10 +617,7 @@ export default function TransactionHistory({ holdingId, ticker, broker }: Transa
           </thead>
           <tbody>
             {transactions.map((tx) => (
-              <tr
-                key={tx.id}
-                className="border-b border-gray-100 dark:border-gray-700/50"
-              >
+              <tr key={tx.id} className="border-b border-gray-100 dark:border-gray-700/50">
                 <td className="py-1.5 pr-4">
                   <span
                     className={
@@ -652,7 +669,12 @@ export default function TransactionHistory({ holdingId, ticker, broker }: Transa
                     aria-label={`Delete transaction from ${formatDate(tx.transaction_date)}`}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
                     </svg>
                   </button>
                 </td>
@@ -661,9 +683,7 @@ export default function TransactionHistory({ holdingId, ticker, broker }: Transa
           </tbody>
         </table>
       ) : (
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          No transactions recorded.
-        </p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">No transactions recorded.</p>
       )}
 
       {/* Delete Confirmation Dialog */}

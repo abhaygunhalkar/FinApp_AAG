@@ -23,10 +23,7 @@ export default function DeleteConfirmation({
       aria-labelledby="delete-dialog-title"
     >
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 dark:bg-black/70"
-        onClick={onCancel}
-      />
+      <div className="absolute inset-0 bg-black/50 dark:bg-black/70" onClick={onCancel} />
 
       {/* Dialog */}
       <div className="relative z-10 w-full max-w-md mx-4 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-xl">
@@ -36,9 +33,7 @@ export default function DeleteConfirmation({
         >
           {title}
         </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          {message}
-        </p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{message}</p>
         <div className="flex justify-end gap-3">
           <button
             onClick={onCancel}

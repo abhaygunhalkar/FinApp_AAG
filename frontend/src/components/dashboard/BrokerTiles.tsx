@@ -46,9 +46,7 @@ export default function BrokerTiles() {
             className={`rounded-xl bg-gradient-to-br p-5 shadow-lg ${gradient}`}
           >
             <p className="text-sm font-medium text-white/80">{broker.broker}</p>
-            <p className="mt-2 text-2xl font-bold text-white">
-              {money(broker.market_value)}
-            </p>
+            <p className="mt-2 text-2xl font-bold text-white">{money(broker.market_value)}</p>
             <p className={`mt-1 text-sm font-semibold ${gainColor}`}>
               {broker.unrealized_gain >= 0 ? '+' : ''}
               {money(broker.unrealized_gain)}

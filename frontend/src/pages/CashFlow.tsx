@@ -17,7 +17,7 @@ import {
 import { CATEGORIES, fmtUSD, frequencyLabel } from '../components/fixedcosts/constants';
 import { MASK } from '../components/networth/format';
 import { useUIStore } from '../store/uiStore';
-import { parseLocalDateString } from '../utils/date';
+import { fmtWeekdayDate } from '../utils/date';
 import type { IncomeSource } from '../types';
 
 /** Colour classes for the emergency-fund reading against the 3–6 month guidance. */
@@ -413,10 +413,7 @@ export default function CashFlow() {
                         {frequencyLabel(i.frequency)}
                         <p className="text-[13px] text-slate-500 dark:text-slate-400">
                           {i.next_pay_date
-                            ? `Next ${parseLocalDateString(i.next_pay_date).toLocaleDateString(
-                                'en-US',
-                                { weekday: 'short', month: 'short', day: 'numeric' },
-                              )}`
+                            ? `Next ${fmtWeekdayDate(i.next_pay_date)}`
                             : 'No pay date set'}
                         </p>
                       </td>

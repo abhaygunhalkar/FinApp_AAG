@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '../api/client';
 import { LoadingSpinner, EmptyState } from '../components/shared';
-import { parseLocalDateString } from '../utils/date';
+import { fmtDate } from '../utils/date';
 
 interface SellRecord {
   id: number;
@@ -62,7 +62,7 @@ export default function TradeHistory() {
       if (aVal == null) return 1;
       if (bVal == null) return -1;
 
-      let comparison = 0;
+      let comparison: number;
       if (typeof aVal === 'number' && typeof bVal === 'number') {
         comparison = aVal - bVal;
       } else {
@@ -80,10 +80,13 @@ export default function TradeHistory() {
   };
 
   const formatCurrency = (value: number | undefined | null) =>
-    (value ?? 0).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
+    (value ?? 0).toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+    });
 
-  const formatDate = (dateStr: string) =>
-    parseLocalDateString(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  const formatDate = fmtDate;
 
   const totalRealized = sortedSells.reduce((sum, s) => sum + (s.realized_gain ?? 0), 0);
 
@@ -98,16 +101,19 @@ export default function TradeHistory() {
   if (sortedSells.length === 0) {
     return (
       <div className="p-4">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-          Trade History
-        </h1>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Trade History</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
           Your completed sell transactions
         </p>
         <EmptyState
           icon={
             <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
             </svg>
           }
           title="No sell transactions yet"
@@ -121,19 +127,20 @@ export default function TradeHistory() {
     <div className="p-4">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-            Trade History
-          </h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Trade History</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Your completed sell transactions
           </p>
         </div>
-        <div className={`px-4 py-2 rounded-lg text-sm font-semibold ${
-          totalRealized >= 0
-            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-        }`}>
-          Total Realized: {totalRealized >= 0 ? '+' : ''}{formatCurrency(totalRealized)}
+        <div
+          className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+            totalRealized >= 0
+              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+              : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+          }`}
+        >
+          Total Realized: {totalRealized >= 0 ? '+' : ''}
+          {formatCurrency(totalRealized)}
         </div>
       </div>
 
@@ -161,35 +168,62 @@ export default function TradeHistory() {
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
             {sortedSells.map((sell) => {
               const gain = sell.realized_gain ?? 0;
-              const gainColor = gain >= 0
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-red-600 dark:text-red-400';
+              const gainColor =
+                gain >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
 
               return (
-                <tr key={sell.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                  <td style={{ padding: '8px', fontSize: '14px', minHeight: '40px' }} className="text-gray-900 dark:text-gray-100">
+                <tr
+                  key={sell.id}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <td
+                    style={{ padding: '8px', fontSize: '14px', minHeight: '40px' }}
+                    className="text-gray-900 dark:text-gray-100"
+                  >
                     {formatDate(sell.transaction_date)}
                   </td>
-                  <td style={{ padding: '8px', fontSize: '14px', minHeight: '40px' }} className="font-medium text-gray-900 dark:text-gray-100">
+                  <td
+                    style={{ padding: '8px', fontSize: '14px', minHeight: '40px' }}
+                    className="font-medium text-gray-900 dark:text-gray-100"
+                  >
                     {sell.ticker}
                   </td>
-                  <td style={{ padding: '8px', fontSize: '14px', minHeight: '40px' }} className="text-right text-gray-900 dark:text-gray-100">
+                  <td
+                    style={{ padding: '8px', fontSize: '14px', minHeight: '40px' }}
+                    className="text-right text-gray-900 dark:text-gray-100"
+                  >
                     {sell.quantity}
                   </td>
-                  <td style={{ padding: '8px', fontSize: '14px', minHeight: '40px' }} className="text-right text-gray-900 dark:text-gray-100">
+                  <td
+                    style={{ padding: '8px', fontSize: '14px', minHeight: '40px' }}
+                    className="text-right text-gray-900 dark:text-gray-100"
+                  >
                     {formatCurrency(sell.price)}
                   </td>
-                  <td style={{ padding: '8px', fontSize: '14px', minHeight: '40px' }} className="text-right text-gray-500 dark:text-gray-400">
+                  <td
+                    style={{ padding: '8px', fontSize: '14px', minHeight: '40px' }}
+                    className="text-right text-gray-500 dark:text-gray-400"
+                  >
                     {formatCurrency(sell.cost_basis)}
                   </td>
-                  <td style={{ padding: '8px', fontSize: '14px', minHeight: '40px' }} className="text-right text-gray-500 dark:text-gray-400">
+                  <td
+                    style={{ padding: '8px', fontSize: '14px', minHeight: '40px' }}
+                    className="text-right text-gray-500 dark:text-gray-400"
+                  >
                     {formatCurrency(sell.fees)}
                   </td>
-                  <td style={{ padding: '8px', fontSize: '14px', minHeight: '40px' }} className="text-gray-900 dark:text-gray-100">
+                  <td
+                    style={{ padding: '8px', fontSize: '14px', minHeight: '40px' }}
+                    className="text-gray-900 dark:text-gray-100"
+                  >
                     {sell.broker ?? '—'}
                   </td>
-                  <td style={{ padding: '8px', fontSize: '14px', minHeight: '40px' }} className={`text-right font-semibold ${gainColor}`}>
-                    {gain >= 0 ? '+' : ''}{formatCurrency(gain)}
+                  <td
+                    style={{ padding: '8px', fontSize: '14px', minHeight: '40px' }}
+                    className={`text-right font-semibold ${gainColor}`}
+                  >
+                    {gain >= 0 ? '+' : ''}
+                    {formatCurrency(gain)}
                   </td>
                 </tr>
               );

@@ -75,16 +75,14 @@ describe('Dark mode class toggling', () => {
 
 describe('AppLayout responsive structure', () => {
   it('should have overflow-hidden on root layout to prevent horizontal scrolling', async () => {
-    const { default: AppLayout } = await import(
-      '../../components/layout/AppLayout'
-    );
+    const { default: AppLayout } = await import('../../components/layout/AppLayout');
 
     render(
       <QueryClientProvider client={new QueryClient()}>
         <MemoryRouter>
           <AppLayout />
         </MemoryRouter>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     // The root div should have overflow-hidden class
@@ -93,9 +91,7 @@ describe('AppLayout responsive structure', () => {
   });
 
   it('should have mobile menu toggle button with correct aria-label', async () => {
-    const { default: AppLayout } = await import(
-      '../../components/layout/AppLayout'
-    );
+    const { default: AppLayout } = await import('../../components/layout/AppLayout');
 
     // Collapse sidebar to show the toggle button
     useUIStore.setState({ sidebarCollapsed: true });
@@ -105,7 +101,7 @@ describe('AppLayout responsive structure', () => {
         <MemoryRouter>
           <AppLayout />
         </MemoryRouter>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     const toggleButton = screen.getByLabelText('Open sidebar');
@@ -113,16 +109,14 @@ describe('AppLayout responsive structure', () => {
   });
 
   it('sidebar should have lg:static and lg:translate-x-0 for desktop visibility', async () => {
-    const { default: AppLayout } = await import(
-      '../../components/layout/AppLayout'
-    );
+    const { default: AppLayout } = await import('../../components/layout/AppLayout');
 
     render(
       <QueryClientProvider client={new QueryClient()}>
         <MemoryRouter>
           <AppLayout />
         </MemoryRouter>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     const sidebar = document.querySelector('aside');
@@ -135,9 +129,7 @@ describe('AppLayout responsive structure', () => {
 
 describe('Table styling requirements', () => {
   it('DataTable should enforce minimum font size, row height, and padding on cells', async () => {
-    const { default: DataTable } = await import(
-      '../../components/shared/DataTable'
-    );
+    const { default: DataTable } = await import('../../components/shared/DataTable');
 
     const columns = [
       { key: 'name', header: 'Name', sortable: true },
@@ -146,13 +138,7 @@ describe('Table styling requirements', () => {
 
     const data = [{ name: 'Test', value: 42 }];
 
-    render(
-      <DataTable
-        columns={columns}
-        data={data}
-        keyExtractor={(row) => String(row.name)}
-      />
-    );
+    render(<DataTable columns={columns} data={data} keyExtractor={(row) => String(row.name)} />);
 
     // Check table cells have correct inline styles
     const cells = document.querySelectorAll('td');
@@ -171,20 +157,12 @@ describe('Table styling requirements', () => {
   });
 
   it('DataTable wrapper should have overflow-x-auto for horizontal scroll containment', async () => {
-    const { default: DataTable } = await import(
-      '../../components/shared/DataTable'
-    );
+    const { default: DataTable } = await import('../../components/shared/DataTable');
 
     const columns = [{ key: 'name', header: 'Name', sortable: false }];
     const data = [{ name: 'Test' }];
 
-    render(
-      <DataTable
-        columns={columns}
-        data={data}
-        keyExtractor={(row) => String(row.name)}
-      />
-    );
+    render(<DataTable columns={columns} data={data} keyExtractor={(row) => String(row.name)} />);
 
     const wrapper = document.querySelector('.overflow-x-auto');
     expect(wrapper).not.toBeNull();

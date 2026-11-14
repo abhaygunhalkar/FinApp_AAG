@@ -149,10 +149,7 @@ export default function MoveToHoldings({ item, onClose, onSuccess }: MoveToHoldi
       aria-labelledby="move-to-holdings-title"
     >
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 dark:bg-black/70"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/50 dark:bg-black/70" onClick={onClose} />
 
       {/* Modal */}
       <div className="relative z-10 w-full max-w-lg mx-4 bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden">
@@ -164,7 +161,8 @@ export default function MoveToHoldings({ item, onClose, onSuccess }: MoveToHoldi
             Move to Holdings
           </h2>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Create a holding from watchlist item <span className="font-medium text-gray-700 dark:text-gray-300">{item.ticker}</span>
+            Create a holding from watchlist item{' '}
+            <span className="font-medium text-gray-700 dark:text-gray-300">{item.ticker}</span>
           </p>
         </div>
 

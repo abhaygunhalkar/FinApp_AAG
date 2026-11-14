@@ -71,9 +71,7 @@ function renderWithQueryClient(ui: React.ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }
 
 // --- HoldingsTable Data Display Tests ---
@@ -316,12 +314,7 @@ describe('ErrorNotification - API failure display', () => {
   });
 
   it('displays error message for connection failure', () => {
-    render(
-      <ErrorNotification
-        message="Failed to load dashboard data"
-        onDismiss={vi.fn()}
-      />
-    );
+    render(<ErrorNotification message="Failed to load dashboard data" onDismiss={vi.fn()} />);
 
     expect(screen.getByText('Failed to load dashboard data')).toBeInTheDocument();
     expect(screen.getByRole('alert')).toBeInTheDocument();
@@ -329,10 +322,7 @@ describe('ErrorNotification - API failure display', () => {
 
   it('displays error message for API timeout', () => {
     render(
-      <ErrorNotification
-        message="Request timed out. Please try again."
-        onDismiss={vi.fn()}
-      />
+      <ErrorNotification message="Request timed out. Please try again." onDismiss={vi.fn()} />,
     );
 
     expect(screen.getByText('Request timed out. Please try again.')).toBeInTheDocument();
@@ -340,9 +330,7 @@ describe('ErrorNotification - API failure display', () => {
 
   it('auto-dismisses after default 5 seconds', () => {
     const onDismiss = vi.fn();
-    render(
-      <ErrorNotification message="Network error" onDismiss={onDismiss} />
-    );
+    render(<ErrorNotification message="Network error" onDismiss={onDismiss} />);
 
     expect(screen.getByRole('alert')).toBeInTheDocument();
 
@@ -356,9 +344,7 @@ describe('ErrorNotification - API failure display', () => {
 
   it('remains visible before auto-dismiss timeout', () => {
     const onDismiss = vi.fn();
-    render(
-      <ErrorNotification message="Server error" onDismiss={onDismiss} />
-    );
+    render(<ErrorNotification message="Server error" onDismiss={onDismiss} />);
 
     act(() => {
       vi.advanceTimersByTime(4999);
@@ -370,9 +356,7 @@ describe('ErrorNotification - API failure display', () => {
 
   it('can be manually dismissed before auto-dismiss', () => {
     const onDismiss = vi.fn();
-    render(
-      <ErrorNotification message="Error occurred" onDismiss={onDismiss} />
-    );
+    render(<ErrorNotification message="Error occurred" onDismiss={onDismiss} />);
 
     const dismissButton = screen.getByLabelText('Dismiss notification');
     act(() => {

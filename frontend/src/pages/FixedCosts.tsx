@@ -21,7 +21,7 @@ import {
 } from '../components/fixedcosts/constants';
 import { MASK } from '../components/networth/format';
 import { useUIStore, type ComingUpDays } from '../store/uiStore';
-import { parseLocalDateString } from '../utils/date';
+import { fmtDate, fmtDayOfMonth, fmtMonthName } from '../utils/date';
 import type { ExpenseCategory, RecurringExpense } from '../types';
 
 type Filter = 'All' | ExpenseCategory;
@@ -69,9 +69,6 @@ const COMING_UP_WINDOWS: ComingUpDays[] = [7, 14, 30];
 
 /** Bills shown in "Coming up" before "View all". */
 const COMING_UP_PREVIEW = 5;
-
-const fmtDate = (iso: string, opts: Intl.DateTimeFormatOptions) =>
-  parseLocalDateString(iso).toLocaleDateString('en-US', opts);
 
 export default function FixedCosts() {
   const { data, isLoading, isError } = useRecurringExpenses();
@@ -373,10 +370,10 @@ export default function FixedCosts() {
                               : 'text-slate-500 dark:text-slate-400'
                           }`}
                         >
-                          {fmtDate(expense.next_due_date!, { month: 'short' })}
+                          {fmtMonthName(expense.next_due_date!)}
                         </span>
                         <span className="text-base font-bold leading-tight text-slate-900 dark:text-white">
-                          {fmtDate(expense.next_due_date!, { day: 'numeric' })}
+                          {fmtDayOfMonth(expense.next_due_date!)}
                         </span>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -531,13 +528,7 @@ export default function FixedCosts() {
                           </td>
                           <td className="px-3 py-2.5">
                             <p className="tabular-nums text-slate-900 dark:text-white">
-                              {e.next_due_date
-                                ? fmtDate(e.next_due_date, {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                  })
-                                : '—'}
+                              {e.next_due_date ? fmtDate(e.next_due_date) : '—'}
                             </p>
                             <p className={`text-xs ${hint.className}`}>{hint.text}</p>
                           </td>

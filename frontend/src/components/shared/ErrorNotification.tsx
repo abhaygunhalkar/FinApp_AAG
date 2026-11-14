@@ -43,9 +43,7 @@ export default function ErrorNotification({
           />
         </svg>
       </div>
-      <p className="flex-1 text-sm font-medium text-red-800 dark:text-red-200">
-        {message}
-      </p>
+      <p className="flex-1 text-sm font-medium text-red-800 dark:text-red-200">{message}</p>
       <button
         onClick={() => {
           setVisible(false);

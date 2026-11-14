@@ -133,7 +133,9 @@ describe('uiStore', () => {
     });
 
     it('should update sortColumn and sortDirection', () => {
-      useUIStore.getState().setHoldingsFilter({ sortColumn: 'unrealized_gain', sortDirection: 'desc' });
+      useUIStore
+        .getState()
+        .setHoldingsFilter({ sortColumn: 'unrealized_gain', sortDirection: 'desc' });
       const filter = useUIStore.getState().holdingsFilter;
       expect(filter.sortColumn).toBe('unrealized_gain');
       expect(filter.sortDirection).toBe('desc');

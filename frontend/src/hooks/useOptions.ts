@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from '../api/options';
+import type { OptionPayload } from '../types';
 
 export function useOptions() {
   return useQuery({ queryKey: ['options', 'list'], queryFn: api.getOptions });
@@ -28,7 +29,8 @@ export function useCreateOption() {
 export function useUpdateOption() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: any }) => api.updateOption(id, payload),
+    mutationFn: ({ id, payload }: { id: number; payload: OptionPayload }) =>
+      api.updateOption(id, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['options'] }),
   });
 }

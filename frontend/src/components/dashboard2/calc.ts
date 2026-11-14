@@ -1,4 +1,4 @@
-import type { MonthlyPnlEntry } from '../../api/options';
+import type { MonthlyPnlEntry } from '../../types';
 import type { Holding, PortfolioSnapshot, PricePoint } from '../../types';
 import { inCurrentYear } from './format';
 

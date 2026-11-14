@@ -44,7 +44,11 @@ const labelClass =
 
 export default function HoldingForm({ holding, holdingType = 'stock', onClose }: HoldingFormProps) {
   const isEditing = !!holding;
-  const createMutation = holdingType === 'etf' ? useCreateETFHolding() : useCreateHolding();
+  // Both hooks run on every render (React needs the same hooks each time);
+  // the holding type picks which one creates.
+  const createStock = useCreateHolding();
+  const createETF = useCreateETFHolding();
+  const createMutation = holdingType === 'etf' ? createETF : createStock;
   const updateMutation = useUpdateHolding();
 
   const [formData, setFormData] = useState<FormData>({
@@ -61,7 +65,9 @@ export default function HoldingForm({ holding, holdingType = 'stock', onClose }:
   const [brokers, setBrokers] = useState<string[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isFetchingInfo, setIsFetchingInfo] = useState(false);
-  const [infoFetched, setInfoFetched] = useState(false);
+  // Editing starts from the holding's saved details. (Render with a `key` per
+  // holding if one form is ever reused for different holdings.)
+  const [infoFetched, setInfoFetched] = useState(isEditing);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,22 +78,6 @@ export default function HoldingForm({ holding, holdingType = 'stock', onClose }:
       })
       .catch(() => setBrokers(['Robinhood', 'Schwab', 'Merrill']));
   }, []);
-
-  useEffect(() => {
-    if (holding) {
-      setFormData({
-        ticker: holding.ticker,
-        quantity: holding.quantity.toString(),
-        buy_price: holding.average_buy_price.toString(),
-        company_name: holding.company_name ?? '',
-        sector: holding.sector ?? '',
-        industry: holding.industry ?? '',
-        broker: holding.broker ?? '',
-        notes: '',
-      });
-      setInfoFetched(true);
-    }
-  }, [holding]);
 
   const fetchTickerInfo = useCallback(async (ticker: string) => {
     if (!ticker || ticker.length < 1 || !/^[A-Z]{1,5}$/.test(ticker)) return;
@@ -122,14 +112,9 @@ export default function HoldingForm({ holding, holdingType = 'stock', onClose }:
   useEffect(() => {
     if (isEditing) return;
     const ticker = formData.ticker.trim();
-    if (ticker.length >= 1 && /^[A-Z]{1,5}$/.test(ticker)) {
-      const debounce = setTimeout(() => fetchTickerInfo(ticker), 600);
-      return () => clearTimeout(debounce);
-    } else {
-      setInfoFetched(false);
-      setFetchError(null);
-      setFormData((prev) => ({ ...prev, company_name: '', sector: '', industry: '', notes: '' }));
-    }
+    if (!/^[A-Z]{1,5}$/.test(ticker)) return;
+    const debounce = setTimeout(() => fetchTickerInfo(ticker), 600);
+    return () => clearTimeout(debounce);
   }, [formData.ticker, isEditing, fetchTickerInfo]);
 
   function validate(): FormErrors {
@@ -214,7 +199,21 @@ export default function HoldingForm({ holding, holdingType = 'stock', onClose }:
       .toUpperCase()
       .replace(/[^A-Z]/g, '')
       .slice(0, 5);
-    setFormData((prev) => ({ ...prev, ticker: upper }));
+    if (upper) {
+      setFormData((prev) => ({ ...prev, ticker: upper }));
+    } else {
+      // No ticker: forget the details looked up for the old one.
+      setInfoFetched(false);
+      setFetchError(null);
+      setFormData((prev) => ({
+        ...prev,
+        ticker: '',
+        company_name: '',
+        sector: '',
+        industry: '',
+        notes: '',
+      }));
+    }
     if (errors.ticker)
       setErrors((prev) => {
         const n = { ...prev };

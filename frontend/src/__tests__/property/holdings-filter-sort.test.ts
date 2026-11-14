@@ -51,7 +51,7 @@ function sortHoldings(
     const aVal = a[sortColumn];
     const bVal = b[sortColumn];
 
-    let comparison = 0;
+    let comparison: number;
     if (aVal == null && bVal == null) comparison = 0;
     else if (aVal == null) comparison = -1;
     else if (bVal == null) comparison = 1;
@@ -191,7 +191,7 @@ describe('Property 3: Holdings sort correctness', () => {
             const aVal = sorted[i][sortColumn];
             const bVal = sorted[i + 1][sortColumn];
 
-            let comparison = 0;
+            let comparison: number;
             if (aVal == null && bVal == null) comparison = 0;
             else if (aVal == null) comparison = -1;
             else if (bVal == null) comparison = 1;

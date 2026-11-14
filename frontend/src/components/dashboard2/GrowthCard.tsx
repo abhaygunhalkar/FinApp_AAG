@@ -9,7 +9,7 @@ import {
   YAxis,
 } from 'recharts';
 import { useMarketHistory, usePortfolioHistory } from '../../hooks';
-import { parseLocalDateString } from '../../utils/date';
+import { fmtDate, fmtDayMonth, fmtMonthShortYear } from '../../utils/date';
 import { growthAxis, withBenchmark, type GrowthRow } from './calc';
 import { Card, Empty, Skeleton } from './Card';
 import { fmtCompact, fmtMoney } from './format';
@@ -83,10 +83,7 @@ function useIsWide(): boolean {
 }
 
 function fmtDay(iso: string, range: Range): string {
-  return parseLocalDateString(iso).toLocaleDateString(
-    'en-US',
-    range === 365 ? { month: 'short', year: '2-digit' } : { month: 'short', day: 'numeric' },
-  );
+  return range === 365 ? fmtMonthShortYear(iso) : fmtDayMonth(iso);
 }
 
 function GrowthTooltip({
@@ -102,13 +99,7 @@ function GrowthTooltip({
   const row = payload[0].payload;
   return (
     <div className="rounded-lg border border-ink-200 bg-white px-3 py-2 text-xs shadow-md dark:border-slate-600 dark:bg-slate-800">
-      <p className="mb-1 font-semibold text-ink-900 dark:text-white">
-        {parseLocalDateString(row.date).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        })}
-      </p>
+      <p className="mb-1 font-semibold text-ink-900 dark:text-white">{fmtDate(row.date)}</p>
       <p className="tabular-nums text-ink-900 dark:text-slate-200">
         <span className="text-ink-500 dark:text-slate-400">Portfolio: </span>
         {fmtMoney(row.value, hidden)}

@@ -94,7 +94,11 @@ function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
   );
 }
 
-export default function HoldingsTable({ holdings, openOptionTickers, scope = 'holdings' }: HoldingsTableProps) {
+export default function HoldingsTable({
+  holdings,
+  openOptionTickers,
+  scope = 'holdings',
+}: HoldingsTableProps) {
   const { holdingsFilter, setHoldingsFilter, etfFilter, setEtfFilter } = useUIStore();
   const holdingsFilterActive = scope === 'etf' ? etfFilter : holdingsFilter;
   const setHoldingsFilterActive = scope === 'etf' ? setEtfFilter : setHoldingsFilter;
@@ -125,7 +129,7 @@ export default function HoldingsTable({ holdings, openOptionTickers, scope = 'ho
     result.sort((a, b) => {
       const aVal = a[sortColumn as keyof Holding];
       const bVal = b[sortColumn as keyof Holding];
-      let comparison = 0;
+      let comparison: number;
       if (aVal == null && bVal == null) comparison = 0;
       else if (aVal == null) comparison = -1;
       else if (bVal == null) comparison = 1;
@@ -142,7 +146,9 @@ export default function HoldingsTable({ holdings, openOptionTickers, scope = 'ho
 
   const handleSort = (column: string) => {
     if (holdingsFilterActive.sortColumn === column) {
-      setHoldingsFilterActive({ sortDirection: holdingsFilterActive.sortDirection === 'asc' ? 'desc' : 'asc' });
+      setHoldingsFilterActive({
+        sortDirection: holdingsFilterActive.sortDirection === 'asc' ? 'desc' : 'asc',
+      });
     } else {
       setHoldingsFilterActive({ sortColumn: column, sortDirection: getDefaultDirection(column) });
     }
@@ -150,7 +156,9 @@ export default function HoldingsTable({ holdings, openOptionTickers, scope = 'ho
 
   if (filteredAndSorted.length === 0) {
     const hasFilters =
-      holdingsFilterActive.search || holdingsFilterActive.sector || holdingsFilterActive.performance !== 'all';
+      holdingsFilterActive.search ||
+      holdingsFilterActive.sector ||
+      holdingsFilterActive.performance !== 'all';
     return (
       <EmptyState
         icon={

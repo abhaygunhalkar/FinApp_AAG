@@ -49,9 +49,7 @@ export default function SearchFilter({ holdings, scope = 'holdings' }: SearchFil
         <select
           id="sector-filter"
           value={filter.sector ?? ''}
-          onChange={(e) =>
-            setFilter({ sector: e.target.value === '' ? null : e.target.value })
-          }
+          onChange={(e) => setFilter({ sector: e.target.value === '' ? null : e.target.value })}
           className={selectClass}
         >
           <option value="">All Sectors</option>
@@ -67,9 +65,7 @@ export default function SearchFilter({ holdings, scope = 'holdings' }: SearchFil
       <select
         id="performance-filter"
         value={filter.performance}
-        onChange={(e) =>
-          setFilter({ performance: e.target.value as 'all' | 'gainers' | 'losers' })
-        }
+        onChange={(e) => setFilter({ performance: e.target.value as 'all' | 'gainers' | 'losers' })}
         className={selectClass}
       >
         <option value="all">All Performance</option>

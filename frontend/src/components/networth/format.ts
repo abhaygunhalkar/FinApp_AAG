@@ -1,3 +1,4 @@
+import { fmtDate, fmtDayMonth, fmtMonthYear as sharedMonthYear } from '../../utils/date';
 export const MASK = '••••••';
 
 const usd0 = new Intl.NumberFormat('en-US', {
@@ -38,21 +39,14 @@ export function toISODate(d: Date): string {
   return d.toLocaleDateString('en-CA');
 }
 
-export function fmtDay(iso: string): string {
-  return parseISODate(iso).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-export function fmtMonthYear(iso: string): string {
-  return parseISODate(iso).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-}
-
-export function fmtShortDate(iso: string): string {
-  return parseISODate(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
+// The app-wide date formats live in utils/date.ts; these keep the names
+// Net Worth already uses.
+/** "Nov 13, 2026" */
+export const fmtDay = (iso: string): string => fmtDate(iso);
+/** "Nov 2026" */
+export const fmtMonthYear = (iso: string): string => sharedMonthYear(iso);
+/** "Nov 13" */
+export const fmtShortDate = (iso: string): string => fmtDayMonth(iso);
 
 export function timeAgo(iso: string, now = Date.now()): string {
   const minutes = Math.floor((now - new Date(iso).getTime()) / 60000);
@@ -62,7 +56,7 @@ export function timeAgo(iso: string, now = Date.now()): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return fmtDayMonth(new Date(iso));
 }
 
 /** Whole days since `iso` when it is more than `afterDays` old, else null. */

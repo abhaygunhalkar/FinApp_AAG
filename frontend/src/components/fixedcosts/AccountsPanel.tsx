@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAccountForecast } from '../../hooks';
 import { useUIStore } from '../../store/uiStore';
-import { parseLocalDateString } from '../../utils/date';
+import { fmtDayMonth } from '../../utils/date';
 import { MASK } from '../networth/format';
 import IssuerBadge from '../shared/IssuerBadge';
 import { findIssuer } from '../shared/issuers';
@@ -63,8 +63,7 @@ function badgeTint(name: string): string {
   return BADGE_TINTS[hash % BADGE_TINTS.length];
 }
 
-const fmtDay = (iso: string) =>
-  parseLocalDateString(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const fmtDay = fmtDayMonth;
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 

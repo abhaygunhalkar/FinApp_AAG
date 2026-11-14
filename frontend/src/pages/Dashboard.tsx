@@ -10,10 +10,14 @@ import { LoadingSpinner, ErrorNotification, HideNumbersToggle } from '../compone
 import { MASK } from '../components/networth/format';
 import { useUIStore } from '../store/uiStore';
 import { useState } from 'react';
-import type { DashboardSummary } from '../types';
+import type { DashboardSummary, OptionsTrade } from '../types';
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(value);
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+  }).format(value);
 }
 
 function OptionsStats() {
@@ -24,42 +28,48 @@ function OptionsStats() {
   const creditTypes = new Set(['sell_call', 'sell_put']);
   const debitTypes = new Set(['buy_call', 'buy_put']);
 
-  const collected = (trades ?? []).reduce((acc: number, t: any) => {
+  const collected = (trades ?? []).reduce((acc: number, t: OptionsTrade) => {
     if (creditTypes.has(t.trade_type)) return acc + (t.premium || 0) * (t.contracts || 0) * 100;
     return acc;
   }, 0);
 
-  const paid = (trades ?? []).reduce((acc: number, t: any) => {
+  const paid = (trades ?? []).reduce((acc: number, t: OptionsTrade) => {
     if (debitTypes.has(t.trade_type)) return acc + (t.premium || 0) * (t.contracts || 0) * 100;
     return acc;
   }, 0);
 
   const net = collected - paid;
 
-  const realized = (trades ?? []).reduce((acc: number, t: any) => {
+  const realized = (trades ?? []).reduce((acc: number, t: OptionsTrade) => {
     if (t.status === 'closed' || t.status === 'expired_worthless') return acc + (t.pnl || 0);
     return acc;
   }, 0);
 
   return (
     <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-  <div className="rounded-xl p-4 bg-green-100 border-2 border-green-300">
-    <p className="text-sm font-medium text-green-800">Premium collected</p>
-    <p className="mt-2 text-xl font-bold text-green-900">{money(collected)}</p>
-  </div>
-  <div className="rounded-xl p-4 bg-red-100 border-2 border-red-300">
-    <p className="text-sm font-medium text-red-800">Premium paid</p>
-    <p className="mt-2 text-xl font-bold text-red-900">{hidden ? MASK : `-${formatCurrency(paid)}`}</p>
-  </div>
-  <div className={`rounded-xl p-4 ${net >= 0 ? 'bg-green-100 border-2 border-green-300' : 'bg-red-100 border-2 border-red-300'}`}>
-    <p className="text-sm font-medium text-slate-600">Net premium</p>
-    <p className={`mt-2 text-xl font-bold ${net >= 0 ? 'text-green-900' : 'text-red-900'}`}>{money(net)}</p>
-  </div>
-  <div className="rounded-xl p-4 bg-slate-200 border-2 border-slate-300">
-    <p className="text-sm font-medium text-slate-600">Realized P&L</p>
-    <p className="mt-2 text-xl font-bold text-slate-900">{money(realized)}</p>
-  </div>
-</div>
+      <div className="rounded-xl p-4 bg-green-100 border-2 border-green-300">
+        <p className="text-sm font-medium text-green-800">Premium collected</p>
+        <p className="mt-2 text-xl font-bold text-green-900">{money(collected)}</p>
+      </div>
+      <div className="rounded-xl p-4 bg-red-100 border-2 border-red-300">
+        <p className="text-sm font-medium text-red-800">Premium paid</p>
+        <p className="mt-2 text-xl font-bold text-red-900">
+          {hidden ? MASK : `-${formatCurrency(paid)}`}
+        </p>
+      </div>
+      <div
+        className={`rounded-xl p-4 ${net >= 0 ? 'bg-green-100 border-2 border-green-300' : 'bg-red-100 border-2 border-red-300'}`}
+      >
+        <p className="text-sm font-medium text-slate-600">Net premium</p>
+        <p className={`mt-2 text-xl font-bold ${net >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+          {money(net)}
+        </p>
+      </div>
+      <div className="rounded-xl p-4 bg-slate-200 border-2 border-slate-300">
+        <p className="text-sm font-medium text-slate-600">Realized P&L</p>
+        <p className="mt-2 text-xl font-bold text-slate-900">{money(realized)}</p>
+      </div>
+    </div>
   );
 }
 

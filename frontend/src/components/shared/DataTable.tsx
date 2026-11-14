@@ -24,12 +24,8 @@ export default function DataTable<T extends Record<string, unknown>>({
   defaultSortDirection = 'asc',
   onSortChange,
 }: DataTableProps<T>) {
-  const [sortColumn, setSortColumn] = useState<string | undefined>(
-    defaultSortColumn
-  );
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(
-    defaultSortDirection
-  );
+  const [sortColumn, setSortColumn] = useState<string | undefined>(defaultSortColumn);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(defaultSortDirection);
 
   const handleSort = useCallback(
     (columnKey: string) => {
@@ -41,7 +37,7 @@ export default function DataTable<T extends Record<string, unknown>>({
       setSortDirection(newDirection);
       onSortChange?.(columnKey, newDirection);
     },
-    [sortColumn, sortDirection, onSortChange]
+    [sortColumn, sortDirection, onSortChange],
   );
 
   const sortedData = [...data].sort((a, b) => {
@@ -53,7 +49,7 @@ export default function DataTable<T extends Record<string, unknown>>({
     if (aVal == null) return sortDirection === 'asc' ? -1 : 1;
     if (bVal == null) return sortDirection === 'asc' ? 1 : -1;
 
-    let comparison = 0;
+    let comparison: number;
     if (typeof aVal === 'string' && typeof bVal === 'string') {
       comparison = aVal.localeCompare(bVal);
     } else if (typeof aVal === 'number' && typeof bVal === 'number') {
@@ -75,7 +71,9 @@ export default function DataTable<T extends Record<string, unknown>>({
                 key={col.key}
                 scope="col"
                 className={`px-2 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 ${
-                  col.sortable ? 'cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-700' : ''
+                  col.sortable
+                    ? 'cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-700'
+                    : ''
                 }`}
                 style={{ minHeight: '40px', padding: '8px' }}
                 onClick={col.sortable ? () => handleSort(col.key) : undefined}
@@ -110,9 +108,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                     lineHeight: '24px',
                   }}
                 >
-                  {col.render
-                    ? col.render(row)
-                    : (row[col.key] as React.ReactNode) ?? '—'}
+                  {col.render ? col.render(row) : ((row[col.key] as React.ReactNode) ?? '—')}
                 </td>
               ))}
             </tr>

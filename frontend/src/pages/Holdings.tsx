@@ -32,7 +32,9 @@ function StatCard({
 }) {
   return (
     <div className={`${bgClass} rounded-xl border px-5 py-4 flex flex-col gap-1 shadow-sm`}>
-      <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest">{label}</span>
+      <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+        {label}
+      </span>
       <span className={`text-2xl font-bold tabular-nums ${valueClass}`}>{value}</span>
       {sub && <span className="text-xs text-slate-400">{sub}</span>}
     </div>
@@ -66,7 +68,7 @@ export default function Holdings() {
     }
   };
 
-  const holdingsList = holdings ?? [];
+  const holdingsList = useMemo(() => holdings ?? [], [holdings]);
 
   const stats = useMemo(() => {
     const totalValue = holdingsList.reduce((s, h) => s + h.current_value, 0);
@@ -178,7 +180,11 @@ export default function Holdings() {
           />
           <StatCard
             label="Realized Gain (YTD)"
-            value={hidden ? MASK : `${stats.ytdRealizedGain >= 0 ? '+' : ''}${fmt(stats.ytdRealizedGain)}`}
+            value={
+              hidden
+                ? MASK
+                : `${stats.ytdRealizedGain >= 0 ? '+' : ''}${fmt(stats.ytdRealizedGain)}`
+            }
             valueClass={stats.ytdRealizedGain >= 0 ? 'text-emerald-700' : 'text-red-600'}
             bgClass="bg-sky-100 border-2 border-sky-300 dark:bg-sky-900/50 dark:border-sky-600"
           />

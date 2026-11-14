@@ -15,9 +15,7 @@ function normalCDF(x: number): number {
   const t = 1 / (1 + 0.2316419 * Math.abs(x));
   const d = 0.3989423 * Math.exp((-x * x) / 2);
   const poly =
-    t *
-    (0.3193815 +
-      t * (-0.3565638 + t * (1.7814779 + t * (-1.821256 + t * 1.3302744))));
+    t * (0.3193815 + t * (-0.3565638 + t * (1.7814779 + t * (-1.821256 + t * 1.3302744))));
   const prob = 1 - d * poly;
   return x >= 0 ? prob : 1 - prob;
 }
@@ -85,10 +83,7 @@ export default function CoveredCallSimulator() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const expiry = new Date(expiryDate + 'T00:00:00');
-    const daysToExpiry = Math.max(
-      0,
-      Math.round((expiry.getTime() - today.getTime()) / 86_400_000),
-    );
+    const daysToExpiry = Math.max(0, Math.round((expiry.getTime() - today.getTime()) / 86_400_000));
     const T = daysToExpiry / 365;
 
     return { S, CB, K, P, sigma: sigma / 100, T, daysToExpiry };
@@ -115,9 +110,7 @@ export default function CoveredCallSimulator() {
     const data = [];
     for (let price = lo; price <= hi + step / 2; price += step) {
       const p = parseFloat(price.toFixed(2));
-      const pnl = parseFloat(
-        ((p >= K ? K - CB + P : p - CB + P) * 100).toFixed(2),
-      );
+      const pnl = parseFloat(((p >= K ? K - CB + P : p - CB + P) * 100).toFixed(2));
       data.push({ price: p, pnl });
     }
     return data;
@@ -161,27 +154,62 @@ export default function CoveredCallSimulator() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <div>
           <label className={labelClass}>Stock Price ($)</label>
-          <input type="number" value={stockPrice} onChange={(e) => setStockPrice(e.target.value)} placeholder="150.00" className={inputClass} />
+          <input
+            type="number"
+            value={stockPrice}
+            onChange={(e) => setStockPrice(e.target.value)}
+            placeholder="150.00"
+            className={inputClass}
+          />
         </div>
         <div>
           <label className={labelClass}>Cost Basis ($)</label>
-          <input type="number" value={costBasis} onChange={(e) => setCostBasis(e.target.value)} placeholder="140.00" className={inputClass} />
+          <input
+            type="number"
+            value={costBasis}
+            onChange={(e) => setCostBasis(e.target.value)}
+            placeholder="140.00"
+            className={inputClass}
+          />
         </div>
         <div>
           <label className={labelClass}>Strike Price ($)</label>
-          <input type="number" value={strikePrice} onChange={(e) => setStrikePrice(e.target.value)} placeholder="160.00" className={inputClass} />
+          <input
+            type="number"
+            value={strikePrice}
+            onChange={(e) => setStrikePrice(e.target.value)}
+            placeholder="160.00"
+            className={inputClass}
+          />
         </div>
         <div>
           <label className={labelClass}>Premium ($/share)</label>
-          <input type="number" value={premium} onChange={(e) => setPremium(e.target.value)} placeholder="2.50" className={inputClass} />
+          <input
+            type="number"
+            value={premium}
+            onChange={(e) => setPremium(e.target.value)}
+            placeholder="2.50"
+            className={inputClass}
+          />
         </div>
         <div>
           <label className={labelClass}>Expiry Date</label>
-          <input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} className={inputClass} />
+          <input
+            type="date"
+            value={expiryDate}
+            onChange={(e) => setExpiryDate(e.target.value)}
+            className={inputClass}
+          />
         </div>
         <div>
           <label className={labelClass}>Implied Vol (%)</label>
-          <input type="number" value={iv} onChange={(e) => setIv(e.target.value)} placeholder="25" className={inputClass} />
+          <input
+            type="number"
+            value={iv}
+            onChange={(e) => setIv(e.target.value)}
+            placeholder="25"
+            className={inputClass}
+          />
         </div>
       </div>
 
@@ -208,20 +236,27 @@ export default function CoveredCallSimulator() {
             <SummaryCard
               label="Max Profit (1 contract)"
               value={fmt(summary.maxProfit)}
-              valueClass={summary.maxProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}
+              valueClass={
+                summary.maxProfit >= 0
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : 'text-red-500 dark:text-red-400'
+              }
               sub={`If called away at ${fmt(inputs.K)}`}
             />
             <SummaryCard
               label="Current Position P&L"
               value={fmtSigned(summary.positionPnL)}
-              valueClass={summary.positionPnL >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}
+              valueClass={
+                summary.positionPnL >= 0
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : 'text-red-500 dark:text-red-400'
+              }
               sub={`Option now worth ${fmt(summary.currentOptionValue)}`}
             />
           </div>
 
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
             {/* Payoff diagram */}
             <div>
               <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-3">
@@ -229,17 +264,17 @@ export default function CoveredCallSimulator() {
               </p>
               <ResponsiveContainer width="100%" height={240}>
                 <LineChart data={payoffData} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-gray-200 dark:stroke-gray-700"
+                  />
                   <XAxis
                     dataKey="price"
                     tick={{ fontSize: 11 }}
                     tickFormatter={(v) => `$${v}`}
                     tickCount={6}
                   />
-                  <YAxis
-                    tick={{ fontSize: 11 }}
-                    tickFormatter={(v) => `$${v}`}
-                  />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
                   <Tooltip
                     formatter={(v) => [fmt(Number(v)), 'P&L']}
                     labelFormatter={(v) => `Stock @ $${v}`}
@@ -252,23 +287,44 @@ export default function CoveredCallSimulator() {
                     x={inputs.K}
                     stroke="#f59e0b"
                     strokeDasharray="4 2"
-                    label={{ value: `Strike $${inputs.K}`, fontSize: 10, fill: '#f59e0b', position: 'insideTopRight' }}
+                    label={{
+                      value: `Strike $${inputs.K}`,
+                      fontSize: 10,
+                      fill: '#f59e0b',
+                      position: 'insideTopRight',
+                    }}
                   />
                   {/* Breakeven */}
                   <ReferenceLine
                     x={summary.breakeven}
                     stroke="var(--color-gray-500)"
                     strokeDasharray="4 2"
-                    label={{ value: `BE $${summary.breakeven.toFixed(2)}`, fontSize: 10, fill: 'var(--color-gray-500)', position: 'insideBottomLeft' }}
+                    label={{
+                      value: `BE $${summary.breakeven.toFixed(2)}`,
+                      fontSize: 10,
+                      fill: 'var(--color-gray-500)',
+                      position: 'insideBottomLeft',
+                    }}
                   />
                   {/* Current price */}
                   <ReferenceLine
                     x={inputs.S}
                     stroke="var(--color-accent-500)"
                     strokeDasharray="4 2"
-                    label={{ value: `Now $${inputs.S}`, fontSize: 10, fill: 'var(--color-accent-500)', position: 'insideTopLeft' }}
+                    label={{
+                      value: `Now $${inputs.S}`,
+                      fontSize: 10,
+                      fill: 'var(--color-accent-500)',
+                      position: 'insideTopLeft',
+                    }}
                   />
-                  <Line type="monotone" dataKey="pnl" stroke="var(--color-gain-500)" strokeWidth={2.5} dot={false} />
+                  <Line
+                    type="monotone"
+                    dataKey="pnl"
+                    stroke="var(--color-gain-500)"
+                    strokeWidth={2.5}
+                    dot={false}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -280,22 +336,29 @@ export default function CoveredCallSimulator() {
               </p>
               <ResponsiveContainer width="100%" height={240}>
                 <LineChart data={decayData} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-gray-200 dark:stroke-gray-700"
+                  />
                   <XAxis
                     dataKey="day"
                     tick={{ fontSize: 11 }}
                     tickFormatter={(v) => `D${v}`}
                     tickCount={6}
-                    label={{ value: 'Days elapsed →', fontSize: 10, position: 'insideBottomRight', offset: -4 }}
+                    label={{
+                      value: 'Days elapsed →',
+                      fontSize: 10,
+                      position: 'insideBottomRight',
+                      offset: -4,
+                    }}
                   />
-                  <YAxis
-                    tick={{ fontSize: 11 }}
-                    tickFormatter={(v) => `$${v}`}
-                  />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
                   <Tooltip
                     formatter={(v, name) => [
                       fmt(Number(v)),
-                      name === 'optionValue' ? 'Option value (cost to close)' : 'Your unrealized gain',
+                      name === 'optionValue'
+                        ? 'Option value (cost to close)'
+                        : 'Your unrealized gain',
                     ]}
                     labelFormatter={(v) => `Day ${v} / ${inputs.daysToExpiry}`}
                     contentStyle={tooltipStyle}
@@ -305,7 +368,12 @@ export default function CoveredCallSimulator() {
                     y={inputs.P * 100}
                     stroke="#f59e0b"
                     strokeDasharray="4 2"
-                    label={{ value: `Premium $${(inputs.P * 100).toFixed(0)}`, fontSize: 10, fill: '#f59e0b', position: 'insideTopRight' }}
+                    label={{
+                      value: `Premium $${(inputs.P * 100).toFixed(0)}`,
+                      fontSize: 10,
+                      fill: '#f59e0b',
+                      position: 'insideTopRight',
+                    }}
                   />
                   <Line
                     type="monotone"
@@ -327,10 +395,10 @@ export default function CoveredCallSimulator() {
                 </LineChart>
               </ResponsiveContainer>
               <p className="text-[10px] text-gray-400 mt-1">
-                Purple: option value (what you'd pay to close) · Green dashed: your unrealized gain · Amber: premium collected
+                Purple: option value (what you'd pay to close) · Green dashed: your unrealized gain
+                · Amber: premium collected
               </p>
             </div>
-
           </div>
         </>
       )}

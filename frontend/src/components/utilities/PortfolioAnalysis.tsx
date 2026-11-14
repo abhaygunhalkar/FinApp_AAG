@@ -17,8 +17,16 @@ const SEVERITY_CONFIG = {
     bg: 'bg-red-50 dark:bg-red-900/20',
     badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
     icon: (
-      <svg className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+      <svg
+        className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fillRule="evenodd"
+          d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
+          clipRule="evenodd"
+        />
       </svg>
     ),
   },
@@ -27,8 +35,16 @@ const SEVERITY_CONFIG = {
     bg: 'bg-amber-50 dark:bg-amber-900/20',
     badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
     icon: (
-      <svg className="w-4 h-4 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+      <svg
+        className="w-4 h-4 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fillRule="evenodd"
+          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z"
+          clipRule="evenodd"
+        />
       </svg>
     ),
   },
@@ -37,8 +53,16 @@ const SEVERITY_CONFIG = {
     bg: 'bg-sky-50 dark:bg-sky-900/20',
     badge: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-400',
     icon: (
-      <svg className="w-4 h-4 text-sky-500 dark:text-sky-400 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
+      <svg
+        className="w-4 h-4 text-sky-500 dark:text-sky-400 flex-shrink-0 mt-0.5"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fillRule="evenodd"
+          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z"
+          clipRule="evenodd"
+        />
       </svg>
     ),
   },
@@ -78,7 +102,9 @@ function SeverityGroup({ severity, insights }: { severity: string; insights: Por
   };
   return (
     <div>
-      <h3 className={`text-xs font-bold uppercase tracking-widest mb-2 ${countColors[severity as keyof typeof countColors]}`}>
+      <h3
+        className={`text-xs font-bold uppercase tracking-widest mb-2 ${countColors[severity as keyof typeof countColors]}`}
+      >
         {labels[severity as keyof typeof labels]} ({insights.length})
       </h3>
       <div className="space-y-2">
@@ -119,7 +145,11 @@ export default function PortfolioAnalysis() {
             viewBox="0 0 20 20"
             fill="currentColor"
           >
-            <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+            <path
+              fillRule="evenodd"
+              d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+              clipRule="evenodd"
+            />
           </svg>
           {isFetching ? 'Refreshing…' : 'Refresh'}
         </button>
