@@ -391,3 +391,80 @@ class TestTwoStep:
         assert backup_codes_left(owner) == 0
         with pytest.raises(ValueError):
             AuthService.new_backup_codes(db_session)
+
+
+NEW = "a brand new passphrase"
+
+
+def change(
+    db: Session,
+    owner: Owner,
+    current: str = PASSWORD,
+    new: str = NEW,
+    code: str | None = None,
+    keep: str | None = None,
+) -> int:
+    return AuthService.change_password(
+        db, SETTINGS, owner, current, new, code, keep_token=keep, now=NOW
+    )
+
+
+class TestChangePassword:
+    def test_changes_it_and_signs_out_other_browsers_only(
+        self, db_session: Session, owner: Owner
+    ) -> None:
+        this_one, _ = login(db_session)
+        other, _ = login(db_session)
+        assert change(db_session, owner, keep=this_one) == 1
+        assert AuthService.authenticate(db_session, SETTINGS, this_one, NOW) is owner
+        assert AuthService.authenticate(db_session, SETTINGS, other, NOW) is None
+        login(db_session, password=NEW)
+        with pytest.raises(HTTPException):
+            login(db_session)
+
+    def test_wrong_current_password_counts_toward_the_lockout(
+        self, db_session: Session, owner: Owner
+    ) -> None:
+        for _ in range(2):
+            with pytest.raises(HTTPException) as exc:
+                change(db_session, owner, current="nope")
+            assert exc.value.status_code == 401
+            assert exc.value.detail == "Your current password is incorrect."
+        with pytest.raises(HTTPException) as exc:
+            change(db_session, owner, current="nope")
+        assert exc.value.status_code == 429
+        # Locked: even the right current password waits.
+        with pytest.raises(HTTPException) as exc:
+            change(db_session, owner)
+        assert exc.value.status_code == 429
+        assert verify_password(PASSWORD, owner.password_hash)
+
+    @pytest.mark.parametrize(
+        ("new", "problem"),
+        [("short", "at least 12"), (PASSWORD, "different from your current")],
+    )
+    def test_new_password_must_follow_the_rules(
+        self, db_session: Session, owner: Owner, new: str, problem: str
+    ) -> None:
+        with pytest.raises(HTTPException) as exc:
+            change(db_session, owner, new=new)
+        assert exc.value.status_code == 422
+        assert problem in str(exc.value.detail)
+        assert owner.failed_logins == 0
+
+    def test_needs_a_code_when_two_step_is_on(
+        self, db_session: Session, owner: Owner
+    ) -> None:
+        secret = totp.new_secret()
+        earlier = NOW - timedelta(minutes=1)
+        AuthService.enable_two_step(
+            db_session, secret, code_now(secret, earlier), now=earlier
+        )
+        with pytest.raises(HTTPException) as exc:
+            change(db_session, owner)
+        assert exc.value.status_code == 422
+        with pytest.raises(HTTPException) as exc:
+            change(db_session, owner, code="000000")
+        assert exc.value.status_code == 401 and owner.failed_logins == 1
+        change(db_session, owner, code=code_now(secret))
+        assert verify_password(NEW, owner.password_hash)

@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 
 WRONG_LOGIN = "Incorrect username or password."
 WRONG_CODE = "That code didn't work. Check your authenticator app and try again."
+WRONG_CURRENT = "Your current password is incorrect."
 # A request refreshes last_seen_at at most this often, to spare the database.
 TOUCH_EVERY = timedelta(minutes=1)
 
@@ -146,6 +147,58 @@ class AuthService:
         OwnerRepository.save(db, owner)
         AuthSessionRepository.delete_all(db)
         return owner
+
+    @staticmethod
+    def change_password(
+        db: Session,
+        settings: Settings,
+        owner: Owner,
+        current_password: str,
+        new_password: str,
+        code: str | None,
+        keep_token: str | None,
+        now: datetime | None = None,
+    ) -> int:
+        """Change the password from Settings; returns browsers signed out.
+
+        Needs the current password, and a code when two-step sign-in is on.
+        Wrong ones count toward the sign-in lockout, so this can't be used to
+        guess. Every browser except the one asking is signed out.
+        """
+        now = now or utcnow()
+        if owner.locked_until is not None and now < owner.locked_until:
+            raise HTTPException(
+                status_code=429,
+                detail="Too many failed attempts. Try again in "
+                f"{_minutes_left(owner.locked_until, now)} minutes.",
+            )
+        if not verify_password(current_password, owner.password_hash):
+            _failed(db, settings, owner, now, None, WRONG_CURRENT)
+        if owner.totp_secret:
+            if not code or not code.strip():
+                raise HTTPException(
+                    status_code=422,
+                    detail="Enter the code from your authenticator app.",
+                )
+            if not _use_code(owner, code, now):
+                _failed(db, settings, owner, now, None, WRONG_CODE)
+
+        problem = password_problem(new_password, owner.username)
+        if problem is None and verify_password(new_password, owner.password_hash):
+            problem = "Choose a password different from your current one."
+        if problem:
+            # A rule failure isn't a wrong guess; the code (if used) still is.
+            OwnerRepository.save(db, owner)
+            raise HTTPException(status_code=422, detail=problem)
+
+        owner.password_hash = hash_password(new_password)
+        owner.password_changed_at = now
+        owner.failed_logins = 0
+        OwnerRepository.save(db, owner)
+        keep = token_hash(keep_token) if keep_token else None
+        signed_out = AuthSessionRepository.delete_all_except(db, keep)
+        logger.info("Password changed; %d other sessions signed out", signed_out)
+        return signed_out
 
     @staticmethod
     def unlock(db: Session) -> Owner:

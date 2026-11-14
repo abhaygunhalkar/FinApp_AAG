@@ -40,6 +40,16 @@ class AuthSessionRepository:
         return count
 
     @staticmethod
+    def delete_all_except(db: Session, keep_token_hash: str | None) -> int:
+        """Sign out every browser but the one with this token."""
+        query = db.query(AuthSession)
+        if keep_token_hash is not None:
+            query = query.filter(AuthSession.token_hash != keep_token_hash)
+        count = query.delete(synchronize_session=False)
+        db.commit()
+        return count
+
+    @staticmethod
     def delete_expired(db: Session, now: datetime, idle_since: datetime) -> None:
         db.query(AuthSession).filter(
             (AuthSession.expires_at <= now) | (AuthSession.last_seen_at <= idle_since)

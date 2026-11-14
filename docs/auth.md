@@ -21,7 +21,7 @@ cd ~/FinApp_AAG/backend && source venv/bin/activate
 | Problem | Command |
 |---|---|
 | Lost your phone (no authenticator codes) | `python scripts/create_owner.py --disable-2fa`, then sign in with the password and turn it back on with `--enable-2fa` |
-| Forgot the password | `python scripts/create_owner.py --reset` (also signs out every browser) |
+| Forgot the password | `python scripts/create_owner.py --reset` (also signs out every browser). If you know it, change it in **Settings → Sign-in & security** instead. |
 | "Too many failed sign-ins" | `python scripts/create_owner.py --unlock`, or wait 15 minutes |
 | Running low on backup codes (Settings warns at 2) | `python scripts/create_owner.py --backup-codes` (the old ones stop working) |
 
@@ -36,6 +36,7 @@ These need SSH access to the VM, which the website itself never gives, so keep t
 - **CSRF:** every request that changes data (anything but GET/HEAD/OPTIONS) must send `X-Requested-With: FinApp`. The frontend's axios client always does; a form or link on another site can't.
 - **Wrong sign-ins:** the message is always "Incorrect username or password." After `AUTH_MAX_FAILED_LOGINS` (5) failures in a row, sign-in is locked for `AUTH_LOCKOUT_MINUTES` (15), even with the right password. Each address is also limited to `AUTH_LOGIN_ATTEMPTS_PER_MINUTE` (10) tries.
 - **Chat** acts for `OWNER_USER_ID` once the request has a session.
+- **Changing the password** (Settings → Sign-in & security → Change password, `POST /api/auth/password`): needs the current password, plus an authenticator or backup code when two-step is on, and the new password twice. Wrong current passwords and codes count toward the same lockout as sign-in. This browser stays signed in; every other one is signed out. A forgotten password is reset on the server only (`--reset`): with no email, a sign-in page reset would let anyone who finds the site take over.
 
 ## Two-step verification
 

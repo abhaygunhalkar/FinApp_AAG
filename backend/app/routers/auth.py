@@ -9,7 +9,13 @@ from app.auth import SESSION_COOKIE, require_session
 from app.config import Settings, get_settings
 from app.database import get_db
 from app.models.owner import Owner
-from app.schemas.auth import AuthUserResponse, LoginRequest, LoginResponse
+from app.schemas.auth import (
+    AuthUserResponse,
+    ChangePasswordRequest,
+    ChangePasswordResponse,
+    LoginRequest,
+    LoginResponse,
+)
 from app.schemas.common import ApiResponse
 from app.services.auth_service import AuthService, backup_codes_left
 from app.services.rate_limit import InMemoryRateLimiter, RateLimiter
@@ -85,6 +91,28 @@ def logout(
         samesite="strict",
     )
     return {"success": True, "data": None, "error": None}
+
+
+@router.post("/password", response_model=ApiResponse[ChangePasswordResponse])
+def change_password(
+    body: ChangePasswordRequest,
+    request: Request,
+    owner: Annotated[Owner, Depends(require_session)],
+    db: Annotated[Session, Depends(get_db)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> dict[str, object]:
+    """Change the password; this browser stays signed in, all others are not."""
+    signed_out = AuthService.change_password(
+        db,
+        settings,
+        owner,
+        body.current_password,
+        body.new_password,
+        body.code,
+        keep_token=request.cookies.get(SESSION_COOKIE),
+    )
+    data = ChangePasswordResponse(signed_out=signed_out)
+    return {"success": True, "data": data, "error": None}
 
 
 @router.get("/me", response_model=ApiResponse[AuthUserResponse])

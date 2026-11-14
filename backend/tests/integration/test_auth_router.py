@@ -96,6 +96,29 @@ class TestSignIn:
         assert r.status_code == 429
 
 
+class TestChangePassword:
+    def test_change_keeps_this_browser_signed_in(self, client: TestClient) -> None:
+        sign_in(client)
+        body = {"current_password": PASSWORD, "new_password": "a brand new passphrase"}
+        r = client.post("/api/auth/password", json=body, headers=CSRF)
+        assert r.json() == {"success": True, "data": {"signed_out": 0}, "error": None}
+        assert client.get("/api/auth/me").status_code == 200
+        client.post("/api/auth/logout", headers=CSRF)
+        old = client.post("/api/auth/login", json=CREDS, headers=CSRF)
+        assert old.status_code == 401
+        new = {**CREDS, "password": "a brand new passphrase"}
+        assert client.post("/api/auth/login", json=new, headers=CSRF).status_code == 200
+
+    def test_needs_a_session_and_the_csrf_header(self, client: TestClient) -> None:
+        body = {"current_password": PASSWORD, "new_password": "a brand new passphrase"}
+        assert (
+            client.post("/api/auth/password", json=body, headers=CSRF).status_code
+            == 401
+        )
+        sign_in(client)
+        assert client.post("/api/auth/password", json=body).status_code == 403
+
+
 class TestTwoStep:
     def test_password_then_code(self, client: TestClient, db_session: Session) -> None:
         secret = totp.new_secret()
