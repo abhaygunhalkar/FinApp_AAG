@@ -16,22 +16,28 @@ class Settings(BaseSettings):
     PLAID_CLIENT_ID: str | None = None
     PLAID_SECRET: str | None = None
     PLAID_ENV: str = "sandbox"
-    # The app has one owner and no logins; chat tools only act for this id.
+    # The app has one owner; chat tools only act for this id.
     OWNER_USER_ID: str = "owner"
     # Which chat engine answers: "rules" (the only one so far).
     CHAT_ENGINE: str = "rules"
 
-    # Auth: nginx basic auth signs the user in and passes their name in this
-    # header. Without AUTH_PROXY_SECRET it is trusted only from these client
-    # addresses, which works only where nothing rewrites the address.
+    # Sign-in (app/auth.py). One owner account, made on the server with
+    # scripts/create_owner.py; there is no sign-up page.
+    AUTH_SESSION_IDLE_MINUTES: int = 60
+    AUTH_SESSION_MAX_HOURS: int = 12
+    # Off only for local development over plain http.
+    AUTH_COOKIE_SECURE: bool = True
+    AUTH_MAX_FAILED_LOGINS: int = 5
+    AUTH_LOCKOUT_MINUTES: int = 15
+    AUTH_LOGIN_ATTEMPTS_PER_MINUTE: int = 10
+
+    # No longer used: the nginx basic-auth setup before the app had its own
+    # sign-in. Kept so an existing .env still loads; remove them from .env,
+    # then from here.
     AUTH_USER_HEADER: str = "X-Remote-User"
     AUTH_TRUSTED_PROXIES: str = "127.0.0.1,::1"
-    # On the VM nginx also sends this secret, proving the request came through
-    # it; when set, it replaces the address check (which uvicorn's proxy
-    # handling defeats). Generate with: openssl rand -hex 32
     AUTH_PROXY_SECRET: str | None = None
     AUTH_PROXY_SECRET_HEADER: str = "X-Proxy-Secret"
-    # Local development only (no nginx): act as this user. Never set on the VM.
     AUTH_DEV_USER: str | None = None
 
     # POST /api/chat limits.
@@ -47,10 +53,6 @@ class Settings(BaseSettings):
     def broker_list(self) -> list[str]:
         """Return the list of configured brokers."""
         return [b.strip() for b in self.BROKERS.split(",") if b.strip()]
-
-    @property
-    def trusted_proxies(self) -> set[str]:
-        return {h.strip() for h in self.AUTH_TRUSTED_PROXIES.split(",") if h.strip()}
 
 
 @lru_cache

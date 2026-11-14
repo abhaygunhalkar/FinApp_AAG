@@ -11,6 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.auth import require_session
 from app.config import Settings, get_settings
 from app.database import get_db
 from app.main import app
@@ -25,7 +26,9 @@ from app.services.chat_tools import build_registry
 from app.services.rate_limit import InMemoryRateLimiter
 
 OWNER = "abhay"
-SIGNED_IN = {"X-Remote-User": OWNER}
+# conftest signs every test in; `real_auth` tests send the CSRF header.
+SIGNED_IN: dict[str, str] = {}
+CSRF = {"X-Requested-With": "FinApp"}
 
 
 class FakeClock:
@@ -42,9 +45,6 @@ class Env:
     def __init__(self) -> None:
         self.settings = Settings(
             OWNER_USER_ID=OWNER,
-            # TestClient connects from host "testclient", standing in for nginx.
-            AUTH_TRUSTED_PROXIES="testclient",
-            AUTH_DEV_USER=None,
             CHAT_RATE_LIMIT_PER_MINUTE=100,
             CHAT_MAX_BODY_BYTES=2048,
             CHAT_TIMEOUT_SECONDS=5,
@@ -136,61 +136,20 @@ def chat_log(caplog: pytest.LogCaptureFixture) -> dict[str, Any]:
 
 
 class TestAuth:
-    def test_no_user_is_401(self, client: TestClient) -> None:
-        r = post(client, {"sessionId": "s", "message": "help"}, headers={})
+    @pytest.mark.usefixtures("real_auth")
+    def test_no_session_is_401(self, client: TestClient) -> None:
+        r = post(client, {"sessionId": "s", "message": "help"}, CSRF)
         assert r.status_code == 401
-        assert error_of(r)["code"] == "unauthorized"
-        assert r.json()["data"]["sessionId"] == "unknown"
+        assert r.json() == {"success": False, "data": None, "error": "Please sign in."}
 
-    def test_blank_user_header_is_401(self, client: TestClient) -> None:
-        r = post(client, {"sessionId": "s", "message": "help"}, {"X-Remote-User": " "})
-        assert r.status_code == 401
-
-    def test_header_from_an_untrusted_host_is_ignored(
-        self, client: TestClient, env: Env
-    ) -> None:
-        env.settings.AUTH_TRUSTED_PROXIES = "127.0.0.1"
-        r = post(client, {"sessionId": "s", "message": "help"})
-        assert r.status_code == 401
-
-    def test_proxy_secret_proves_the_request_came_through_nginx(
-        self, client: TestClient, env: Env
-    ) -> None:
-        # Behind nginx, uvicorn reports the browser's address, not nginx's,
-        # so the address check fails; the shared secret is what counts.
-        env.settings.AUTH_TRUSTED_PROXIES = "127.0.0.1"
-        env.settings.AUTH_PROXY_SECRET = "s3cret"
-        body = {"sessionId": "s", "message": "help"}
-        ok = post(client, body, {**SIGNED_IN, "X-Proxy-Secret": "s3cret"})
-        assert ok.status_code == 200
-
-    @pytest.mark.parametrize("secret", [None, "", "wrong", "s3cret "])
-    def test_wrong_or_missing_proxy_secret_is_401(
-        self, client: TestClient, env: Env, secret: str | None
-    ) -> None:
-        env.settings.AUTH_PROXY_SECRET = "s3cret"
-        headers = dict(SIGNED_IN)
-        if secret is not None:
-            headers["X-Proxy-Secret"] = secret
-        # Even from a trusted address, the secret is now required.
-        r = post(client, {"sessionId": "s", "message": "help"}, headers)
-        assert r.status_code == 401
-
-    def test_another_signed_in_user_is_403(self, client: TestClient) -> None:
-        r = post(
-            client, {"sessionId": "s", "message": "help"}, {"X-Remote-User": "eve"}
-        )
-        assert r.status_code == 403
-        assert error_of(r)["code"] == "forbidden"
-
-    def test_dev_user_for_local_development(self, client: TestClient, env: Env) -> None:
-        env.settings.AUTH_DEV_USER = OWNER
-        r = post(client, {"sessionId": "s", "message": "help"}, headers={})
-        assert r.status_code == 200
-
+    @pytest.mark.usefixtures("real_auth")
     def test_user_cannot_be_set_in_the_body(self, client: TestClient) -> None:
-        r = post(client, {"sessionId": "s", "message": "help", "userId": OWNER}, {})
+        r = post(client, {"sessionId": "s", "message": "help", "userId": OWNER}, CSRF)
         assert r.status_code == 401
+
+    def test_signed_in_chats_as_the_owner(self, client: TestClient, env: Env) -> None:
+        assert post(client, {"sessionId": "s", "message": "help"}).status_code == 200
+        assert env.store.get(OWNER, "s") is not None
 
 
 # --- validation --------------------------------------------------------------
@@ -400,8 +359,10 @@ class TestRateLimit:
         self, client: TestClient, env: Env
     ) -> None:
         env.limiter = InMemoryRateLimiter(1, clock=env.clock)
+        signed_in = app.dependency_overrides.pop(require_session)
         for _ in range(3):
-            post(client, {"sessionId": "s", "message": "help"}, headers={})
+            post(client, {"sessionId": "s", "message": "help"})
+        app.dependency_overrides[require_session] = signed_in
         assert post(client, {"sessionId": "s", "message": "help"}).status_code == 200
 
 
@@ -487,11 +448,11 @@ class TestLogging:
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:
         with caplog.at_level(logging.INFO, logger="app.chat"):
-            post(client, {"sessionId": "s", "message": "help"}, headers={})
+            post(client, {"sessionId": "s"})
         log = chat_log(caplog)
         assert (log["status"], log["code"], log["intent"]) == (
-            401,
-            "unauthorized",
+            422,
+            "invalid_request",
             None,
         )
 

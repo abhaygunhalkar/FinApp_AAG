@@ -44,17 +44,11 @@ server {
     root /home/YOUR_USERNAME/FinApp_AAG/frontend/dist;
     index index.html;
 
-    # Basic auth for the whole site, including the API
-    auth_basic "FinApp";
-    auth_basic_user_file /etc/nginx/.htpasswd;
+    # No basic auth: the app has its own sign-in page (docs/auth.md).
 
     # Proxy API requests to FastAPI
     location /api/ {
         proxy_pass http://127.0.0.1:8000;
-        # Who signed in, plus a secret proving it came from nginx; both
-        # replace any value a client sends (used by /api/chat, see docs/chat-api.md)
-        proxy_set_header X-Remote-User $remote_user;
-        proxy_set_header X-Proxy-Secret YOUR_SECRET;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -110,7 +104,9 @@ Allow HTTP traffic from the GCP Console:
    - Source IPv4 ranges: `0.0.0.0/0`
    - Protocol: `TCP` → Port `80`
 
-## Phase 6 — nginx Basic Auth (Password Protection)
+## Phase 6 — nginx Basic Auth (no longer used)
+
+The app now has its own sign-in page; see [auth.md](auth.md), including how to remove basic auth from an existing VM. Kept for reference:
 
 ```bash
 # Install apache2-utils

@@ -11,7 +11,7 @@ External data is fetched only by the backend; the frontend never calls these ser
 - Earnings calendar: Finnhub (`FINNHUB_API_KEY`).
 - Bank/card balances: Plaid (`PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV`). Balances only; Plaid transactions are not imported.
 
-There are no user accounts in the app. See "Auth" below.
+There is one sign-in account, the owner's. See "Auth" below.
 
 ## Commands
 
@@ -96,16 +96,23 @@ Every API response, success or error, is wrapped in the same envelope: `{"succes
 | `net_worth_snapshots` | One row per day of total assets, liabilities and net worth (totals only, not per account) |
 | `recurring_expenses` | Fixed costs / bills with category, frequency, next due date, paying account, autopay |
 | `income_sources` | Paychecks and other income with pay schedule and deposit account |
+| `owner` | The one sign-in account: username, scrypt password hash, failed-sign-in count and lock |
+| `auth_sessions` | Signed-in browsers: hash of the cookie token, last seen, expiry |
 
 ### Configuration
 
-All backend config is env vars / `backend/.env` (see `backend/.env.example`), loaded via `app/config.py` (`pydantic-settings`, cached with `lru_cache`): `DATABASE_URL`, `MARKET_API_PROVIDER`, `REFRESH_INTERVAL_MINUTES`, `BROKERS` (comma-separated, drives the broker dropdown), `FINNHUB_API_KEY`, `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV`, `OWNER_USER_ID` (chat tools act only for this id), `CHAT_ENGINE` (`rules`), `AUTH_USER_HEADER` / `AUTH_TRUSTED_PROXIES` / `AUTH_DEV_USER` and the `CHAT_*` limits (see `docs/chat-api.md`). Frontend: `VITE_API_BASE_URL` (defaults to `http://localhost:8000`).
+All backend config is env vars / `backend/.env` (see `backend/.env.example`), loaded via `app/config.py` (`pydantic-settings`, cached with `lru_cache`): `DATABASE_URL`, `MARKET_API_PROVIDER`, `REFRESH_INTERVAL_MINUTES`, `BROKERS` (comma-separated, drives the broker dropdown), `FINNHUB_API_KEY`, `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV`, `OWNER_USER_ID` (chat tools act only for this id), `CHAT_ENGINE` (`rules`), the `AUTH_*` sign-in settings (`docs/auth.md`) and the `CHAT_*` limits (see `docs/chat-api.md`). Frontend: `VITE_API_BASE_URL` (defaults to `http://localhost:8000`).
 
 ### Auth
 
-There is no login or user model in the app; every request acts on the one owner's data, and most services take no user argument. On the VM, nginx HTTP basic auth covers the whole site, including `/api/` (`docs/GCP-VM-Frontend.md`). The nginx config on the VM is edited by hand, not by the deploy workflow. CORS allows only `http://localhost:3000`.
+The app has its own sign-in page and one account, the owner's, created on the server with `backend/scripts/create_owner.py` (also `--reset` and `--unlock`); there is no sign-up page and no user model beyond the `owner` table, so services still take no user argument. See `docs/auth.md`.
 
-Endpoints that need to know who is asking (so far only `POST /api/chat`) use `user_from_request()` in `app/auth.py`. It reads the username nginx forwards in `X-Remote-User`, and trusts it only when nginx's shared secret (`AUTH_PROXY_SECRET`, sent as `X-Proxy-Secret`) matches. Don't rely on the client address: uvicorn replaces it with the browser's IP from `X-Forwarded-For`. It falls back to `AUTH_DEV_USER` for local development, which must never be set on the VM. New settings must be deployed before they're added to the VM's `backend/.env`; `pydantic-settings` rejects unknown keys and the service won't start. Never take a user from a request body. See `docs/chat-api.md` for the one-time nginx and `OWNER_USER_ID` setup.
+- `POST /api/auth/login` sets an HttpOnly, SameSite=Strict `finapp_session` cookie; only a hash of the token is stored (`auth_sessions`). Sessions end after `AUTH_SESSION_IDLE_MINUTES` idle or `AUTH_SESSION_MAX_HOURS` after sign-in. Failed sign-ins lock the account after `AUTH_MAX_FAILED_LOGINS`.
+- Every router except `auth` is included with `Depends(require_session)` in `app/main.py`; add new routers to that list. The app-level `require_csrf_header` refuses any non-GET request without `X-Requested-With: FinApp`, which the axios client always sends (`withCredentials` on).
+- Frontend: `RequireAuth` wraps every page except `/login`; a 401 from any non-auth call clears the query cache and goes to `/login?expired=1&next=…`.
+- Tests: the autouse `signed_in` fixture in `tests/conftest.py` signs every test in and skips the CSRF check; use the `real_auth` fixture to test them for real.
+- Locally, run the backend with `AUTH_COOKIE_SECURE=false` and create an owner in the database you use.
+- On the VM, nginx does HTTPS and forwards `/api/` (`docs/GCP-VM-Frontend.md`); its config is edited by hand, not by the deploy workflow. CORS allows only `http://localhost:3000`. New settings must be deployed before they're added to the VM's `backend/.env`; `pydantic-settings` rejects unknown keys and the service won't start.
 
 ### Error handling and logging
 
@@ -133,7 +140,7 @@ Endpoints that need to know who is asking (so far only `POST /api/chat`) use `us
 - **Charts:** Recharts.
 - **Chat contract:** the chat assistant's request/response shapes are mirrored in `backend/app/schemas/chat.py` (Pydantic) and `frontend/src/types/chat.ts` (Zod), checked against shared examples in `docs/chat-contract.examples.json`. Change all three together; see `docs/chat-contract.md`. This API is camelCase on the wire, unlike the rest.
 - **Chat tools:** read-only functions in `backend/app/services/chat_tools/`, registered in a `ToolRegistry` for function calling. They reuse services/repositories, take the user from a server-built `ToolContext` (only `OWNER_USER_ID` is allowed), and return money as `Decimal` cents. See `docs/chat-tools.md`.
-- **Chat widget:** `src/components/chat/` (launcher in `AppLayout`, panel lazy-loaded), talking to `POST /api/chat` through `useChat` (`src/hooks/useChat.ts`, `src/api/chat.ts`). One component per message type in `src/components/chat/messages/`. Replies are checked against the Zod contract in development only (dynamic import, so Zod stays out of the production bundle). Locally, run the backend with `AUTH_DEV_USER` set to `OWNER_USER_ID` or every chat request gets 401.
+- **Chat widget:** `src/components/chat/` (launcher in `AppLayout`, panel lazy-loaded), talking to `POST /api/chat` through `useChat` (`src/hooks/useChat.ts`, `src/api/chat.ts`). One component per message type in `src/components/chat/messages/`. Replies are checked against the Zod contract in development only (dynamic import, so Zod stays out of the production bundle). Locally, sign in first like any other page.
 - **Chat engine:** `backend/app/services/chat_engine/` turns a `ChatRequest` into a `ChatResponse`. Get one with `create_engine()` (`CHAT_ENGINE` setting, only `rules` so far). Intents, chips and example questions must only point at tools that exist. See `docs/chat-engine.md`.
 - **Dependencies:** ask before adding a new package to either side. Zod (frontend) is used for runtime validation of the chat contract.
 - **Git:** commit and push only when the owner says so; no Co-Authored-By line.

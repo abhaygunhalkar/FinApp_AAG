@@ -63,7 +63,7 @@ None. There is no budget model, endpoint or page.
 
 ## How the user is identified
 
-It isn't. The app has no users, logins, tokens or sessions; every request acts on the one owner's data and no service takes a user argument. Access is controlled at the edge by nginx basic auth on the VM (`docs/GCP-VM-Frontend.md`). The setup doc originally put basic auth on `location /` only; on the VM it has covered the whole server, including `/api/`, since 2026-10-23. `POST /api/chat` identifies the user from the username nginx forwards (see `docs/chat-api.md`).
+It isn't. The app has no users, logins, tokens or sessions; every request acts on the one owner's data and no service takes a user argument. Access is controlled at the edge by nginx basic auth on the VM (`docs/GCP-VM-Frontend.md`). The setup doc originally put basic auth on `location /` only; on the VM it has covered the whole server, including `/api/`, since 2026-10-23. `POST /api/chat` identifies the user from the username nginx forwards (see `docs/chat-api.md`). *Superseded on 2026-11-13: the app now has its own sign-in page and session cookie; see `docs/auth.md`.*
 
 ## Frontend
 

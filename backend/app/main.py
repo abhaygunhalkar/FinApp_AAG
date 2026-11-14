@@ -5,14 +5,31 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.auth import require_csrf_header, require_session
 from app.config import get_settings
 from app.database import SessionLocal, verify_database
-from app.routers import dashboard, earnings, etf_holdings, holdings, market, net_worth, plaid, transactions, watchlist, options, portfolio_analysis, recurring_expenses, income, chat
+from app.routers import (
+    auth,
+    chat,
+    dashboard,
+    earnings,
+    etf_holdings,
+    holdings,
+    income,
+    market,
+    net_worth,
+    options,
+    plaid,
+    portfolio_analysis,
+    recurring_expenses,
+    transactions,
+    watchlist,
+)
 from app.routers.chat import ChatRequestError, chat_error_response
 from app.services.financial_account_service import FinancialAccountService
 from app.services.market_data_service import MarketDataService
@@ -101,6 +118,7 @@ app = FastAPI(
     description="Backend API for the Personal Finance Dashboard application.",
     version="0.1.0",
     lifespan=lifespan,
+    dependencies=[Depends(require_csrf_header)],
 )
 
 # CORS middleware: allow frontend on localhost:3000
@@ -153,9 +171,7 @@ async def validation_exception_handler(
 
 
 @app.exception_handler(HTTPException)
-async def http_exception_handler(
-    request: Request, exc: HTTPException
-) -> JSONResponse:
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     """Wrap FastAPI HTTPExceptions in the standard API envelope format."""
     return JSONResponse(
         status_code=exc.status_code,
@@ -168,9 +184,7 @@ async def http_exception_handler(
 
 
 @app.exception_handler(Exception)
-async def global_exception_handler(
-    request: Request, exc: Exception
-) -> JSONResponse:
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Catch all unhandled exceptions. Log details, return safe message."""
     logger.error(
         "Unhandled exception on %s %s: %s: %s",
@@ -191,21 +205,26 @@ async def global_exception_handler(
 
 # --- Routers ---
 
-app.include_router(holdings.router)
-app.include_router(etf_holdings.router)
-app.include_router(transactions.router)
-app.include_router(watchlist.router)
-app.include_router(dashboard.router)
-app.include_router(market.router)
-app.include_router(earnings.router)
-app.include_router(options.router)
-app.include_router(portfolio_analysis.router)
-app.include_router(plaid.router)
-app.include_router(net_worth.router)
-app.include_router(recurring_expenses.router)
-app.include_router(income.router)
-app.include_router(chat.router)
+# Sign-in itself is open; every other /api/ route needs a session.
+app.include_router(auth.router)
 
+for _router in (
+    holdings.router,
+    etf_holdings.router,
+    transactions.router,
+    watchlist.router,
+    dashboard.router,
+    market.router,
+    earnings.router,
+    options.router,
+    portfolio_analysis.router,
+    plaid.router,
+    net_worth.router,
+    recurring_expenses.router,
+    income.router,
+    chat.router,
+):
+    app.include_router(_router, dependencies=[Depends(require_session)])
 
 # --- Health Check ---
 

@@ -7,8 +7,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.auth import require_csrf_header, require_session
 from app.database import Base, get_db
 from app.main import app
+from app.models.owner import Owner
 
 # In-memory SQLite engine for tests — uses StaticPool to keep a single
 # connection alive across the test session (required for in-memory DBs).
@@ -29,6 +31,30 @@ def setup_database() -> Generator[None, None, None]:
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture(autouse=True)
+def signed_in() -> Generator[None, None, None]:
+    """API tests run as the signed-in owner, without the CSRF header check.
+
+    Tests of sign-in itself use the `real_auth` fixture to turn both back on.
+    Fixtures that clear app.dependency_overrides at teardown are fine: this
+    sets them again before the next test.
+    """
+    app.dependency_overrides[require_session] = lambda: Owner(
+        id=1, username="owner", password_hash="x"
+    )
+    app.dependency_overrides[require_csrf_header] = lambda: None
+    yield
+    app.dependency_overrides.pop(require_session, None)
+    app.dependency_overrides.pop(require_csrf_header, None)
+
+
+@pytest.fixture()
+def real_auth() -> None:
+    """Check sessions and the CSRF header for real in this test."""
+    app.dependency_overrides.pop(require_session, None)
+    app.dependency_overrides.pop(require_csrf_header, None)
 
 
 @pytest.fixture()

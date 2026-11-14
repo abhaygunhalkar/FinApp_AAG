@@ -1,9 +1,10 @@
 """POST /api/chat: one turn with the chat assistant.
 
-Every failure, from auth to a bug, comes back as the usual envelope with
-`data` holding a ChatResponse of one `error` message, so the widget can always
-render it. Nothing internal (stack traces, exception text) is ever returned.
-Logs are one JSON line per request, without message content.
+Every failure after sign-in, from a bad request to a bug, comes back as the
+usual envelope with `data` holding a ChatResponse of one `error` message, so
+the widget can always render it. A missing session is the app-wide 401.
+Nothing internal (stack traces, exception text) is ever returned. Logs are
+one JSON line per request, without message content.
 """
 
 import asyncio
@@ -21,7 +22,6 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-from app.auth import user_from_request
 from app.config import Settings, get_settings
 from app.database import get_db
 from app.schemas.chat import ChatResponse, dump_chat_response, parse_chat_request
@@ -138,11 +138,9 @@ async def chat(
     }
     session_id: str | None = None
     try:
-        user = user_from_request(request, settings)
-        if user is None:
-            raise ChatRequestError(401, "unauthorized", "Please sign in to chat.")
-        if user != settings.OWNER_USER_ID:
-            raise ChatRequestError(403, "forbidden", "Not allowed")
+        # The router requires a signed-in session (app/main.py), and the one
+        # account is the owner the chat tools act for.
+        user = settings.OWNER_USER_ID
 
         wait = limiter.check(user)
         if wait is not None:
