@@ -4,7 +4,6 @@ What's still to do on FinApp, so nothing gets forgotten. Newest decisions at the
 
 ## Infrastructure (quick, in GCP and on the VM)
 
-- [ ] **Turn on nightly backups on the VM:** `bash ~/FinApp_AAG/backend/scripts/backup/install_backup.sh` (local copies only, no restart). Until then there is no backup of `finance_tracker.db` at all.
 - [ ] *Later:* copies off the VM. Uploading to a bucket needs a one-time Stop/Start, so make the IP static first (`cloudshell_setup.sh` does both; deferred 2026-11-14 to avoid any IP cost). Meanwhile, download a backup now and then from Cloud Shell. See [backup.md](backup.md).
 - [ ] **Find out why the VM froze** (it needed a Reset). On the VM:
   ```bash
@@ -39,6 +38,8 @@ One copy per person on their own cloud, not a multi-user service.
 - **Chat feature flag, metrics dashboards, Playwright end-to-end tests:** not needed for one user.
 
 ## Done
+
+- 2026-11-14: nightly database backups on the VM (03:15 UTC, newest 14 kept in `~/finapp-backups`; local copies only). See [backup.md](backup.md).
 
 - 2026-11-14: standardization pass.
   - Every router follows one pattern: call the service, declare `response_model=ApiResponse[<schema>]`, no hand-built `JSONResponse`, no repository imports. Logic moved into services: sell history (`TransactionService.get_sell_history`), the earnings calendar (new `EarningsService`), company info (`MarketDataService.fetch_company_info`) and the Plaid item list (`PlaidService.get_items`). New schemas for market, earnings, Plaid and sell-history replies. A recording of 68 replies (successes and errors) was identical before and after.
