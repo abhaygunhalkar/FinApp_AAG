@@ -11,7 +11,13 @@ export type {
 export type { EarningsCalendarEntry } from './earnings';
 export type { MarketQuote, PricePoint } from './market';
 export type { ApiResponse } from './api';
-export type { AuthUser, LoginRequest, LoginResult } from './auth';
+export type {
+  AuthUser,
+  ChangePasswordRequest,
+  ChangePasswordResult,
+  LoginRequest,
+  LoginResult,
+} from './auth';
 export type {
   MonthlyPnlEntry,
   OptionPayload,

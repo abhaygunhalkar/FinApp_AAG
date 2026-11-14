@@ -1,6 +1,13 @@
 import { isAxiosError } from 'axios';
 import apiClient, { unwrapResponse } from './client';
-import type { ApiResponse, AuthUser, LoginRequest, LoginResult } from '../types';
+import type {
+  ApiResponse,
+  AuthUser,
+  ChangePasswordRequest,
+  ChangePasswordResult,
+  LoginRequest,
+  LoginResult,
+} from '../types';
 
 /** The server's own message for a failed request, or a fallback. */
 function messageOf(err: unknown): string {
@@ -27,6 +34,19 @@ export async function getMe(): Promise<AuthUser> {
 export async function login(credentials: LoginRequest): Promise<LoginResult> {
   try {
     const { data } = await apiClient.post<ApiResponse<LoginResult>>('/api/auth/login', credentials);
+    return unwrapResponse(data);
+  } catch (err) {
+    throw new Error(messageOf(err), { cause: err });
+  }
+}
+
+/** Changes the password. Throws an Error whose message is fit to show. */
+export async function changePassword(body: ChangePasswordRequest): Promise<ChangePasswordResult> {
+  try {
+    const { data } = await apiClient.post<ApiResponse<ChangePasswordResult>>(
+      '/api/auth/password',
+      body,
+    );
     return unwrapResponse(data);
   } catch (err) {
     throw new Error(messageOf(err), { cause: err });

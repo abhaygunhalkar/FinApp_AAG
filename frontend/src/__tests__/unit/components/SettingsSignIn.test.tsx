@@ -4,7 +4,10 @@ import Settings from '../../../pages/Settings';
 import type { AuthUser } from '../../../types';
 
 const me = vi.hoisted(() => ({ data: undefined as AuthUser | undefined }));
-vi.mock('../../../hooks/useAuth', () => ({ useMe: () => ({ data: me.data }) }));
+vi.mock('../../../hooks/useAuth', () => ({
+  useMe: () => ({ data: me.data }),
+  useChangePassword: () => ({ mutate: vi.fn(), reset: vi.fn(), isPending: false, error: null }),
+}));
 
 describe('Settings: sign-in & security', () => {
   beforeEach(() => {

@@ -1,5 +1,5 @@
 export { queryClient } from './queryClient';
-export { AUTH_ME_KEY, useLogin, useLogout, useMe } from './useAuth';
+export { AUTH_ME_KEY, useChangePassword, useLogin, useLogout, useMe } from './useAuth';
 export {
   useHoldings,
   useHolding,

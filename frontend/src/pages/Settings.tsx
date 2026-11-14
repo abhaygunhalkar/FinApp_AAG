@@ -1,3 +1,4 @@
+import { ChangePasswordForm } from '../components/auth';
 import { useMe } from '../hooks/useAuth';
 import { PALETTES, useUIStore, type Palette } from '../store/uiStore';
 
@@ -128,6 +129,7 @@ export default function Settings() {
               Make new ones on the server before you need one.
             </p>
           )}
+          <ChangePasswordForm twoStep={me.two_step_enabled} />
           <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
             These are changed on the server, in <code>backend/</code>:{' '}
             {me.two_step_enabled ? (
@@ -140,7 +142,7 @@ export default function Settings() {
                 <code>python scripts/create_owner.py --enable-2fa</code> turns it on.
               </>
             )}{' '}
-            <code>--reset</code> changes the password.
+            Forgot your password? <code>--reset</code> sets a new one there.
           </p>
         </section>
       )}

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { getMe, login, logout } from '../api/auth';
-import type { LoginRequest } from '../types';
+import { changePassword, getMe, login, logout } from '../api/auth';
+import type { ChangePasswordRequest, LoginRequest } from '../types';
 
 export const AUTH_ME_KEY = ['auth', 'me'] as const;
 
@@ -28,6 +28,17 @@ export function useLogin() {
         await queryClient.fetchQuery({ queryKey: AUTH_ME_KEY, queryFn: getMe });
       }
     },
+  });
+}
+
+export function useChangePassword() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: ChangePasswordRequest) => changePassword(body),
+    // Never retried: a wrong current password counts toward the lockout.
+    retry: false,
+    // A backup code may have been used up.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: AUTH_ME_KEY }),
   });
 }
 
