@@ -9,9 +9,9 @@ from app.auth import SESSION_COOKIE, require_session
 from app.config import Settings, get_settings
 from app.database import get_db
 from app.models.owner import Owner
-from app.schemas.auth import AuthUserResponse, LoginRequest
+from app.schemas.auth import AuthUserResponse, LoginRequest, LoginResponse
 from app.schemas.common import ApiResponse
-from app.services.auth_service import AuthService
+from app.services.auth_service import AuthService, backup_codes_left
 from app.services.rate_limit import InMemoryRateLimiter, RateLimiter
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -40,7 +40,7 @@ def _set_cookie(response: Response, token: str, settings: Settings) -> None:
     )
 
 
-@router.post("/login", response_model=ApiResponse[AuthUserResponse])
+@router.post("/login", response_model=ApiResponse[LoginResponse])
 def login(
     body: LoginRequest,
     request: Request,
@@ -54,16 +54,19 @@ def login(
         raise HTTPException(
             status_code=429, detail="Too many sign-in attempts. Wait a minute."
         )
-    token, owner = AuthService.login(
+    result = AuthService.login(
         db,
         settings,
         body.username,
         body.password,
+        code=body.code,
         ip_address=ip,
         user_agent=request.headers.get("user-agent"),
     )
-    _set_cookie(response, token, settings)
-    return {"success": True, "data": {"username": owner.username}, "error": None}
+    if result.token is not None:
+        _set_cookie(response, result.token, settings)
+    data = {"username": result.owner.username, "code_required": result.code_required}
+    return {"success": True, "data": data, "error": None}
 
 
 @router.post("/logout", response_model=ApiResponse[None])
@@ -86,4 +89,9 @@ def logout(
 
 @router.get("/me", response_model=ApiResponse[AuthUserResponse])
 def me(owner: Annotated[Owner, Depends(require_session)]) -> dict[str, object]:
-    return {"success": True, "data": {"username": owner.username}, "error": None}
+    data = {
+        "username": owner.username,
+        "two_step_enabled": owner.totp_secret is not None,
+        "backup_codes_left": backup_codes_left(owner),
+    }
+    return {"success": True, "data": data, "error": None}

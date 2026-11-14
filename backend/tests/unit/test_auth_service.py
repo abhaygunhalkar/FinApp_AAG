@@ -1,7 +1,8 @@
 """Tests for passwords, sign-in, lockout and session expiry."""
 
+import base64
 from collections.abc import Generator
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi import HTTPException
@@ -10,8 +11,8 @@ from sqlalchemy.orm import Session
 from app.config import Settings
 from app.models.auth_session import AuthSession
 from app.models.owner import Owner
-from app.services import passwords
-from app.services.auth_service import AuthService, token_hash
+from app.services import passwords, totp
+from app.services.auth_service import AuthService, backup_codes_left, token_hash
 from app.services.passwords import hash_password, password_problem, verify_password
 
 PASSWORD = "correct horse battery"
@@ -36,8 +37,16 @@ def owner(db_session: Session) -> Owner:
     return AuthService.create_owner(db_session, "abhay", PASSWORD)
 
 
-def login(db: Session, username: str = "abhay", password: str = PASSWORD, **kw):  # type: ignore[no-untyped-def]
-    return AuthService.login(db, SETTINGS, username, password, now=kw.pop("now", NOW))
+def login(
+    db: Session,
+    username: str = "abhay",
+    password: str = PASSWORD,
+    now: datetime = NOW,
+    code: str | None = None,
+) -> tuple[str, Owner]:
+    result = AuthService.login(db, SETTINGS, username, password, code=code, now=now)
+    assert result.token is not None and not result.code_required
+    return result.token, result.owner
 
 
 class TestPasswords:
@@ -225,3 +234,160 @@ class TestSessions:
         login(db_session)
         login(db_session, now=NOW + timedelta(hours=13))
         assert db_session.query(AuthSession).count() == 1
+
+
+# RFC 6238 appendix B, SHA-1: the ASCII key "12345678901234567890".
+RFC_SECRET = base64.b32encode(b"12345678901234567890").decode()
+
+
+class TestTotp:
+    @pytest.mark.parametrize(
+        ("timestamp", "eight_digits"),
+        [
+            (59, "94287082"),
+            (1111111109, "07081804"),
+            (1111111111, "14050471"),
+            (1234567890, "89005924"),
+            (2000000000, "69279037"),
+            (20000000000, "65353130"),
+        ],
+    )
+    def test_matches_the_rfc_test_values(
+        self, timestamp: int, eight_digits: str
+    ) -> None:
+        counter = totp.counter_at(timestamp)
+        assert totp.code_at(RFC_SECRET, counter, digits=8) == eight_digits
+        # The usual 6 digits are the last six.
+        assert totp.matching_counter(RFC_SECRET, eight_digits[2:], timestamp) == counter
+
+    def test_accepts_one_step_either_side_only(self) -> None:
+        t = 1_000_000_000
+        now = totp.counter_at(t)
+        for step, ok in [(-2, False), (-1, True), (0, True), (1, True), (2, False)]:
+            code = totp.code_at(RFC_SECRET, now + step)
+            assert (totp.matching_counter(RFC_SECRET, code, t) is not None) is ok
+
+    @pytest.mark.parametrize("code", ["", "12345", "1234567", "abcdef", "12 34 5"])
+    def test_malformed_codes(self, code: str) -> None:
+        assert totp.matching_counter(RFC_SECRET, code, 59) is None
+
+    def test_new_secrets_and_backup_codes(self) -> None:
+        secret = totp.new_secret()
+        assert len(secret) == 32 and secret != totp.new_secret()
+        assert totp.setup_key(secret).count(" ") == 7
+        assert "secret=" + secret in totp.otpauth_uri(secret, "abhay")
+        codes = totp.new_backup_codes()
+        assert len(set(codes)) == 10
+        assert all(len(c) == 9 and c[4] == "-" for c in codes)
+        assert totp.backup_code_hash(codes[0]) == totp.backup_code_hash(
+            " " + codes[0].upper().replace("-", "") + " "
+        )
+
+
+def code_now(secret: str, now: datetime = NOW, step: int = 0) -> str:
+    ts = now.replace(tzinfo=UTC).timestamp()
+    return totp.code_at(secret, totp.counter_at(ts) + step)
+
+
+class TestTwoStep:
+    @pytest.fixture
+    def secret(self, db_session: Session, owner: Owner) -> str:
+        return totp.new_secret()
+
+    @pytest.fixture
+    def backup(self, db_session: Session, owner: Owner, secret: str) -> list[str]:
+        # Enabled a minute before NOW, so NOW's code is still unused.
+        earlier = NOW - timedelta(minutes=1)
+        return AuthService.enable_two_step(
+            db_session, secret, code_now(secret, earlier), now=earlier
+        )
+
+    def test_turning_on_needs_a_right_code(
+        self, db_session: Session, owner: Owner, secret: str
+    ) -> None:
+        with pytest.raises(ValueError, match="didn't match"):
+            AuthService.enable_two_step(db_session, secret, "000000", now=NOW)
+        assert owner.totp_secret is None
+
+    def test_turning_on_signs_everyone_out(
+        self, db_session: Session, owner: Owner, secret: str
+    ) -> None:
+        token, _ = login(db_session)
+        codes = AuthService.enable_two_step(
+            db_session, secret, code_now(secret), now=NOW
+        )
+        assert len(codes) == 10 and backup_codes_left(owner) == 10
+        assert AuthService.authenticate(db_session, SETTINGS, token, NOW) is None
+
+    def test_password_alone_asks_for_a_code(
+        self, db_session: Session, owner: Owner, backup: list[str]
+    ) -> None:
+        result = AuthService.login(db_session, SETTINGS, "abhay", PASSWORD, now=NOW)
+        assert result.code_required and result.token is None
+        assert db_session.query(AuthSession).count() == 0
+        assert owner.failed_logins == 0
+
+    def test_wrong_password_never_reveals_two_step(
+        self, db_session: Session, owner: Owner, backup: list[str]
+    ) -> None:
+        with pytest.raises(HTTPException) as exc:
+            AuthService.login(db_session, SETTINGS, "abhay", "nope", now=NOW)
+        assert exc.value.detail == "Incorrect username or password."
+
+    def test_right_code_signs_in(
+        self, db_session: Session, owner: Owner, secret: str, backup: list[str]
+    ) -> None:
+        token, _ = login(db_session, code=code_now(secret))
+        assert AuthService.authenticate(db_session, SETTINGS, token, NOW) is owner
+
+    def test_a_code_works_only_once(
+        self, db_session: Session, owner: Owner, secret: str, backup: list[str]
+    ) -> None:
+        code = code_now(secret)
+        login(db_session, code=code)
+        with pytest.raises(HTTPException) as exc:
+            login(db_session, code=code)
+        assert exc.value.status_code == 401
+        # An older code, from before the one just used, is refused too.
+        with pytest.raises(HTTPException):
+            login(db_session, code=code_now(secret, step=-1))
+        login(db_session, code=code_now(secret, step=1))
+
+    def test_wrong_codes_count_toward_the_lockout(
+        self, db_session: Session, owner: Owner, backup: list[str]
+    ) -> None:
+        for _ in range(2):
+            with pytest.raises(HTTPException) as exc:
+                login(db_session, code="000000")
+            assert exc.value.status_code == 401
+            assert "code didn't work" in str(exc.value.detail)
+        with pytest.raises(HTTPException) as exc:
+            login(db_session, code="000000")
+        assert exc.value.status_code == 429
+
+    def test_backup_code_works_once(
+        self, db_session: Session, owner: Owner, backup: list[str]
+    ) -> None:
+        login(db_session, code=backup[3].upper())
+        assert backup_codes_left(owner) == 9
+        with pytest.raises(HTTPException):
+            login(db_session, code=backup[3])
+        login(db_session, code=backup[4])
+        assert backup_codes_left(owner) == 8
+
+    def test_new_backup_codes_replace_the_old(
+        self, db_session: Session, owner: Owner, backup: list[str]
+    ) -> None:
+        fresh = AuthService.new_backup_codes(db_session)
+        with pytest.raises(HTTPException):
+            login(db_session, code=backup[0])
+        login(db_session, code=fresh[0])
+
+    def test_turning_off(
+        self, db_session: Session, owner: Owner, backup: list[str]
+    ) -> None:
+        AuthService.disable_two_step(db_session)
+        login(db_session)
+        assert backup_codes_left(owner) == 0
+        with pytest.raises(ValueError):
+            AuthService.new_backup_codes(db_session)

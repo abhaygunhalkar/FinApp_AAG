@@ -7,6 +7,7 @@ The app has its own sign-in page and **one account**, the owner's. There is no s
 | Session check, CSRF header check | `backend/app/auth.py` |
 | Sign-in, lockout, session expiry | `backend/app/services/auth_service.py` |
 | Password hashing and rules | `backend/app/services/passwords.py` |
+| Authenticator (TOTP) and backup codes | `backend/app/services/totp.py` |
 | `/api/auth/login`, `/logout`, `/me` | `backend/app/routers/auth.py` |
 | Account setup and reset | `backend/scripts/create_owner.py` |
 | Sign-in page, route guard, Sign out | `frontend/src/pages/Login.tsx`, `src/components/auth/`, `src/components/layout/Sidebar.tsx` |
@@ -21,12 +22,26 @@ The app has its own sign-in page and **one account**, the owner's. There is no s
 - **Wrong sign-ins:** the message is always "Incorrect username or password." After `AUTH_MAX_FAILED_LOGINS` (5) failures in a row, sign-in is locked for `AUTH_LOCKOUT_MINUTES` (15), even with the right password. Each address is also limited to `AUTH_LOGIN_ATTEMPTS_PER_MINUTE` (10) tries.
 - **Chat** acts for `OWNER_USER_ID` once the request has a session.
 
+## Two-step verification
+
+Optional, and off until you turn it on. When it's on, the right password is not enough: the sign-in page asks next for the 6-digit code from an authenticator app (Google Authenticator, 1Password, Authy, ...), or one of 10 one-time backup codes.
+
+- **Codes:** standard TOTP (RFC 6238): 6 digits, a new one every 30 seconds, SHA-1. Written with Python's standard library and checked against the RFC's test values. Codes from one step before or after are accepted, for a phone clock a little off. Each code works once.
+- **Backup codes:** 10 codes like `k7mp-q2xa`, shown once when two-step is turned on (or with `--backup-codes`). Only their SHA-256 hashes are stored; each works once. Settings shows how many are left and warns at 2 or fewer.
+- **Wrong codes** count toward the same lockout as wrong passwords. A wrong password still says only "Incorrect username or password."; the code step comes only after the right password.
+- **How the API does it:** `POST /api/auth/login` with just the password answers `code_required: true` and sets no cookie; the page sends the password again with `code`. `GET /api/auth/me` includes `two_step_enabled` and `backup_codes_left`.
+- **Storage:** the TOTP key is kept as-is in the `owner` row (the server has to read it to check codes), so the database file must stay private, as it already must.
+- Turning it on signs every browser out, so each one signs in again with a code.
+
 ## Commands (on the server, in `~/FinApp_AAG/backend` with the venv active)
 
 ```bash
 python scripts/create_owner.py            # one time: choose a username and password
 python scripts/create_owner.py --reset    # forgot the password: set a new one (signs out every browser)
 python scripts/create_owner.py --unlock   # locked out after failed sign-ins
+python scripts/create_owner.py --enable-2fa     # turn on two-step: add the key to your app, type a code back
+python scripts/create_owner.py --backup-codes   # new backup codes (the old ones stop working)
+python scripts/create_owner.py --disable-2fa    # lost your phone: the password alone signs in again
 ```
 
 There is no "forgot password" link on the page: you reset it on the server.

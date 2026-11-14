@@ -1,6 +1,8 @@
 """Integration tests for /api/auth and the sign-in wall around the API."""
 
+import time
 from collections.abc import Generator
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,7 +12,7 @@ from app.config import Settings, get_settings
 from app.database import get_db
 from app.main import app
 from app.routers.auth import get_login_limiter
-from app.services import passwords
+from app.services import passwords, totp
 from app.services.auth_service import AuthService
 from app.services.rate_limit import InMemoryRateLimiter
 
@@ -50,7 +52,7 @@ class TestSignIn:
         r = client.post("/api/auth/login", json=CREDS, headers=CSRF)
         assert r.json() == {
             "success": True,
-            "data": {"username": "abhay"},
+            "data": {"username": "abhay", "code_required": False},
             "error": None,
         }
         cookie = r.headers["set-cookie"].lower()
@@ -71,7 +73,11 @@ class TestSignIn:
     def test_me_needs_a_session(self, client: TestClient) -> None:
         assert client.get("/api/auth/me").status_code == 401
         sign_in(client)
-        assert client.get("/api/auth/me").json()["data"] == {"username": "abhay"}
+        assert client.get("/api/auth/me").json()["data"] == {
+            "username": "abhay",
+            "two_step_enabled": False,
+            "backup_codes_left": 0,
+        }
 
     def test_sign_out(self, client: TestClient) -> None:
         sign_in(client)
@@ -88,6 +94,36 @@ class TestSignIn:
             client.post("/api/auth/login", json=bad, headers=CSRF)
         r = client.post("/api/auth/login", json=CREDS, headers=CSRF)
         assert r.status_code == 429
+
+
+class TestTwoStep:
+    def test_password_then_code(self, client: TestClient, db_session: Session) -> None:
+        secret = totp.new_secret()
+        earlier = datetime.now(UTC).replace(tzinfo=None) - timedelta(minutes=2)
+        ts = earlier.replace(tzinfo=UTC).timestamp()
+        AuthService.enable_two_step(
+            db_session, secret, totp.code_at(secret, totp.counter_at(ts)), now=earlier
+        )
+
+        first = client.post("/api/auth/login", json=CREDS, headers=CSRF)
+        assert first.json()["data"] == {"username": "abhay", "code_required": True}
+        assert "set-cookie" not in first.headers
+        assert client.get("/api/auth/me").status_code == 401
+
+        wrong = client.post(
+            "/api/auth/login", json={**CREDS, "code": "000000"}, headers=CSRF
+        )
+        assert wrong.status_code == 401
+
+        code = totp.code_at(secret, totp.counter_at(time.time()))
+        ok = client.post("/api/auth/login", json={**CREDS, "code": code}, headers=CSRF)
+        assert ok.json()["data"]["code_required"] is False
+        me = client.get("/api/auth/me").json()["data"]
+        assert me == {
+            "username": "abhay",
+            "two_step_enabled": True,
+            "backup_codes_left": 10,
+        }
 
 
 class TestTheApiIsClosedWithoutASession:

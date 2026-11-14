@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, func
+from sqlalchemy import DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -17,6 +17,12 @@ class Owner(Base):
     # Wrong passwords in a row; reaching the limit locks sign-in for a while.
     failed_logins: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Two-step sign-in (app/services/totp.py); off while totp_secret is None.
+    totp_secret: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # The last code's time step, so a code can't be used twice.
+    totp_last_counter: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # JSON list of SHA-256 hashes of the unused backup codes.
+    backup_code_hashes: Mapped[str | None] = mapped_column(Text, nullable=True)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     password_changed_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
