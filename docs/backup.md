@@ -11,11 +11,19 @@ The files contain your password hash, 2FA key and Plaid tokens, so the bucket is
 
 Scripts: `backend/scripts/backup/` (`cloudshell_setup.sh`, `install_backup.sh`, `backup_db.sh`).
 
+**Current setup (2026-11-14): local copies only.** The owner chose not to make the IP static or keep a separate Google account for now, and writing to the bucket needs a VM Stop/Start, which would change the ephemeral IP. So `install_backup.sh` runs without a bucket: the 14 nightly copies protect against mistakes, but not against losing the VM. To keep a copy elsewhere, download one now and then from Cloud Shell:
+
+```bash
+gcloud compute scp instance-20260526-134113:'~/finapp-backups/finance_tracker-*.db.gz' . --zone ZONE
+```
+
+then save it from Cloud Shell's ⋮ menu → Download. Steps 1 and 2 below add the bucket later; step 1 makes the IP static first.
+
 ## Cost
 
 Free under Google's Always Free tier: 5 GB-months of **Standard** storage in **us-east1, us-west1 or us-central1**, pooled across those regions, plus 5,000 uploads a month. Thirty compressed copies of this database are a few MB. The setup script picks the VM's region when it's one of those three, else us-central1. Google can change the free tier; see [Cloud Storage pricing](https://cloud.google.com/storage/pricing).
 
-## Setup (one time)
+## Adding the bucket (one time, later)
 
 **1. In Google Cloud Shell** (console, `>_` icon at the top right):
 
@@ -36,7 +44,7 @@ The first `gcloud compute ssh` may ask to create an SSH key for Cloud Shell; acc
 
 It prints the command for step 2. It's safe to run again.
 
-**2. On the VM** (after the deploy that brought these scripts):
+**2. On the VM** (after the deploy that brought these scripts). For local copies only, leave out the bucket:
 
 ```bash
 bash ~/FinApp_AAG/backend/scripts/backup/install_backup.sh gs://finapp-backups-<project>

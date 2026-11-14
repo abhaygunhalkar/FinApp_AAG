@@ -34,7 +34,10 @@ IP="$(describe 'networkInterfaces[0].accessConfigs[0].natIP')"
 if gcloud compute addresses list --filter="address=$IP" --format="value(name)" | grep -q .; then
   echo "1. IP $IP is already static."
 else
-  gcloud compute addresses create finapp-ip --addresses="$IP" --region="$REGION"
+  # The reserved address must use the same network tier as the VM's IP.
+  TIER="$(describe 'networkInterfaces[0].accessConfigs[0].networkTier')"
+  gcloud compute addresses create finapp-ip --addresses="$IP" --region="$REGION" \
+    --network-tier="${TIER:-PREMIUM}"
   echo "1. IP $IP is now static (named finapp-ip)."
 fi
 

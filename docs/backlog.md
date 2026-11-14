@@ -4,7 +4,8 @@ What's still to do on FinApp, so nothing gets forgotten. Newest decisions at the
 
 ## Infrastructure (quick, in GCP and on the VM)
 
-- [ ] **Turn on nightly database backups**, which also makes the VM's external IP static: run `backend/scripts/backup/cloudshell_setup.sh` in Cloud Shell, then `install_backup.sh` on the VM. See [backup.md](backup.md). Until then there is no backup of `finance_tracker.db` at all.
+- [ ] **Turn on nightly backups on the VM:** `bash ~/FinApp_AAG/backend/scripts/backup/install_backup.sh` (local copies only, no restart). Until then there is no backup of `finance_tracker.db` at all.
+- [ ] *Later:* copies off the VM. Uploading to a bucket needs a one-time Stop/Start, so make the IP static first (`cloudshell_setup.sh` does both; deferred 2026-11-14 to avoid any IP cost). Meanwhile, download a backup now and then from Cloud Shell. See [backup.md](backup.md).
 - [ ] **Find out why the VM froze** (it needed a Reset). On the VM:
   ```bash
   free -h; df -h /; sudo journalctl -k -b -1 --no-pager | grep -iE "oom|killed process" | tail -5
