@@ -8,8 +8,10 @@ function messageOf(err: unknown): string {
     const error = (err.response?.data as ApiResponse<unknown> | undefined)?.error;
     if (error) return error;
     if (!err.response) return "Couldn't reach the server. Check your connection and try again.";
+    // A reply that isn't the app's own, e.g. from nginx in front of it.
+    return `The server sent an unexpected reply (HTTP ${err.response.status}). Please try again.`;
   }
-  return 'Something went wrong. Please try again.';
+  return 'The server sent an unexpected reply. Please try again.';
 }
 
 /** The signed-in user; rejects with a 401 error when there is no session. */
